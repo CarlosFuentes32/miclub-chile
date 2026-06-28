@@ -1,8 +1,14 @@
 # MiClub Chile
 
-Base técnica de una plataforma PWA de fidelización para comercios. El repositorio separa las experiencias de clientes, comercios, cajeros y administradores, y centraliza autenticación y autorización en una API NestJS.
+MVP de una plataforma PWA de fidelización para comercios. El repositorio separa las experiencias de clientes, comercios, cajeros y administradores, y centraliza autenticación, autorización y el motor de fidelización en una API NestJS.
 
-Esta fase no incluye funcionalidades finales ni credenciales reales.
+## Enlaces públicos
+
+- Landing comercial: https://carlosfuentes32.github.io/miclub-chile/
+- Demo guiada: https://carlosfuentes32.github.io/miclub-chile/#/demo
+- Repositorio: https://github.com/CarlosFuentes32/miclub-chile
+
+La demo pública es un recorrido comercial autocontenido y no modifica una base de datos. Para demostrar transacciones, progreso, generación y canje reales, ejecute PostgreSQL, la API y los cuatro paneles siguiendo **Demo funcional del MVP**.
 
 ## Estructura
 
@@ -45,6 +51,10 @@ En macOS o Linux, use `npm` en lugar de `npm.cmd` y `cp .env.example .env`.
 
 Edite `.env` con una URL válida de PostgreSQL y secretos propios. Nunca confirme `.env` al repositorio.
 
+### Inicio rápido de la demo pública
+
+No requiere instalación: abra https://carlosfuentes32.github.io/miclub-chile/#/demo y avance por sus cinco pasos.
+
 ## Base de datos
 
 1. Cree una base PostgreSQL vacía llamada `miclub` (o cambie el nombre en `DATABASE_URL`).
@@ -60,6 +70,13 @@ npm.cmd run prisma:migrate:deploy
 
 ```powershell
 npm.cmd run prisma:seed
+```
+
+Ejemplo con `psql` instalado:
+
+```powershell
+psql -U postgres -c "CREATE USER miclub WITH PASSWORD 'change_me';"
+psql -U postgres -c "CREATE DATABASE miclub OWNER miclub;"
 ```
 
 Opcionalmente, abra Prisma Studio:
@@ -196,7 +213,7 @@ Abra `http://localhost:5177/demo`. El recorrido usa Café Central, Carlos Demo, 
 Flujo recomendado de presentación:
 
 1. Comience en la landing explicando el problema de recompra.
-2. Abra **Ver demo** y complete los cinco pasos guiados.
+2. Abra **Ver demo** y complete los seis pasos guiados, incluido el canje.
 3. Pregunte qué recompensa usaría la cafetería.
 4. Muestre los planes Start y Business.
 5. Proponga activar un piloto en menos de 10 minutos.
