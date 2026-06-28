@@ -30,8 +30,8 @@ $redeemed=Invoke-RestMethod -Method Post -Uri "$Api/cashier/rewards/redeem" -Hea
 Assert ($redeemed.status -eq 'REDEEMED') 'canje de recompensa'
 try { Invoke-RestMethod -Method Post -Uri "$Api/cashier/transactions/$($last.transaction_id)/cancel" -Headers $ch; throw 'La anulación debió fallar' } catch { Assert ($_.Exception.Message -notlike '*debió fallar*') 'anulación bloqueada después del canje' }
 
-$home=Invoke-RestMethod "$Api/customer/home" -Headers $cuh
-Assert ($home.primary_progress.current_value -eq 0) 'home cliente conectado al ciclo nuevo'
+$customerHome=Invoke-RestMethod "$Api/customer/home" -Headers $cuh
+Assert ($customerHome.primary_progress.current_value -eq 0) 'home cliente conectado al ciclo nuevo'
 $rewards=Invoke-RestMethod "$Api/customer/rewards" -Headers $cuh
 Assert (($rewards|Where-Object status -eq 'REDEEMED').Count -ge 1) 'cliente ve recompensa utilizada'
 $dashboard=Invoke-RestMethod "$Api/business/dashboard?business_id=$businessId" -Headers $oh
