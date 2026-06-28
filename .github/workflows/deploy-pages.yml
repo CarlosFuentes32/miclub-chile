@@ -1,4 +1,4 @@
-name: Deploy MiClub demo to GitHub Pages
+name: Deploy MiClub web apps to GitHub Pages
 on:
   push:
     branches: [main]
@@ -10,6 +10,9 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: true
+env:
+  VITE_API_URL: ${{ vars.VITE_API_URL }}
+  VITE_PUBLIC_ROOT: https://carlosfuentes32.github.io/miclub-chile
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,11 +23,28 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build --workspace=@miclub/landing
+      - name: Build landing
+        run: npm run build --workspace=@miclub/landing
+      - name: Build customer
+        run: VITE_BASE_PATH=/miclub-chile/customer/ npm run build --workspace=@miclub/customer
+      - name: Build commerce
+        run: VITE_BASE_PATH=/miclub-chile/commerce/ npm run build --workspace=@miclub/commerce
+      - name: Build cashier
+        run: VITE_BASE_PATH=/miclub-chile/cashier/ npm run build --workspace=@miclub/cashier
+      - name: Build admin
+        run: VITE_BASE_PATH=/miclub-chile/admin/ npm run build --workspace=@miclub/admin
+      - name: Assemble Pages artifact
+        run: |
+          mkdir -p public/customer public/commerce public/cashier public/admin
+          cp -R apps/landing/dist/. public/
+          cp -R apps/customer/dist/. public/customer/
+          cp -R apps/commerce/dist/. public/commerce/
+          cp -R apps/cashier/dist/. public/cashier/
+          cp -R apps/admin/dist/. public/admin/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/landing/dist
+          path: public
   deploy:
     environment:
       name: github-pages

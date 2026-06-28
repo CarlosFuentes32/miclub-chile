@@ -6,9 +6,32 @@ MVP de una plataforma PWA de fidelización para comercios. El repositorio separa
 
 - Landing comercial: https://carlosfuentes32.github.io/miclub-chile/
 - Demo guiada: https://carlosfuentes32.github.io/miclub-chile/#/demo
+- Panel Cliente: https://carlosfuentes32.github.io/miclub-chile/customer/
+- Panel Comercio: https://carlosfuentes32.github.io/miclub-chile/commerce/
+- Panel Cajero: https://carlosfuentes32.github.io/miclub-chile/cashier/
+- Panel Administrador: https://carlosfuentes32.github.io/miclub-chile/admin/
 - Repositorio: https://github.com/CarlosFuentes32/miclub-chile
 
-La demo pública es un recorrido comercial autocontenido y no modifica una base de datos. Para demostrar transacciones, progreso, generación y canje reales, ejecute PostgreSQL, la API y los cuatro paneles siguiendo **Demo funcional del MVP**.
+La landing y la demo guiada son autocontenidas. Los cuatro paneles consumen la API configurada en la variable de GitHub Actions `VITE_API_URL`.
+
+## Capacidades del MVP conectado
+
+- El administrador MiClub crea un comercio, su plan y la cuenta del dueño.
+- El dueño configura el programa y crea cuentas de cajero con contraseña temporal.
+- El cajero busca o escanea al cliente, registra compras, genera y canjea recompensas y anula transacciones permitidas.
+- El cliente consulta QR, progreso, recompensas, historial y perfil.
+- Comercio y administrador ven los resultados actualizados en sus dashboards.
+
+## Despliegue público
+
+GitHub Pages aloja los cinco frontends. NestJS y PostgreSQL requieren un servicio de backend; el repositorio incluye `Dockerfile` y `render.yaml` para desplegarlos en Render.
+
+1. Cree el Blueprint de Render desde este repositorio.
+2. Render crea `miclub-api` y `miclub-db`, ejecuta migraciones y carga el seed demo.
+3. Copie la URL de la API, agregue `/api` y guárdela como variable de Actions `VITE_API_URL`.
+4. Vuelva a ejecutar **Deploy MiClub web apps to GitHub Pages**.
+
+Para producción real, reemplace las credenciales del seed y use secretos propios.
 
 ## Estructura
 

@@ -5,5 +5,6 @@ export interface LoyaltyProgram{id:string;version:number;type:ProgramType;earnin
 export type LoyaltyProgramDraft=Omit<LoyaltyProgram,'id'|'version'|'status'>;
 export interface BusinessCustomer{id:string;name:string;phone:string;progress:string;rewardsAvailable:number;lastVisit:string;history:string[]}
 export interface Collaborator{id:string;name:string;email:string;role:'BUSINESS_ADMIN'|'CASHIER';status:'active'|'inactive'}
+export interface CreatedCollaborator extends Collaborator{temporaryPassword:string}
 export interface BusinessReward{id:string;customer:string;description:string;generatedAt:string;expiresAt:string;status:RewardStatus}
 export interface QRMaterial{businessCode:string;registrationUrl:string;businessName:string}

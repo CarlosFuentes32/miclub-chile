@@ -1,6 +1,6 @@
 import { useEffect,useState } from 'react';
 import { AuthUser,logout,portalByRole,restoreSession } from '@miclub/shared';
-import { BrowserRouter,Navigate,Outlet,Route,Routes,useNavigate } from 'react-router-dom';
+import { HashRouter,Navigate,Outlet,Route,Routes,useNavigate } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { BusinessesPage } from './pages/BusinessesPage';import { DashboardPage } from './pages/DashboardPage';import { LoginPage } from './pages/LoginPage';import { PlansPage } from './pages/PlansPage';import { ReportsPage } from './pages/ReportsPage';import { SettingsPage } from './pages/SettingsPage';import { SupportPage } from './pages/SupportPage';import { UsersPage } from './pages/UsersPage';
 import { adminService } from './services/admin.service';import { AdminDashboard,GlobalSettings,Reports,SupportTicket } from './types/admin';
@@ -15,4 +15,4 @@ function AppRoutes(){
  if(!dashboard||!reports||!settings)return <main className="grid min-h-screen place-items-center">{error||'Cargando administración…'}</main>;
  return <Routes><Route element={<Protected user={user}/>}> <Route element={<AdminLayout onLogout={out}/>}> <Route path="/dashboard" element={<DashboardPage data={dashboard}/>}/><Route path="/businesses" element={<BusinessesPage/>}/><Route path="/users" element={<UsersPage/>}/><Route path="/plans" element={<PlansPage/>}/><Route path="/reports" element={<ReportsPage data={reports}/>}/><Route path="/support" element={<SupportPage items={tickets}/>}/><Route path="/settings" element={<SettingsPage settings={settings} onChange={setSettings}/>}/></Route></Route><Route path="*" element={<Navigate to="/dashboard" replace/>}/></Routes>;
 }
-export function App(){return <BrowserRouter><AppRoutes/></BrowserRouter>}
+export function App(){return <HashRouter><AppRoutes/></HashRouter>}

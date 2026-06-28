@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
+import { ConfigService } from "@nestjs/config";
 import {
   CreateCollaboratorDto,
   UpdateBusinessDto,
@@ -23,6 +24,7 @@ export class BusinessesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: BusinessAccessService,
+    private readonly config: ConfigService,
   ) {}
   mine(userId: string) {
     return this.prisma.businessUser.findMany({
@@ -165,7 +167,7 @@ export class BusinessesService {
     await this.access.requireManager(userId, businessId);
     if (dto.role !== UserRole.CASHIER && dto.role !== UserRole.BUSINESS_ADMIN)
       throw new Error("Rol de colaborador inválido");
-    const temporaryPassword = randomBytes(12).toString("base64url");
+    const temporaryPassword = dto.password ?? randomBytes(12).toString("base64url");
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
@@ -206,7 +208,7 @@ export class BusinessesService {
     const { business } = await this.access.requireManager(userId, businessId);
     return {
       businessCode: business.slug.toUpperCase(),
-      registrationUrl: `http://localhost:5173/register?business=${business.slug}`,
+      registrationUrl: `${this.config.get('CUSTOMER_APP_URL','http://localhost:5173')}/#/register?business=${business.slug}`,
       businessName: business.name,
     };
   }

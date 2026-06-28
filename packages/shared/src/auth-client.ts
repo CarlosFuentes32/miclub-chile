@@ -37,4 +37,7 @@ export async function restoreSession() {
 export async function getMe() { return apiRequest<AuthUser>('/auth/me'); }
 export async function logout() { try { await apiRequest('/auth/logout', { method: 'POST' }); } finally { accessToken = null; } }
 
-export const portalByRole: Record<UserRole, string> = { CUSTOMER: 'http://localhost:5173', BUSINESS_ADMIN: 'http://localhost:5174', BUSINESS_OWNER: 'http://localhost:5174', CASHIER: 'http://localhost:5175', MICLUB_ADMIN: 'http://localhost:5176' };
+const publicRoot = import.meta.env.VITE_PUBLIC_ROOT?.replace(/\/$/, '');
+export const portalByRole: Record<UserRole, string> = publicRoot
+  ? { CUSTOMER: `${publicRoot}/customer/`, BUSINESS_ADMIN: `${publicRoot}/commerce/`, BUSINESS_OWNER: `${publicRoot}/commerce/`, CASHIER: `${publicRoot}/cashier/`, MICLUB_ADMIN: `${publicRoot}/admin/` }
+  : { CUSTOMER: 'http://localhost:5173', BUSINESS_ADMIN: 'http://localhost:5174', BUSINESS_OWNER: 'http://localhost:5174', CASHIER: 'http://localhost:5175', MICLUB_ADMIN: 'http://localhost:5176' };

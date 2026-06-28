@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthUser, logout, portalByRole, restoreSession } from '@miclub/shared';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { HashRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { QRScreen } from './components/QRScreen';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { HistoryPage } from './pages/HistoryPage';
@@ -60,4 +60,4 @@ function AppRoutes() {
   </Routes>;
 }
 
-export function App() { return <BrowserRouter><AppRoutes /></BrowserRouter>; }
+export function App() { return <HashRouter><AppRoutes /></HashRouter>; }

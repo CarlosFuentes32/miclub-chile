@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AuthUser, logout, portalByRole, restoreSession } from "@miclub/shared";
 import {
-  BrowserRouter,
+  HashRouter,
   Navigate,
   Outlet,
   Route,
@@ -154,8 +154,8 @@ function AppRoutes() {
 }
 export function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AppRoutes />
-    </BrowserRouter>
+    </HashRouter>
   );
 }

@@ -33,7 +33,7 @@ export class AuthController {
   @Post('logout') @HttpCode(204)
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     await this.auth.logout(request.cookies?.[REFRESH_COOKIE]);
-    response.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
+    response.clearCookie(REFRESH_COOKIE, this.cookieOptions());
   }
 
   @Get('me') @UseGuards(JwtAuthGuard)
@@ -41,7 +41,12 @@ export class AuthController {
 
   private respondWithSession(session: Awaited<ReturnType<AuthService['login']>>, response: Response) {
     const { refreshToken, refreshExpiresAt, ...body } = session;
-    response.cookie(REFRESH_COOKIE, refreshToken, { httpOnly: true, secure: this.config.get('NODE_ENV') === 'production', sameSite: 'lax', path: '/api/auth', expires: refreshExpiresAt });
+    response.cookie(REFRESH_COOKIE, refreshToken, { ...this.cookieOptions(), expires: refreshExpiresAt });
     return body;
+  }
+
+  private cookieOptions() {
+    const production = this.config.get('NODE_ENV') === 'production';
+    return { httpOnly: true, secure: production, sameSite: production ? 'none' as const : 'lax' as const, path: '/api/auth' };
   }
 }
