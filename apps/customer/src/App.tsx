@@ -30,7 +30,10 @@ function AppRoutes() {
   useEffect(() => {
     const minimumSplash = new Promise(resolve => window.setTimeout(resolve, 650));
     Promise.allSettled([restoreSession(), minimumSplash]).then(([session]) => {
-      if (session.status === 'fulfilled') setUser(session.value);
+      if (session.status === 'fulfilled') {
+        if (session.value.role === 'CUSTOMER') setUser(session.value);
+        else void logout();
+      }
       setBooting(false);
     });
   }, []);

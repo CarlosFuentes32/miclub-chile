@@ -44,7 +44,14 @@ function AppRoutes() {
   const navigate = useNavigate();
   useEffect(() => {
     restoreSession()
-      .then(setUser)
+      .then(async (session) => {
+        if (session.role !== "CASHIER") {
+          await logout();
+          setUser(null);
+          return;
+        }
+        setUser(session);
+      })
       .catch(() => setUser(null))
       .finally(() => setReady(true));
   }, []);

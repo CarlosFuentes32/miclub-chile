@@ -7,7 +7,7 @@ import { adminService } from './services/admin.service';import { AdminDashboard,
 function Protected({user}:{user:AuthUser|null}){if(!user)return <Navigate to="/login" replace/>;if(user.role!=='MICLUB_ADMIN')return <main className="grid min-h-screen place-items-center"><div><h1>Sin permiso</h1><a href={portalByRole[user.role]}>Ir al portal autorizado</a></div></main>;return <Outlet/>}
 function AppRoutes(){
  const[user,setUser]=useState<AuthUser|null>(null);const[ready,setReady]=useState(false);const[dashboard,setDashboard]=useState<AdminDashboard|null>(null);const[reports,setReports]=useState<Reports|null>(null);const[settings,setSettings]=useState<GlobalSettings|null>(null);const[tickets,setTickets]=useState<SupportTicket[]>([]);const[error,setError]=useState('');const navigate=useNavigate();
- useEffect(()=>{restoreSession().then(setUser).catch(()=>setUser(null)).finally(()=>setReady(true))},[]);
+ useEffect(()=>{restoreSession().then(async session=>{if(session.role!=='MICLUB_ADMIN'){await logout();setUser(null);return}setUser(session)}).catch(()=>setUser(null)).finally(()=>setReady(true))},[]);
  useEffect(()=>{if(user)Promise.all([adminService.getAdminDashboard(),adminService.getReports(),adminService.getGlobalSettings(),adminService.getSupportTickets()]).then(([d,r,s,t])=>{setDashboard(d);setReports(r);setSettings(s);setTickets(t)}).catch(e=>setError(e instanceof Error?e.message:'Error de conexión'))},[user]);
  async function out(){await logout();setUser(null);navigate('/login',{replace:true})}
  if(!ready)return <main className="grid min-h-screen place-items-center bg-slate-950 text-white">Preparando administración…</main>;
