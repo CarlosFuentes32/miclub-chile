@@ -1,7 +1,7 @@
 export type UserRole = 'CUSTOMER' | 'CASHIER' | 'BUSINESS_ADMIN' | 'BUSINESS_OWNER' | 'MICLUB_ADMIN';
 export interface AuthUser { id: string; name: string; email: string; phone: string; role: UserRole; status: string; }
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD?'https://api.miclubchile.cl/api':'http://localhost:3000/api');
 let accessToken: string | null = null;
 
 async function parseError(response: Response) {
@@ -37,8 +37,8 @@ export async function restoreSession() {
 export async function getMe() { return apiRequest<AuthUser>('/auth/me'); }
 export async function logout() { try { await apiRequest('/auth/logout', { method: 'POST' }); } finally { accessToken = null; } }
 
-const customerUrl=import.meta.env.VITE_CUSTOMER_URL??'http://localhost:5173';
-const commerceUrl=import.meta.env.VITE_COMMERCE_URL??'http://localhost:5174';
-const cashierUrl=import.meta.env.VITE_CASHIER_URL??'http://localhost:5175';
-const adminUrl=import.meta.env.VITE_ADMIN_URL??'http://localhost:5176';
+const customerUrl=import.meta.env.VITE_CUSTOMER_URL??(import.meta.env.PROD?'https://app.miclubchile.cl':'http://localhost:5173');
+const commerceUrl=import.meta.env.VITE_COMMERCE_URL??(import.meta.env.PROD?'https://comercio.miclubchile.cl':'http://localhost:5174');
+const cashierUrl=import.meta.env.VITE_CASHIER_URL??(import.meta.env.PROD?'https://cajero.miclubchile.cl':'http://localhost:5175');
+const adminUrl=import.meta.env.VITE_ADMIN_URL??(import.meta.env.PROD?'https://admin.miclubchile.cl':'http://localhost:5176');
 export const portalByRole:Record<UserRole,string>={CUSTOMER:customerUrl,BUSINESS_ADMIN:commerceUrl,BUSINESS_OWNER:commerceUrl,CASHIER:cashierUrl,MICLUB_ADMIN:adminUrl};
