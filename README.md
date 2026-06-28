@@ -37,6 +37,8 @@ El proyecto ya es un monorepo y debe mantenerse así: cada panel conserva separa
 
 La configuración recomendada utiliza Vercel para las cinco aplicaciones web y Render o Railway para NestJS y PostgreSQL. Consulte [docs/despliegue-produccion.md](docs/despliegue-produccion.md) para contratación, variables, DNS, comandos y prueba del piloto.
 
+La revisión de disponibilidad, cuentas y costos está documentada en [docs/contratacion-servicios.md](docs/contratacion-servicios.md).
+
 GitHub Pages continúa disponible como demostración visual. No debe considerarse el entorno productivo mientras no tenga una API pública configurada.
 
 ## Estructura
