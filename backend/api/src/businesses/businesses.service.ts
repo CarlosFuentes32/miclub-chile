@@ -29,6 +29,7 @@ export class BusinessesService {
   mine(userId: string) {
     return this.prisma.businessUser.findMany({
       where: { userId, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
       select: {
         role: true,
         business: {

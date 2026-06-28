@@ -1,25 +1,7 @@
-# Panel Cliente PWA
+# Panel Cliente
 
-La aplicación `apps/customer` implementa una experiencia mobile-first con splash breve, bienvenida, acceso, registro, inicio, QR, recompensas, historial y perfil.
+El Panel Cliente consume la API real para QR, progreso, recompensas, historial y perfil. El registro admite correo opcional y permite iniciar sesión con correo o teléfono.
 
-## Datos mock
+Cuando el registro se abre desde el QR de un comercio, la URL incluye `business=<slug>` y el backend crea la asociación con ese comercio. El QR personal del cliente dura cinco minutos y se valida nuevamente en la API antes de mostrar su ficha al cajero.
 
-`src/data/customer.mock.ts` contiene temporalmente:
-
-- progreso de Café Central (7 de 10 compras);
-- próxima recompensa;
-- recompensas disponibles, utilizadas y vencidas;
-- historial reciente de compras, puntos y canjes.
-
-La UI consume contratos TypeScript definidos en `src/types/customer.ts`. `src/services/customer.service.ts` delimita la futura integración y evita introducir llamadas de red en los componentes visuales.
-
-## Endpoints pendientes
-
-- `GET /api/customer/dashboard`: programa principal, progreso y resumen.
-- `GET /api/customer/rewards`: recompensas agrupadas por estado.
-- `GET /api/customer/history`: actividad paginada.
-- `GET /api/customer/qr`: credencial QR firmada y de corta duración.
-- `PATCH /api/users/me`: actualización del perfil propio.
-- Ajustar `POST /api/auth/register` para aceptar correo opcional y definir acceso alternativo por teléfono.
-
-El QR actual contiene un identificador mock y un código de respaldo derivado. No debe utilizarse para transacciones reales hasta que el backend emita y valide credenciales firmadas, rotativas y con vencimiento.
+El flujo principal no utiliza mocks.

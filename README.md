@@ -22,16 +22,22 @@ La landing y la demo guiada son autocontenidas. Los cuatro paneles consumen la A
 - El cliente consulta QR, progreso, recompensas, historial y perfil.
 - Comercio y administrador ven los resultados actualizados en sus dashboards.
 
-## Despliegue público
+## Arquitectura de producción
 
-GitHub Pages aloja los cinco frontends. NestJS y PostgreSQL requieren un servicio de backend; el repositorio incluye `Dockerfile` y `render.yaml` para desplegarlos en Render.
+El proyecto ya es un monorepo y debe mantenerse así: cada panel conserva separación de responsabilidades, pero todos usan la misma API, base PostgreSQL y utilidades compartidas.
 
-1. Cree el Blueprint de Render desde este repositorio.
-2. Render crea `miclub-api` y `miclub-db`, ejecuta migraciones y carga el seed demo.
-3. Copie la URL de la API, agregue `/api` y guárdela como variable de Actions `VITE_API_URL`.
-4. Vuelva a ejecutar **Deploy MiClub web apps to GitHub Pages**.
+| Aplicación | Dominio objetivo |
+|---|---|
+| Landing | `miclub.cl` |
+| Cliente | `app.miclub.cl` |
+| Comercio | `comercio.miclub.cl` |
+| Cajero | `cajero.miclub.cl` |
+| Administrador | `admin.miclub.cl` |
+| API | `api.miclub.cl` |
 
-Para producción real, reemplace las credenciales del seed y use secretos propios.
+La configuración recomendada utiliza Vercel para las cinco aplicaciones web y Render o Railway para NestJS y PostgreSQL. Consulte [docs/despliegue-produccion.md](docs/despliegue-produccion.md) para contratación, variables, DNS, comandos y prueba del piloto.
+
+GitHub Pages continúa disponible como demostración visual. No debe considerarse el entorno productivo mientras no tenga una API pública configurada.
 
 ## Estructura
 
@@ -197,9 +203,9 @@ Para cambiar la URL de la API, copie `.env.example` dentro de cada aplicación y
 
 | Perfil | Email | Contraseña | URL |
 |---|---|---|---|
-| Carlos Demo | `customer@miclub.local` | `MiClubDemo2026!` | `http://localhost:5173` |
+| Cliente Demo | `customer@miclub.local` | `MiClubDemo2026!` | `http://localhost:5173` |
 | Cajero Demo | `cashier@miclub.local` | `MiClubDemo2026!` | `http://localhost:5175` |
-| Dueño Café Central | `owner@miclub.local` | `MiClubDemo2026!` | `http://localhost:5174` |
+| Dueño Minimarket Piloto | `owner@miclub.local` | `MiClubDemo2026!` | `http://localhost:5174` |
 | Admin MiClub | `admin@miclub.local` | `MiClubDemo2026!` | `http://localhost:5176` |
 
 ### Prueba automatizada básica
@@ -214,13 +220,13 @@ El script valida login, búsqueda telefónica, creación de programa, transacci�
 
 ### Flujo para mostrar a una cafetería
 
-1. Abra Cliente y muestre el QR de Carlos.
+1. Abra Cliente y muestre el QR del Cliente Demo.
 2. Abra Caja, busque `95026368` o escanee el QR y registre compras.
 3. En la décima compra, muestre la recompensa y el ciclo nuevo en cero.
 4. Vuelva a Cliente para mostrar la recompensa disponible.
 5. Canjee desde Caja y confirme el estado utilizado en Cliente.
 6. Abra Comercio para mostrar dashboard, cliente y recompensa canjeada.
-7. Abra Admin para mostrar Café Central, usuarios y actividad global.
+7. Abra Admin para mostrar Minimarket Piloto, usuarios y actividad global.
 
 ## Modo demo comercial sin configuración
 

@@ -1,0 +1,1 @@
+{"version":2,"installCommand":"npm ci","buildCommand":"npm run build --workspace=@miclub/admin","outputDirectory":"apps/admin/dist","framework":null}

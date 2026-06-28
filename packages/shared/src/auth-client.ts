@@ -37,7 +37,8 @@ export async function restoreSession() {
 export async function getMe() { return apiRequest<AuthUser>('/auth/me'); }
 export async function logout() { try { await apiRequest('/auth/logout', { method: 'POST' }); } finally { accessToken = null; } }
 
-const publicRoot = import.meta.env.VITE_PUBLIC_ROOT?.replace(/\/$/, '');
-export const portalByRole: Record<UserRole, string> = publicRoot
-  ? { CUSTOMER: `${publicRoot}/customer/`, BUSINESS_ADMIN: `${publicRoot}/commerce/`, BUSINESS_OWNER: `${publicRoot}/commerce/`, CASHIER: `${publicRoot}/cashier/`, MICLUB_ADMIN: `${publicRoot}/admin/` }
-  : { CUSTOMER: 'http://localhost:5173', BUSINESS_ADMIN: 'http://localhost:5174', BUSINESS_OWNER: 'http://localhost:5174', CASHIER: 'http://localhost:5175', MICLUB_ADMIN: 'http://localhost:5176' };
+const customerUrl=import.meta.env.VITE_CUSTOMER_URL??'http://localhost:5173';
+const commerceUrl=import.meta.env.VITE_COMMERCE_URL??'http://localhost:5174';
+const cashierUrl=import.meta.env.VITE_CASHIER_URL??'http://localhost:5175';
+const adminUrl=import.meta.env.VITE_ADMIN_URL??'http://localhost:5176';
+export const portalByRole:Record<UserRole,string>={CUSTOMER:customerUrl,BUSINESS_ADMIN:commerceUrl,BUSINESS_OWNER:commerceUrl,CASHIER:cashierUrl,MICLUB_ADMIN:adminUrl};

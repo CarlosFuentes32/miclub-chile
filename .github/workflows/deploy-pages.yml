@@ -12,7 +12,10 @@ concurrency:
   cancel-in-progress: true
 env:
   VITE_API_URL: ${{ vars.VITE_API_URL }}
-  VITE_PUBLIC_ROOT: https://carlosfuentes32.github.io/miclub-chile
+  VITE_CUSTOMER_URL: https://carlosfuentes32.github.io/miclub-chile/customer/
+  VITE_COMMERCE_URL: https://carlosfuentes32.github.io/miclub-chile/commerce/
+  VITE_CASHIER_URL: https://carlosfuentes32.github.io/miclub-chile/cashier/
+  VITE_ADMIN_URL: https://carlosfuentes32.github.io/miclub-chile/admin/
 jobs:
   build:
     runs-on: ubuntu-latest

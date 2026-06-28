@@ -28,7 +28,7 @@ npm.cmd run prisma:seed
 npm.cmd run dev:api
 ```
 
-El seed restablece los ciclos, transacciones, recompensas y auditorías de Café Central para que la prueba comience en cero.
+El seed crea o actualiza el comercio piloto, sus usuarios, plan y programa sin eliminar transacciones ni recompensas existentes. Los valores se controlan mediante variables `PILOT_*`.
 
 ## Endpoints disponibles
 

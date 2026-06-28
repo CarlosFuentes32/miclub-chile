@@ -19,7 +19,12 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email.trim().toLowerCase() } });
+    const identifier = dto.email.trim().toLowerCase();
+    const digits = identifier.replace(/\D/g, '');
+    const phone = digits.length === 8 ? `+569${digits}` : identifier.startsWith('+') ? `+${digits}` : digits;
+    const user = identifier.includes('@')
+      ? await this.prisma.user.findUnique({ where: { email: identifier } })
+      : await this.prisma.user.findFirst({ where: { phone } });
     if (!user || user.status !== UserStatus.ACTIVE || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Credenciales inválidas');
     }

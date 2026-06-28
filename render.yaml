@@ -26,10 +26,24 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN_DAYS
         value: 7
       - key: SEED_PASSWORD
-        value: MiClubDemo2026!
+        sync: false
       - key: SEED_ADMIN_EMAIL
         value: admin@miclub.local
       - key: CORS_ORIGIN
-        value: https://carlosfuentes32.github.io
+        value: https://miclub.cl,https://app.miclub.cl,https://comercio.miclub.cl,https://cajero.miclub.cl,https://admin.miclub.cl,https://carlosfuentes32.github.io
       - key: CUSTOMER_APP_URL
-        value: https://carlosfuentes32.github.io/miclub-chile/customer
+        value: https://app.miclub.cl
+      - key: PILOT_BUSINESS_NAME
+        value: Minimarket Piloto
+      - key: PILOT_BUSINESS_SLUG
+        value: minimarket-piloto
+      - key: PILOT_OWNER_EMAIL
+        value: owner@miclub.local
+      - key: PILOT_CASHIER_EMAIL
+        value: cashier@miclub.local
+      - key: PILOT_CUSTOMER_EMAIL
+        value: customer@miclub.local
+      - key: PILOT_PROGRAM_TARGET
+        value: 10
+      - key: PILOT_PROGRAM_REWARD
+        value: $5.000 de descuento en la próxima compra
