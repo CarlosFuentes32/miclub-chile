@@ -1,0 +1,24 @@
+{
+  "name": "miclub-chile",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/*", "backend/api", "packages/*"],
+  "scripts": {
+    "dev:customer": "npm run dev --workspace=@miclub/customer",
+    "dev:commerce": "npm run dev --workspace=@miclub/commerce",
+    "dev:cashier": "npm run dev --workspace=@miclub/cashier",
+    "dev:admin": "npm run dev --workspace=@miclub/admin",
+    "dev:landing": "npm run dev --workspace=@miclub/landing",
+    "dev:api": "npm run start:dev --workspace=@miclub/api",
+    "build": "npm run build --workspaces --if-present",
+    "prisma:generate": "prisma generate --schema=database/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=database/prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema=database/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=database/prisma/schema.prisma",
+    "prisma:seed": "npm run seed --workspace=@miclub/api"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.0"
+  },
+  "engines": { "node": ">=20.19.0", "npm": ">=10.0.0" }
+}

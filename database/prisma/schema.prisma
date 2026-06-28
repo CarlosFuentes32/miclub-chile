@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  CASHIER
+  BUSINESS_ADMIN
+  BUSINESS_OWNER
+  MICLUB_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id                    String             @id @default(cuid())
+  name                  String
+  email                 String             @unique
+  phone                 String
+  passwordHash          String             @map("password_hash")
+  birthDate             DateTime?          @map("birth_date") @db.Date
+  rut                   String?            @unique
+  role                  UserRole           @default(CUSTOMER)
+  status                UserStatus         @default(ACTIVE)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  sessions              AuthSession[]
+  ownedBusinesses       Business[]         @relation("BusinessOwner")
+  businessMemberships   BusinessUser[]
+  customerBusinesses    CustomerBusiness[]
+  cycles                Cycle[]
+  customerTransactions  Transaction[]      @relation("TransactionCustomer")
+  performedTransactions Transaction[]      @relation("TransactionPerformer")
+  cancelledTransactions Transaction[]      @relation("TransactionCanceller")
+  rewards               Reward[]           @relation("RewardCustomer")
+  redeemedRewards       Reward[]           @relation("RewardRedeemer")
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  userId           String    @map("user_id")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+enum BusinessStatus {
+  ACTIVE       @map("active")
+  SUSPENDED    @map("suspended")
+  GRACE_PERIOD @map("grace_period")
+  CANCELLED    @map("cancelled")
+}
+
+enum MembershipStatus {
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
+}
+
+enum ProgramStatus {
+  DRAFT    @map("draft")
+  ACTIVE   @map("active")
+  ARCHIVED @map("archived")
+}
+
+enum AccumulationType {
+  PURCHASE_COUNT @map("purchase_count")
+  VISIT_COUNT    @map("visit_count")
+  AMOUNT_SPENT   @map("amount_spent")
+  POINTS         @map("points")
+}
+
+enum CycleStatus {
+  ACTIVE    @map("active")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+}
+
+enum TransactionType {
+  PURCHASE      @map("purchase")
+  VISIT         @map("visit")
+  MANUAL_POINTS @map("manual_points")
+  AMOUNT        @map("amount")
+}
+
+enum TransactionStatus {
+  VALID     @map("valid")
+  CANCELLED @map("cancelled")
+}
+
+enum RewardStatus {
+  AVAILABLE @map("available")
+  REDEEMED  @map("redeemed")
+  EXPIRED   @map("expired")
+  CANCELLED @map("cancelled")
+}
+
+model Plan {
+  id                String     @id @default(cuid())
+  name              String     @unique
+  monthlyPrice      Decimal    @default(0) @map("monthly_price") @db.Decimal(12, 2)
+  customerLimit     Int        @default(500) @map("customer_limit")
+  collaboratorLimit Int        @default(3) @map("collaborator_limit")
+  features          Json       @default("[]")
+  active            Boolean    @default(true)
+  businesses        Business[]
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  @@map("plans")
+}
+
+model Business {
+  id           String             @id @default(cuid())
+  name         String
+  slug         String             @unique
+  businessType String             @map("business_type")
+  rutBusiness  String?            @unique @map("rut_business")
+  ownerUserId  String             @map("owner_user_id")
+  phone        String
+  email        String
+  address      String
+  logoUrl      String?            @map("logo_url")
+  status       BusinessStatus     @default(ACTIVE)
+  planId       String?            @map("plan_id")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  owner        User               @relation("BusinessOwner", fields: [ownerUserId], references: [id])
+  plan         Plan?              @relation(fields: [planId], references: [id])
+  users        BusinessUser[]
+  programs     LoyaltyProgram[]
+  customers    CustomerBusiness[]
+  cycles       Cycle[]
+  transactions Transaction[]
+  rewards      Reward[]
+  auditLogs    AuditLog[]
+
+  @@map("businesses")
+}
+
+model BusinessUser {
+  id         String           @id @default(cuid())
+  businessId String           @map("business_id")
+  userId     String           @map("user_id")
+  role       UserRole
+  status     MembershipStatus @default(ACTIVE)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([userId])
+  @@map("business_users")
+}
+
+model LoyaltyProgram {
+  id                   String           @id @default(cuid())
+  businessId           String           @map("business_id")
+  name                 String
+  accumulationType     AccumulationType @map("accumulation_type")
+  targetValue          Decimal          @map("target_value") @db.Decimal(14, 2)
+  rewardDescription    String           @map("reward_description")
+  rewardExpirationDays Int?             @map("reward_expiration_days")
+  version              Int              @default(1)
+  status               ProgramStatus    @default(DRAFT)
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  business             Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  cycles               Cycle[]
+
+  @@unique([businessId, version])
+  @@index([businessId, status])
+  @@map("loyalty_programs")
+}
+
+model CustomerBusiness {
+  id             String           @id @default(cuid())
+  customerUserId String           @map("customer_user_id")
+  businessId     String           @map("business_id")
+  joinedAt       DateTime         @default(now()) @map("joined_at")
+  status         MembershipStatus @default(ACTIVE)
+  customer       User             @relation(fields: [customerUserId], references: [id], onDelete: Cascade)
+  business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([customerUserId, businessId])
+  @@index([businessId])
+  @@map("customer_businesses")
+}
+
+model Cycle {
+  id               String         @id @default(cuid())
+  customerUserId   String         @map("customer_user_id")
+  businessId       String         @map("business_id")
+  loyaltyProgramId String         @map("loyalty_program_id")
+  currentValue     Decimal        @default(0) @map("current_value") @db.Decimal(14, 2)
+  targetValue      Decimal        @map("target_value") @db.Decimal(14, 2)
+  status           CycleStatus    @default(ACTIVE)
+  startedAt        DateTime       @default(now()) @map("started_at")
+  completedAt      DateTime?      @map("completed_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  customer         User           @relation(fields: [customerUserId], references: [id])
+  business         Business       @relation(fields: [businessId], references: [id])
+  loyaltyProgram   LoyaltyProgram @relation(fields: [loyaltyProgramId], references: [id])
+  transactions     Transaction[]
+  rewards          Reward[]
+
+  @@index([customerUserId, businessId, status])
+  @@map("cycles")
+}
+
+model Transaction {
+  id                String            @id @default(cuid())
+  cycleId           String            @map("cycle_id")
+  businessId        String            @map("business_id")
+  customerUserId    String            @map("customer_user_id")
+  performedByUserId String            @map("performed_by_user_id")
+  transactionType   TransactionType   @map("transaction_type")
+  previousValue     Decimal           @map("previous_value") @db.Decimal(14, 2)
+  valueAdded        Decimal           @map("value_added") @db.Decimal(14, 2)
+  amountOptional    Decimal?          @map("amount_optional") @db.Decimal(14, 2)
+  status            TransactionStatus @default(VALID)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  cancelledAt       DateTime?         @map("cancelled_at")
+  cancelledByUserId String?           @map("cancelled_by_user_id")
+  cycle             Cycle             @relation(fields: [cycleId], references: [id])
+  business          Business          @relation(fields: [businessId], references: [id])
+  customer          User              @relation("TransactionCustomer", fields: [customerUserId], references: [id])
+  performedBy       User              @relation("TransactionPerformer", fields: [performedByUserId], references: [id])
+  cancelledBy       User?             @relation("TransactionCanceller", fields: [cancelledByUserId], references: [id])
+
+  @@index([customerUserId, businessId, status, createdAt])
+  @@map("transactions")
+}
+
+model Reward {
+  id                String       @id @default(cuid())
+  cycleId           String       @map("cycle_id")
+  businessId        String       @map("business_id")
+  customerUserId    String       @map("customer_user_id")
+  rewardDescription String       @map("reward_description")
+  status            RewardStatus @default(AVAILABLE)
+  generatedAt       DateTime     @default(now()) @map("generated_at")
+  expiresAt         DateTime?    @map("expires_at")
+  redeemedAt        DateTime?    @map("redeemed_at")
+  redeemedByUserId  String?      @map("redeemed_by_user_id")
+  cycle             Cycle        @relation(fields: [cycleId], references: [id])
+  business          Business     @relation(fields: [businessId], references: [id])
+  customer          User         @relation("RewardCustomer", fields: [customerUserId], references: [id])
+  redeemedBy        User?        @relation("RewardRedeemer", fields: [redeemedByUserId], references: [id])
+
+  @@index([customerUserId, businessId, status])
+  @@map("rewards")
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  businessId String?   @map("business_id")
+  action     String
+  entityType String    @map("entity_type")
+  entityId   String    @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User      @relation(fields: [userId], references: [id])
+  business   Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, createdAt])
+  @@map("audit_logs")
+}

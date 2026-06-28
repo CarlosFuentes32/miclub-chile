@@ -1,0 +1,5 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base{*{-webkit-tap-highlight-color:transparent}html{@apply bg-slate-200}body{@apply m-0 min-h-screen bg-slate-50 text-slate-900 antialiased}button,a,input{@apply touch-manipulation}}
+@layer components{.input{@apply mt-1.5 w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100}}

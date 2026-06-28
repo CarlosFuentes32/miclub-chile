@@ -1,0 +1,2 @@
+import { BrandMark } from '../components/BrandMark';
+export function SplashPage(){return <main className="grid min-h-screen place-items-center bg-gradient-to-b from-white to-violet-50 p-8 text-center"><div className="animate-soft-in"><BrandMark/><p className="mt-5 text-slate-500">Todos tus beneficios en un solo lugar</p><span className="mx-auto mt-8 block h-1 w-12 overflow-hidden rounded-full bg-violet-100"><span className="block h-full w-2/3 animate-pulse rounded-full bg-violet-600"/></span></div></main>}
