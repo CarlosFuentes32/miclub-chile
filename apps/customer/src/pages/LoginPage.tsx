@@ -1,5 +1,115 @@
-import { FormEvent,useState } from 'react';
-import { login,portalByRole } from '@miclub/shared';
-import { ArrowLeft } from 'lucide-react';
-import { Link,useNavigate } from 'react-router-dom';
-export function LoginPage({onLogin}:{onLogin:(user:Awaited<ReturnType<typeof login>>)=>void}){const[identifier,setIdentifier]=useState(import.meta.env.DEV?'customer@miclub.local':''),[password,setPassword]=useState(import.meta.env.DEV?'MiClubDemo2026!':''),[error,setError]=useState(''),[loading,setLoading]=useState(false);const navigate=useNavigate();async function submit(e:FormEvent){e.preventDefault();setLoading(true);setError('');try{const user=await login(identifier,password);if(user.role!=='CUSTOMER'){window.location.assign(portalByRole[user.role]);return}onLogin(user);navigate('/app',{replace:true})}catch(e){setError(e instanceof Error?e.message:'No pudimos iniciar sesión')}finally{setLoading(false)}}return <main className="min-h-screen bg-white p-6 pt-[max(1.5rem,env(safe-area-inset-top))]"><Link to="/welcome" className="grid h-11 w-11 place-items-center rounded-full bg-slate-100"><ArrowLeft/></Link><div className="mx-auto mt-10 max-w-sm"><p className="font-bold text-violet-600">Bienvenido de vuelta</p><h1 className="mt-2 text-3xl font-black">Ingresa a MiClub</h1><p className="mt-2 text-slate-500">Tus beneficios te están esperando.</p><form onSubmit={submit} className="mt-8 space-y-4"><label className="block text-sm font-semibold">Correo o teléfono<input className="input" value={identifier} onChange={e=>setIdentifier(e.target.value)} required/></label><label className="block text-sm font-semibold">Contraseña<input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<p role="alert" className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}<button disabled={loading} className="w-full rounded-2xl bg-slate-950 py-4 font-bold text-white">{loading?'Ingresando…':'Ingresar'}</button></form><p className="mt-6 text-center text-sm text-slate-500">¿Aún no tienes cuenta? <Link to="/register" className="font-bold text-violet-700">Créala aquí</Link></p></div></main>}
+import { FormEvent, useState } from "react";
+import { login, portalByRole } from "@miclub/shared";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+export function LoginPage({
+  onLogin,
+}: {
+  onLogin: (user: Awaited<ReturnType<typeof login>>) => void;
+}) {
+  const [identifier, setIdentifier] = useState(
+      import.meta.env.DEV ? "customer@miclub.local" : "",
+    ),
+    [password, setPassword] = useState(
+      import.meta.env.DEV ? "MiClubDemo2026!" : "",
+    ),
+    [showPassword, setShowPassword] = useState(false),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const user = await login(identifier, password);
+      if (user.role !== "CUSTOMER") {
+        window.location.assign(portalByRole[user.role]);
+        return;
+      }
+      onLogin(user);
+      navigate("/app", { replace: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <main className="min-h-screen bg-white p-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
+      <Link
+        to="/welcome"
+        className="grid h-11 w-11 place-items-center rounded-full bg-slate-100"
+      >
+        <ArrowLeft />
+      </Link>
+      <div className="mx-auto mt-10 max-w-sm">
+        <p className="font-bold text-violet-600">Bienvenido de vuelta</p>
+        <h1 className="mt-2 text-3xl font-black">Ingresa a MiClub</h1>
+        <p className="mt-2 text-slate-500">
+          Tus beneficios te están esperando.
+        </p>
+        <form onSubmit={submit} className="mt-8 space-y-4">
+          <label className="block text-sm font-semibold">
+            Correo o teléfono
+            <input
+              className="input"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              required
+            />
+          </label>
+          <label className="block text-sm font-semibold">
+            Contraseña
+            <span className="relative block">
+              <input
+                className="input pr-12"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </span>
+            <button
+              type="button"
+              className="mt-2 text-sm font-bold text-violet-700"
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            </button>
+          </label>
+          {error && (
+            <p
+              role="alert"
+              className="rounded-2xl bg-red-50 p-4 text-sm text-red-700"
+            >
+              {error}
+            </p>
+          )}
+          <button
+            disabled={loading}
+            className="w-full rounded-2xl bg-slate-950 py-4 font-bold text-white"
+          >
+            {loading ? "Ingresando…" : "Ingresar"}
+          </button>
+        </form>
+        <p className="mt-6 text-center text-sm text-slate-500">
+          ¿Aún no tienes cuenta?{" "}
+          <Link to="/register" className="font-bold text-violet-700">
+            Créala aquí
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
