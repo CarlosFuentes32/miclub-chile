@@ -3,7 +3,8 @@ param(
   [string]$Password = 'MiClubDemo2026!',
   [string]$CashierEmail = 'cashier@miclub.local',
   [string]$OwnerEmail = 'owner@miclub.local',
-  [string]$AdminEmail = 'admin@miclub.local'
+  [string]$AdminEmail = 'admin@miclub.local',
+  [string]$RewardDescription = '$5.000 de descuento'
 )
 $ErrorActionPreference='Stop'
 function Login($identifier){Invoke-RestMethod -Method Post -Uri "$Api/auth/login" -ContentType 'application/json' -Body (@{email=$identifier;password=$Password}|ConvertTo-Json)}
@@ -30,7 +31,7 @@ Assert ($customer.id -eq $registration.user.id) 'escaneo de QR personal'
 $search=(Invoke-RestMethod "$Api/cashier/customers/search?phone=$($phone.Substring($phone.Length-8))&business_id=$businessId" -Headers $ch)[0].customer
 Assert ($search.id -eq $customer.id) 'búsqueda cliente con prefijo automático'
 
-$program=Invoke-RestMethod -Method Post -Uri "$Api/business/loyalty-programs" -Headers $oh -ContentType 'application/json' -Body (@{business_id=$businessId;name='Piloto 10 compras';accumulation_type='purchase_count';target_value=10;reward_description='$5.000 de descuento';reward_expiration_days=30}|ConvertTo-Json)
+$program=Invoke-RestMethod -Method Post -Uri "$Api/business/loyalty-programs" -Headers $oh -ContentType 'application/json' -Body (@{business_id=$businessId;name='Piloto 10 compras';accumulation_type='purchase_count';target_value=10;reward_description=$RewardDescription;reward_expiration_days=30}|ConvertTo-Json)
 Assert ($program.version -ge 1) 'creación/versionado de programa'
 
 $first=Invoke-RestMethod -Method Post -Uri "$Api/cashier/transactions" -Headers $ch -ContentType 'application/json' -Body (@{business_id=$businessId;customer_user_id=$customer.id}|ConvertTo-Json)

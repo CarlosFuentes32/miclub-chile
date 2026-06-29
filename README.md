@@ -12,7 +12,7 @@ MVP de una plataforma PWA de fidelización para comercios. El repositorio separa
 - Panel Cajero: https://cajero.miclubchile.cl
 - Panel Administrador: https://admin.miclubchile.cl
 - API: https://api.miclubchile.cl/api
-- Salud de la API: https://api.miclubchile.cl/api/health
+- Salud de la API: https://api.miclubchile.cl/health
 - Repositorio: https://github.com/CarlosFuentes32/miclub-chile
 
 La landing y la demo guiada son autocontenidas. Los cuatro paneles consumen la API configurada en la variable de GitHub Actions `VITE_API_URL`.
