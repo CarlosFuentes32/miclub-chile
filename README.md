@@ -207,10 +207,10 @@ Para cambiar la URL de la API, copie `.env.example` dentro de cada aplicación y
 
 | Perfil | Email | Contraseña | URL |
 |---|---|---|---|
-| Cliente Demo | `customer@miclub.local` | `MiClubDemo2026!` | `http://localhost:5173` |
-| Cajero Demo | `cashier@miclub.local` | `MiClubDemo2026!` | `http://localhost:5175` |
-| Dueño Minimarket Piloto | `owner@miclub.local` | `MiClubDemo2026!` | `http://localhost:5174` |
-| Admin MiClub | `admin@miclub.local` | `MiClubDemo2026!` | `http://localhost:5176` |
+| Cliente Demo | `customer@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-customer.vercel.app |
+| Cajero Demo | `cashier@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-cashier.vercel.app |
+| Dueño Minimarket Piloto | `owner@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-commerce.vercel.app |
+| Admin MiClub | `admin@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-admin.vercel.app |
 
 ### Prueba automatizada básica
 
