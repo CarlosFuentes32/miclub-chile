@@ -1,5 +1,7 @@
 # MiClub Chile
 
+> Estado actual de publicación: [docs/estado-publicacion.md](docs/estado-publicacion.md)
+
 MVP de una plataforma PWA de fidelización para comercios. El repositorio separa las experiencias de clientes, comercios, cajeros y administradores, y centraliza autenticación, autorización y el motor de fidelización en una API NestJS.
 
 ## Enlaces públicos
