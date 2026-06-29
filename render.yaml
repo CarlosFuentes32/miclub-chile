@@ -30,9 +30,9 @@ services:
       - key: SEED_ADMIN_EMAIL
         value: admin@miclub.local
       - key: CORS_ORIGIN
-        value: https://miclub.cl,https://app.miclub.cl,https://comercio.miclub.cl,https://cajero.miclub.cl,https://admin.miclub.cl,https://miclub-chile-landing.vercel.app,https://miclub-chile-customer.vercel.app,https://miclub-chile-commerce.vercel.app,https://miclub-chile-cashier.vercel.app,https://miclub-chile-admin.vercel.app,https://carlosfuentes32.github.io
+        value: https://miclubchile.cl,https://www.miclubchile.cl,https://app.miclubchile.cl,https://comercio.miclubchile.cl,https://cajero.miclubchile.cl,https://admin.miclubchile.cl,https://miclub-chile-landing.vercel.app,https://miclub-chile-customer.vercel.app,https://miclub-chile-commerce.vercel.app,https://miclub-chile-cashier.vercel.app,https://miclub-chile-admin.vercel.app,https://carlosfuentes32.github.io
       - key: CUSTOMER_APP_URL
-        value: https://app.miclub.cl
+        value: https://app.miclubchile.cl
       - key: PILOT_BUSINESS_NAME
         value: Minimarket Piloto
       - key: PILOT_BUSINESS_SLUG

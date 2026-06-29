@@ -6,12 +6,13 @@ MVP de una plataforma PWA de fidelización para comercios. El repositorio separa
 
 ## Enlaces públicos
 
-- Landing comercial: https://carlosfuentes32.github.io/miclub-chile/
-- Demo guiada: https://carlosfuentes32.github.io/miclub-chile/#/demo
-- Panel Cliente: https://carlosfuentes32.github.io/miclub-chile/customer/
-- Panel Comercio: https://carlosfuentes32.github.io/miclub-chile/commerce/
-- Panel Cajero: https://carlosfuentes32.github.io/miclub-chile/cashier/
-- Panel Administrador: https://carlosfuentes32.github.io/miclub-chile/admin/
+- Landing comercial: https://miclubchile.cl
+- Acceso único / Panel Cliente: https://app.miclubchile.cl
+- Panel Comercio: https://comercio.miclubchile.cl
+- Panel Cajero: https://cajero.miclubchile.cl
+- Panel Administrador: https://admin.miclubchile.cl
+- API: https://api.miclubchile.cl/api
+- Salud de la API: https://api.miclubchile.cl/api/health
 - Repositorio: https://github.com/CarlosFuentes32/miclub-chile
 
 La landing y la demo guiada son autocontenidas. Los cuatro paneles consumen la API configurada en la variable de GitHub Actions `VITE_API_URL`.
@@ -30,12 +31,12 @@ El proyecto ya es un monorepo y debe mantenerse así: cada panel conserva separa
 
 | Aplicación | Dominio objetivo |
 |---|---|
-| Landing | `miclub.cl` |
-| Cliente | `app.miclub.cl` |
-| Comercio | `comercio.miclub.cl` |
-| Cajero | `cajero.miclub.cl` |
-| Administrador | `admin.miclub.cl` |
-| API | `api.miclub.cl` |
+| Landing | `miclubchile.cl` |
+| Cliente / login único | `app.miclubchile.cl` |
+| Comercio | `comercio.miclubchile.cl` |
+| Cajero | `cajero.miclubchile.cl` |
+| Administrador | `admin.miclubchile.cl` |
+| API | `api.miclubchile.cl` |
 
 La configuración recomendada utiliza Vercel para las cinco aplicaciones web y Render o Railway para NestJS y PostgreSQL. Consulte [docs/despliegue-produccion.md](docs/despliegue-produccion.md) para contratación, variables, DNS, comandos y prueba del piloto.
 

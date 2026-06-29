@@ -6,17 +6,17 @@ El repositorio debe mantenerse como monorepo. Cada interfaz continúa siendo una
 
 | Servicio | Dominio | Plataforma recomendada |
 |---|---|---|
-| Landing | `miclub.cl` | Vercel |
-| Cliente | `app.miclub.cl` | Vercel |
-| Comercio | `comercio.miclub.cl` | Vercel |
-| Cajero | `cajero.miclub.cl` | Vercel |
-| Administrador | `admin.miclub.cl` | Vercel |
-| API | `api.miclub.cl` | Render o Railway |
+| Landing | `miclubchile.cl` (`www` redirige al dominio raíz) | Vercel |
+| Cliente / login único | `app.miclubchile.cl` | Vercel |
+| Comercio | `comercio.miclubchile.cl` | Vercel |
+| Cajero | `cajero.miclubchile.cl` | Vercel |
+| Administrador | `admin.miclubchile.cl` | Vercel |
+| API | `api.miclubchile.cl` | Railway |
 | PostgreSQL | Interno, sin exposición pública | Render PostgreSQL o Railway PostgreSQL |
 
 ## Recursos que se deben contratar o crear
 
-1. Dominio `miclub.cl` en NIC Chile u otro registrador que lo tenga disponible.
+1. Dominio `miclubchile.cl` en DonWeb.
 2. Una cuenta Vercel. El plan gratuito puede servir para evaluación; revise límites antes del piloto comercial.
 3. Un servicio web persistente para NestJS y una base PostgreSQL. En Render se crean desde `render.yaml`; en Railway se puede desplegar `Dockerfile` y agregar PostgreSQL.
 4. Opcional: monitoreo de disponibilidad, copias de seguridad y correo transaccional. No son necesarios para validar el flujo inicial, pero sí antes de almacenar datos comerciales críticos.
@@ -29,7 +29,7 @@ El repositorio debe mantenerse como monorepo. Cada interfaz continúa siendo una
 4. Complete las variables `PILOT_*` con los datos reales del minimarket.
 5. Espere que el pre-deploy ejecute migraciones y el seed.
 6. Compruebe `https://URL-RENDER/api/health`.
-7. Agregue `api.miclub.cl` como dominio personalizado del servicio.
+7. Agregue `api.miclubchile.cl` como dominio personalizado del servicio.
 
 Variables obligatorias del backend:
 
@@ -40,8 +40,11 @@ JWT_SECRET=secreto-aleatorio-largo
 JWT_REFRESH_SECRET=otro-secreto-aleatorio-largo
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN_DAYS=7
-CORS_ORIGIN=https://miclub.cl,https://app.miclub.cl,https://comercio.miclub.cl,https://cajero.miclub.cl,https://admin.miclub.cl
-CUSTOMER_APP_URL=https://app.miclub.cl
+CORS_ORIGIN=https://miclubchile.cl,https://www.miclubchile.cl,https://app.miclubchile.cl,https://comercio.miclubchile.cl,https://cajero.miclubchile.cl,https://admin.miclubchile.cl
+CUSTOMER_APP_URL=https://app.miclubchile.cl
+FRONTEND_URL=https://miclubchile.cl
+APP_URL=https://app.miclubchile.cl
+API_URL=https://api.miclubchile.cl/api
 SEED_PASSWORD=contraseña-temporal-del-piloto
 ```
 
@@ -60,7 +63,7 @@ npm run prisma:migrate:deploy
 npm run prisma:seed
 ```
 
-6. Configure `api.miclub.cl` como dominio personalizado.
+6. Configure `api.miclubchile.cl` como dominio personalizado.
 
 ## Frontends en Vercel
 
@@ -68,20 +71,20 @@ Cree cinco proyectos Vercel apuntando al mismo repositorio. Mantenga la raíz en
 
 | Proyecto | Build command | Output directory | Dominio |
 |---|---|---|---|
-| landing | `npm run build --workspace=@miclub/landing` | `apps/landing/dist` | `miclub.cl` |
-| customer | `npm run build --workspace=@miclub/customer` | `apps/customer/dist` | `app.miclub.cl` |
-| commerce | `npm run build --workspace=@miclub/commerce` | `apps/commerce/dist` | `comercio.miclub.cl` |
-| cashier | `npm run build --workspace=@miclub/cashier` | `apps/cashier/dist` | `cajero.miclub.cl` |
-| admin | `npm run build --workspace=@miclub/admin` | `apps/admin/dist` | `admin.miclub.cl` |
+| landing | `npm run build --workspace=@miclub/landing` | `apps/landing/dist` | `miclubchile.cl`, `www.miclubchile.cl` |
+| customer | `npm run build --workspace=@miclub/customer` | `apps/customer/dist` | `app.miclubchile.cl` |
+| commerce | `npm run build --workspace=@miclub/commerce` | `apps/commerce/dist` | `comercio.miclubchile.cl` |
+| cashier | `npm run build --workspace=@miclub/cashier` | `apps/cashier/dist` | `cajero.miclubchile.cl` |
+| admin | `npm run build --workspace=@miclub/admin` | `apps/admin/dist` | `admin.miclubchile.cl` |
 
 En los cuatro paneles configure:
 
 ```env
-VITE_API_URL=https://api.miclub.cl/api
-VITE_CUSTOMER_URL=https://app.miclub.cl
-VITE_COMMERCE_URL=https://comercio.miclub.cl
-VITE_CASHIER_URL=https://cajero.miclub.cl
-VITE_ADMIN_URL=https://admin.miclub.cl
+VITE_API_URL=https://api.miclubchile.cl/api
+VITE_CUSTOMER_URL=https://app.miclubchile.cl
+VITE_COMMERCE_URL=https://comercio.miclubchile.cl
+VITE_CASHIER_URL=https://cajero.miclubchile.cl
+VITE_ADMIN_URL=https://admin.miclubchile.cl
 ```
 
 Los archivos `vercel.*.json` contienen la misma configuración para despliegues mediante CLI.
@@ -94,11 +97,11 @@ No cambie los nameservers sin verificar antes dónde se administrará definitiva
 
 ## Prueba del piloto
 
-1. Entre a `admin.miclub.cl` y confirme que el minimarket está activo.
-2. Entre a `comercio.miclub.cl`, configure o revise el programa y cree un cajero.
-3. Abra el QR de inscripción del comercio y registre un cliente desde `app.miclub.cl`.
+1. Entre a `admin.miclubchile.cl` y confirme que el minimarket está activo.
+2. Entre a `comercio.miclubchile.cl`, configure o revise el programa y cree un cajero.
+3. Abra el QR de inscripción del comercio y registre un cliente desde `app.miclubchile.cl`.
 4. Inicie sesión como el cliente usando correo o teléfono y muestre su QR.
-5. Entre a `cajero.miclub.cl`, escanee el QR o busque los ocho dígitos finales del teléfono.
+5. Entre a `cajero.miclubchile.cl`, escanee el QR o busque los ocho dígitos finales del teléfono.
 6. Registre compras hasta completar la meta.
 7. Confirme la recompensa en Cliente, canjéela desde Caja y revise el estado utilizado.
 8. Verifique las métricas en Comercio y la actividad global en Administrador.

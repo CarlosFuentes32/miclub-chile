@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const origins = config.get<string>('CORS_ORIGIN', '').split(',').filter(Boolean);
+  const origins = config.get<string>('CORS_ORIGIN', '').split(',').map(origin => origin.trim()).filter(Boolean);
 
   app.setGlobalPrefix('api');
   app.use(cookieParser());

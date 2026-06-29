@@ -32,7 +32,10 @@ function AppRoutes() {
     Promise.allSettled([restoreSession(), minimumSplash]).then(([session]) => {
       if (session.status === 'fulfilled') {
         if (session.value.role === 'CUSTOMER') setUser(session.value);
-        else void logout();
+        else {
+          window.location.replace(portalByRole[session.value.role]);
+          return;
+        }
       }
       setBooting(false);
     });
