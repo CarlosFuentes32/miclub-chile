@@ -1,7 +1,7 @@
 export type UserRole = 'CUSTOMER' | 'CASHIER' | 'BUSINESS_ADMIN' | 'BUSINESS_OWNER' | 'MICLUB_ADMIN';
 export interface AuthUser { id: string; name: string; email: string; phone: string; role: UserRole; status: string; }
 
-const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD?'https://api.miclubchile.cl/api':'http://localhost:3000/api');
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD?'https://miclub-api-production.up.railway.app/api':'http://localhost:3000/api');
 let accessToken: string | null = null;
 
 async function parseError(response: Response) {
