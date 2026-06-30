@@ -14,7 +14,7 @@ export class RegisterUserDto {
     message: "El nombre solo puede contener letras y espacios",
   })
   name!: string;
-  @IsOptional() @IsEmail() email?: string;
+  @IsEmail() email!: string;
   @IsString() @Matches(/^\+?[0-9]{8,15}$/) phone!: string;
   @IsString()
   @MinLength(4, { message: "La contraseña debe tener al menos 4 caracteres" })

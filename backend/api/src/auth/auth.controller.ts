@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtUser } from './auth.types';
 
@@ -35,6 +36,9 @@ export class AuthController {
     await this.auth.logout(request.cookies?.[REFRESH_COOKIE]);
     response.clearCookie(REFRESH_COOKIE, this.cookieOptions());
   }
+
+  @Post('password-reset/request') @HttpCode(200)
+  passwordReset(@Body() _dto: RequestPasswordResetDto) { return this.auth.requestPasswordReset(); }
 
   @Get('me') @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: JwtUser) { return this.users.findPublicById(user.id); }

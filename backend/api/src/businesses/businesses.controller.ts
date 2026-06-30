@@ -22,7 +22,7 @@ import {
 } from "./dto/business.dto";
 @Controller("business")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.BUSINESS_OWNER, UserRole.BUSINESS_ADMIN)
+@Roles(UserRole.BUSINESS_OWNER, UserRole.BUSINESS_ADMIN, UserRole.CASHIER)
 export class BusinessesController {
   constructor(private readonly businesses: BusinessesService) {}
   @Get("mine") mine(@CurrentUser() user: JwtUser) {

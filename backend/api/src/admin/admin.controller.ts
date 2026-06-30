@@ -13,6 +13,8 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AdminService } from "./admin.service";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { JwtUser } from "../auth/auth.types";
 import {
   ChangePasswordDto,
   CreateBusinessDto,
@@ -67,8 +69,9 @@ export class AdminController {
   @Patch("users/:id/password") password(
     @Param("id") id: string,
     @Body() d: ChangePasswordDto,
+    @CurrentUser() user: JwtUser,
   ) {
-    return this.admin.changePassword(id, d.password);
+    return this.admin.changePassword(id, d.password, user.id);
   }
   @Delete("users/:id") deleteUser(@Param("id") id: string) {
     return this.admin.deleteUser(id);

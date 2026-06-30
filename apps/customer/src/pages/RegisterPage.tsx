@@ -3,11 +3,6 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { customerService } from "../services/customer.service";
 import { CustomerRegistration } from "../types/customer";
-const optional = (
-  <small className="mt-1 block font-normal text-slate-400">
-    Opcional, puedes completarlo después
-  </small>
-);
 export function RegisterPage() {
   const [params] = useSearchParams();
   const businessSlug = params.get("business") ?? undefined;
@@ -60,7 +55,7 @@ export function RegisterPage() {
         </p>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <label className="block text-sm font-semibold">
-            Nombre
+            Nombre completo
             <input
               className="input"
               value={data.name}
@@ -92,20 +87,16 @@ export function RegisterPage() {
                 required
               />
             </span>
-            <small className="mt-1 block font-normal text-slate-400">
-              Escribe los 8 dígitos finales: +569{data.phone.padEnd(8, "X")}
-            </small>
           </label>
           <label className="block text-sm font-semibold">
-            Correo{" "}
-            <span className="font-normal text-slate-400">(opcional)</span>
+            Correo electrónico
             <input
               className="input"
               type="email"
               value={data.email}
               onChange={(e) => set("email", e.target.value)}
+              required
             />
-            {optional}
           </label>
           <label className="block text-sm font-semibold">
             Fecha de nacimiento{" "}
@@ -116,7 +107,6 @@ export function RegisterPage() {
               value={data.birthDate}
               onChange={(e) => set("birthDate", e.target.value)}
             />
-            {optional}
           </label>
           <label className="block text-sm font-semibold">
             RUT <span className="font-normal text-slate-400">(opcional)</span>
@@ -126,7 +116,6 @@ export function RegisterPage() {
               onChange={(e) => set("rut", e.target.value)}
               placeholder="12.345.678-9"
             />
-            {optional}
           </label>
           <label className="block text-sm font-semibold">
             Contraseña

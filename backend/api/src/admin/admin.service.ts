@@ -14,10 +14,11 @@ import {
 } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "../prisma/prisma.service";
+import { AuditService } from "../audit/audit.service";
 import { CreateBusinessDto, PlanDto, UpdateAdminUserDto } from "./dto/admin.dto";
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,private readonly audit:AuditService) {}
   async dashboard() {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
@@ -225,9 +226,10 @@ export class AdminService {
   async updateUser(id: string, dto: UpdateAdminUserDto) {
     return this.prisma.user.update({ where: { id }, data: { ...dto, email: dto.email?.toLowerCase() } });
   }
-  async changePassword(id: string, password: string) {
+  async changePassword(id: string, password: string, actorId: string) {
     await this.prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 12) } });
     await this.prisma.authSession.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+    await this.audit.create({userId:actorId,action:"admin_password_reset",entityType:"user",entityId:id});
     return { ok: true };
   }
   async deleteUser(id: string) {

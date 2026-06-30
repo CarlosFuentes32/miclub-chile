@@ -148,7 +148,7 @@ export class BusinessesService {
       : undefined;
     return this.prisma.reward.findMany({
       where: { businessId, status: mapped },
-      include: { customer: { select: { name: true } } },
+      include: { customer: { select: { name: true } }, business:{select:{id:true,name:true}}, cycle:{include:{loyaltyProgram:{select:{id:true,name:true,version:true}}}} },
       orderBy: { generatedAt: "desc" },
     });
   }

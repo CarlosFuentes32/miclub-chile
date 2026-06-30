@@ -8,6 +8,7 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
+import { RecoverPasswordPage } from './pages/RecoverPasswordPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { SplashPage } from './pages/SplashPage';
 import { WelcomePage } from './pages/WelcomePage';
@@ -42,7 +43,7 @@ function AppRoutes() {
   }, []);
   useEffect(()=>{if(user)customerService.getDashboard().then(setDashboard).catch(e=>setDataError(e instanceof Error?e.message:'Error de conexión'));else setDashboard(null)},[user]);
 
-  async function signOut() { await logout(); setUser(null); navigate('/welcome', { replace: true }); }
+  async function signOut() { try{await logout()}finally{setDashboard(null);setUser(null);navigate('/welcome',{replace:true})} }
   if (booting) return <SplashPage />;
 
   return <Routes>
@@ -50,6 +51,7 @@ function AppRoutes() {
     <Route path="/welcome" element={user ? <Navigate to="/app" replace /> : <WelcomePage />} />
     <Route path="/login" element={user ? <Navigate to="/app" replace /> : <LoginPage onLogin={setUser} />} />
     <Route path="/register" element={user ? <Navigate to="/app" replace /> : <RegisterPage />} />
+    <Route path="/recover-password" element={user ? <Navigate to="/app" replace /> : <RecoverPasswordPage />} />
     <Route element={<Protected user={user} />}>
       <Route path="/qr" element={dashboard?<QRScreen profile={{...customerService.getProfile(user!),shortCode:dashboard.shortCode}} token={dashboard.qrToken}/>:<main className="grid min-h-screen place-items-center">Cargando QR…</main>} />
       <Route element={<CustomerLayout />}>

@@ -30,7 +30,7 @@ export function LoginPage({
       onLogin(user);
       navigate("/app", { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos iniciar sesión");
+      const message=e instanceof Error?e.message:"No pudimos iniciar sesión";setError(message.includes("Correo o contraseña")?"Teléfono o contraseña incorrecta.":message);
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,11 @@ export function LoginPage({
         <ArrowLeft />
       </Link>
       <div className="mx-auto mt-10 max-w-sm">
-        <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="mx-auto mb-6 h-28 w-auto rounded-2xl object-contain" />
+        <img
+          src="/logo-miclub-chile.jpeg"
+          alt="MiClub Chile"
+          className="mx-auto mb-6 h-28 w-auto rounded-2xl object-contain"
+        />
         <p className="font-bold text-violet-600">Bienvenido de vuelta</p>
         <h1 className="mt-2 text-3xl font-black">Ingresa a MiClub</h1>
         <p className="mt-2 text-slate-500">
@@ -53,13 +57,20 @@ export function LoginPage({
         <form onSubmit={submit} className="mt-8 space-y-4">
           <label className="block text-sm font-semibold">
             Teléfono
-            <span className="phone-field"><b>+569</b><input
-              className="input"
-              inputMode="numeric" pattern="[0-9]{8}" maxLength={8}
-              value={telefonoLocal(identifier)}
-              onChange={(e) => setIdentifier(e.target.value.replace(/\D/g, "").slice(0, 8))}
-              required
-            /></span>
+            <span className="phone-field">
+              <b>+569</b>
+              <input
+                className="input"
+                inputMode="numeric"
+                pattern="[0-9]{8}"
+                maxLength={8}
+                value={telefonoLocal(identifier)}
+                onChange={(e) =>
+                  setIdentifier(e.target.value.replace(/\D/g, "").slice(0, 8))
+                }
+                required
+              />
+            </span>
           </label>
           <label className="block text-sm font-semibold">
             Contraseña
@@ -91,6 +102,7 @@ export function LoginPage({
               {showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             </button>
           </label>
+          <Link to="/recover-password" className="block text-right text-sm font-bold text-violet-700">¿Olvidaste tu contraseña?</Link>
           {error && (
             <p
               role="alert"

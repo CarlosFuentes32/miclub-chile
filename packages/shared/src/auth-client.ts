@@ -1,5 +1,5 @@
 export type UserRole = 'CUSTOMER' | 'CASHIER' | 'BUSINESS_ADMIN' | 'BUSINESS_OWNER' | 'MICLUB_ADMIN';
-export interface AuthUser { id: string; name: string; email: string; phone: string; role: UserRole; status: string; }
+export interface AuthUser { id: string; name: string; email: string; phone: string; birthDate?:string; rut?:string; role: UserRole; status: string; }
 
 const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD?'https://api.miclubchile.cl/api':'http://localhost:3000/api');
 let accessToken: string | null = null;

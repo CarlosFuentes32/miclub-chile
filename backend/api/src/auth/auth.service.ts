@@ -54,6 +54,10 @@ export class AuthService {
     } catch { /* La cookie se elimina aunque el token ya no sea válido. */ }
   }
 
+  requestPasswordReset() {
+    return { message: 'Si los datos existen, recibirás instrucciones para recuperar tu contraseña.' };
+  }
+
   private async createSession(userId: string) {
     const days = this.config.get<number>('JWT_REFRESH_EXPIRES_IN_DAYS', 7);
     const session = await this.prisma.authSession.create({ data: { userId, refreshTokenHash: 'pending', expiresAt: new Date(Date.now() + days * 86_400_000) } });

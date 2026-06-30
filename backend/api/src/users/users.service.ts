@@ -14,7 +14,7 @@ export class UsersService {
   async createCustomer(dto: RegisterUserDto) {
     const digits = dto.phone.replace(/\D/g, '');
     const phone = digits.length === 8 ? `+569${digits}` : dto.phone;
-    const email = dto.email?.trim().toLowerCase() || `${digits}@phone.miclub.local`;
+    const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findFirst({where:{OR:[{email},{phone},...(dto.rut?[{rut:dto.rut}]:[])]}});
     if(existing)throw new ConflictException('El correo, teléfono o RUT ya está registrado');
     const passwordHash=await bcrypt.hash(dto.password,12);
@@ -22,7 +22,11 @@ export class UsersService {
       const user=await tx.user.create({data:{name:dto.name.trim(),email,phone,passwordHash,birthDate:dto.birthDate?new Date(dto.birthDate):undefined,rut:dto.rut,role:UserRole.CUSTOMER,status:UserStatus.ACTIVE},select:publicUserSelect});
       if(dto.businessSlug){
         const business=await tx.business.findUnique({where:{slug:dto.businessSlug}});
-        if(business)await tx.customerBusiness.create({data:{customerUserId:user.id,businessId:business.id}});
+        if(business){
+          await tx.customerBusiness.create({data:{customerUserId:user.id,businessId:business.id}});
+          const program=await tx.loyaltyProgram.findFirst({where:{businessId:business.id,status:'ACTIVE'},orderBy:{version:'desc'}});
+          if(program)await tx.cycle.create({data:{customerUserId:user.id,businessId:business.id,loyaltyProgramId:program.id,targetValue:program.targetValue}});
+        }
       }
       return user;
     });
