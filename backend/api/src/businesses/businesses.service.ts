@@ -57,6 +57,8 @@ export class BusinessesService {
         businessType: dto.business_type,
         rutBusiness: dto.rut_business,
         address: dto.address,
+        region: dto.region,
+        commune: dto.commune,
         phone: dto.phone,
         email: dto.email,
         logoUrl: dto.logo_url,

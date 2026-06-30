@@ -6,6 +6,7 @@ let accessToken: string | null = null;
 
 async function parseError(response: Response) {
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401 && response.url.includes('/auth/login')) return data.message ?? 'Correo o contraseña incorrecta.';
   if (response.status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.';
   if (response.status === 403) return data.message ?? 'No tienes permiso para realizar esta acción.';
   return Array.isArray(data.message) ? data.message.join(', ') : data.message ?? 'Error de conexión con MiClub';

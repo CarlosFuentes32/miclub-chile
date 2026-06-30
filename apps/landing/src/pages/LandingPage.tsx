@@ -61,37 +61,27 @@ const plans = [
     ],
   },
 ];
-const customerUrl =
-  import.meta.env.VITE_CUSTOMER_URL ??
-  (import.meta.env.PROD
-    ? "https://app.miclubchile.cl"
-    : "http://localhost:5173");
-const commerceUrl =
-  import.meta.env.VITE_COMMERCE_URL ??
-  (import.meta.env.PROD
-    ? "https://comercio.miclubchile.cl"
-    : "http://localhost:5174");
 export function LandingPage() {
   return (
     <div className="overflow-hidden">
       <header className="container-page flex h-20 items-center justify-between">
         <Brand />
         <nav className="hidden items-center gap-7 text-sm font-bold text-slate-600 md:flex">
+          <a href="#inicio">Inicio</a>
+          <a href="#beneficios">Beneficios</a>
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#precios">Precios</a>
-          <Link to="/demo">Demo</Link>
-          <a href={customerUrl}>Clientes</a>
-          <a href={commerceUrl}>Comercios</a>
+          <Link to="/contacto">Solicitar acceso</Link>
         </nav>
         <Link
-          to="/demo"
+          to="/contacto"
           className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white"
         >
-          Ver demo
+          Solicitar acceso
         </Link>
       </header>
       <main>
-        <section className="relative border-y border-slate-100 bg-gradient-to-b from-violet-50/70 to-white py-20 md:py-28">
+        <section id="inicio" className="relative border-y border-slate-100 bg-gradient-to-b from-violet-50/70 to-white py-20 md:py-28">
           <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-violet-200/30 blur-3xl" />
           <div className="container-page relative grid items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
             <div className="animate-rise">
@@ -173,7 +163,7 @@ export function LandingPage() {
             ))}
           </div>
         </section>
-        <section className="bg-slate-950 py-20 text-white">
+        <section id="beneficios" className="bg-slate-950 py-20 text-white">
           <div className="container-page text-center">
             <p className="text-sm font-black uppercase tracking-widest text-emerald-300">
               Hecho para negocios cercanos

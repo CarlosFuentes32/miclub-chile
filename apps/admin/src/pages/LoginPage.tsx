@@ -1,1 +1,78 @@
-import { AuthUser,login,portalByRole } from '@miclub/shared';import { FormEvent,useState } from 'react';import { ShieldCheck } from 'lucide-react';export function LoginPage({onLogin}:{onLogin:(u:AuthUser)=>void}){const[email,setEmail]=useState(import.meta.env.DEV?'admin@miclub.local':''),[password,setPassword]=useState(import.meta.env.DEV?'MiClubDemo2026!':''),[error,setError]=useState(''),[busy,setBusy]=useState(false);async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{const u=await login(email,password);if(u.role!=='MICLUB_ADMIN'){setError('Sin permiso: se requiere rol miclub_admin.');setTimeout(()=>window.location.assign(portalByRole[u.role]),1400);return}onLogin(u)}catch(e){setError(e instanceof Error?e.message:'No pudimos iniciar sesión')}finally{setBusy(false)}}return <main className="grid min-h-screen place-items-center bg-slate-950 p-6"><form onSubmit={submit} className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-violet-100 text-violet-700"><ShieldCheck/></span><p className="mt-6 text-sm font-black uppercase tracking-wider text-violet-700">MiClub Chile</p><h1 className="mt-1 text-3xl font-black">Administración</h1><p className="mt-2 text-sm text-slate-500">Acceso exclusivo al equipo MiClub.</p><label className="field mt-7">Correo<input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label className="field mt-4">Contraseña<input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<p role="alert" className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</p>}<button disabled={busy} className="primary mt-5 w-full">{busy?'Ingresando…':'Ingresar al panel'}</button></form></main>}
+import { AuthUser, login } from "@miclub/shared";
+import { FormEvent, useState } from "react";
+export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
+  const [email, setEmail] = useState(
+      import.meta.env.DEV ? "admin@miclub.local" : "",
+    ),
+    [password, setPassword] = useState(
+      import.meta.env.DEV ? "MiClubDemo2026!" : "",
+    ),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const u = await login(email, password);
+      if (u.role !== "MICLUB_ADMIN") {
+        setError("Esta cuenta no tiene acceso al panel administrador.");
+        return;
+      }
+      onLogin(u);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos iniciar sesión");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="grid min-h-screen place-items-center bg-slate-950 p-6">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl"
+      >
+        <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="mx-auto h-28 w-auto rounded-2xl object-contain" />
+        <p className="mt-6 text-sm font-black uppercase tracking-wider text-violet-700">
+          MiClub Chile
+        </p>
+        <h1 className="mt-1 text-3xl font-black">Administración</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Acceso exclusivo al equipo MiClub.
+        </p>
+        <label className="field mt-7">
+          Correo
+          <input
+            className="input"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </label>
+        <label className="field mt-4">
+          Contraseña
+          <input
+            className="input"
+            type="password"
+            minLength={4}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </label>
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700"
+          >
+            {error}
+          </p>
+        )}
+        <button disabled={busy} className="primary mt-5 w-full">
+          {busy ? "Ingresando…" : "Ingresar al panel"}
+        </button>
+      </form>
+    </main>
+  );
+}

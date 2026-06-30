@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { login, portalByRole } from "@miclub/shared";
+import { formatearTelefonoChile, login, telefonoLocal } from "@miclub/shared";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 export function LoginPage({
@@ -22,9 +22,9 @@ export function LoginPage({
     setLoading(true);
     setError("");
     try {
-      const user = await login(identifier, password);
+      const user = await login(formatearTelefonoChile(identifier), password);
       if (user.role !== "CUSTOMER") {
-        window.location.assign(portalByRole[user.role]);
+        setError("Esta cuenta no tiene acceso al panel cliente.");
         return;
       }
       onLogin(user);
@@ -44,6 +44,7 @@ export function LoginPage({
         <ArrowLeft />
       </Link>
       <div className="mx-auto mt-10 max-w-sm">
+        <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="mx-auto mb-6 h-28 w-auto rounded-2xl object-contain" />
         <p className="font-bold text-violet-600">Bienvenido de vuelta</p>
         <h1 className="mt-2 text-3xl font-black">Ingresa a MiClub</h1>
         <p className="mt-2 text-slate-500">
@@ -51,13 +52,14 @@ export function LoginPage({
         </p>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <label className="block text-sm font-semibold">
-            Correo o teléfono
-            <input
+            Teléfono
+            <span className="phone-field"><b>+569</b><input
               className="input"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              inputMode="numeric" pattern="[0-9]{8}" maxLength={8}
+              value={telefonoLocal(identifier)}
+              onChange={(e) => setIdentifier(e.target.value.replace(/\D/g, "").slice(0, 8))}
               required
-            />
+            /></span>
           </label>
           <label className="block text-sm font-semibold">
             Contraseña
@@ -67,6 +69,7 @@ export function LoginPage({
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={4}
                 required
               />
               <button

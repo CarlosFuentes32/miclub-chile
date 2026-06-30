@@ -2,12 +2,14 @@ import { FormEvent, useState } from "react";
 import { ArrowLeft, MessageCircle, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Brand } from "../components/Brand";
+import { formatearTelefonoChile,soloNombre,telefonoLocal } from "@miclub/shared";
 
 const whatsappUrl =
   "https://wa.me/56995026368?text=Hola%2C%20quiero%20cotizar%20MiClub%20Chile%20para%20mi%20comercio.";
 
 export function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [name,setName]=useState(''),[phone,setPhone]=useState('');
   function submit(event: FormEvent) {
     event.preventDefault();
     setSent(true);
@@ -37,17 +39,18 @@ export function ContactPage() {
           <form onSubmit={submit} className="mt-8 grid gap-4 md:grid-cols-2">
             <label className="block text-sm font-bold">
               Nombre
-              <input className="input mt-1" name="name" required />
+              <input className="input mt-1" name="name" value={name} onChange={e=>setName(soloNombre(e.target.value))} required />
             </label>
             <label className="block text-sm font-bold">
               Teléfono
-              <input
+              <span className="phone-field"><b>+569</b><input
                 className="input mt-1"
                 name="phone"
                 type="tel"
                 inputMode="numeric"
+                pattern="[0-9]{8}" maxLength={8} value={telefonoLocal(phone)} onChange={e=>setPhone(formatearTelefonoChile(e.target.value))}
                 required
-              />
+              /></span>
             </label>
             <label className="block text-sm font-bold">
               Comercio

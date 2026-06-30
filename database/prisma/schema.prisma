@@ -136,6 +136,8 @@ model Business {
   phone        String
   email        String
   address      String
+  region       String?
+  commune      String?
   logoUrl      String?            @map("logo_url")
   status       BusinessStatus     @default(ACTIVE)
   planId       String?            @map("plan_id")

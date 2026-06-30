@@ -11,6 +11,9 @@
 
 @layer components {
   .input { @apply mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100; }
+  .phone-field { @apply mt-1.5 flex items-center rounded-2xl border border-slate-200 bg-white pl-4; }
+  .phone-field b { @apply text-violet-700; }
+  .phone-field .input { @apply mt-0 border-0 focus:ring-0; }
 }
 
 @keyframes soft-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }

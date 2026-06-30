@@ -26,7 +26,7 @@ export class AuthService {
       ? await this.prisma.user.findUnique({ where: { email: identifier } })
       : await this.prisma.user.findFirst({ where: { phone } });
     if (!user || user.status !== UserStatus.ACTIVE || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('Correo o contraseña incorrecta.');
     }
     return this.createSession(user.id);
   }
