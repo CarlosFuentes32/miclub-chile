@@ -163,7 +163,7 @@ El seed usa la contraseña definida en `SEED_PASSWORD` (`MiClubDemo2026!` en el 
 
 | Portal | Email | Rol |
 |---|---|---|
-| Admin | `admin@miclub.local` | `MICLUB_ADMIN` |
+| Admin | `administrador@miclubchile.cl` | `MICLUB_ADMIN` |
 | Commerce | `owner@miclub.local` | `BUSINESS_OWNER` |
 | Cashier | `cashier@miclub.local` | `CASHIER` |
 | Customer | `customer@miclub.local` | `CUSTOMER` |
@@ -211,7 +211,18 @@ Para cambiar la URL de la API, copie `.env.example` dentro de cada aplicación y
 | Cliente Demo | `customer@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-customer.vercel.app |
 | Cajero Demo | `cashier@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-cashier.vercel.app |
 | Dueño Minimarket Piloto | `owner@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-commerce.vercel.app |
-| Admin MiClub | `admin@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-admin.vercel.app |
+| Admin MiClub | `administrador@miclubchile.cl` | `MiClubDemo2026!` | https://miclub-chile-admin.vercel.app |
+
+### Soporte de usuarios
+
+El panel administrador incluye búsqueda por tipo de usuario, edición de datos permitidos, desbloqueo, historial y restablecimiento seguro. Una clave temporal se muestra una sola vez y obliga a crear una nueva contraseña antes de acceder al resto del sistema.
+
+- `GET /api/admin/support/:role`
+- `POST /api/admin/support/users/:id/reset-password`
+- `POST /api/admin/support/users/:id/unlock`
+- `PATCH /api/admin/support/users/:id/rut`
+- `GET /api/admin/support/users/:id/history`
+- `PATCH /api/users/me/password`
 
 ### Prueba automatizada básica
 

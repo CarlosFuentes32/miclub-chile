@@ -51,3 +51,4 @@ export class UpdateAdminUserDto {
 export class ChangePasswordDto {
   @IsString() @MinLength(4) password!: string;
 }
+export class CorrectRutDto { @IsString() @MinLength(7) rut!:string; @IsBoolean() confirmed!:boolean; }

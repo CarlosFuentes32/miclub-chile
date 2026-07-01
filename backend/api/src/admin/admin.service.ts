@@ -13,8 +13,10 @@ import {
   UserStatus,
 } from "@prisma/client";
 import * as bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { publicUserSelect } from "../users/users.service";
 import { CreateBusinessDto, PlanDto, UpdateAdminUserDto } from "./dto/admin.dto";
 @Injectable()
 export class AdminService {
@@ -193,6 +195,9 @@ export class AdminService {
         email: true,
         role: true,
         status: true,
+        rut: true,
+        forcePasswordChange:true,
+        lockedAt:true,
         createdAt: true,
         businessMemberships: {
           select: { business: { select: { name: true } } },
@@ -211,6 +216,9 @@ export class AdminService {
         email: true,
         role: true,
         status: true,
+        rut:true,
+        forcePasswordChange:true,
+        lockedAt:true,
         createdAt: true,
         businessMemberships: {
           select: { business: { select: { name: true } } },
@@ -223,8 +231,14 @@ export class AdminService {
     if (!value) throw new NotFoundException("Estado inválido");
     return this.prisma.user.update({ where: { id }, data: { status: value } });
   }
-  async updateUser(id: string, dto: UpdateAdminUserDto) {
-    return this.prisma.user.update({ where: { id }, data: { ...dto, email: dto.email?.toLowerCase() } });
+  async updateUser(id: string, dto: UpdateAdminUserDto, actorId: string) {
+    const current=await this.prisma.user.findUniqueOrThrow({where:{id},select:{name:true,email:true,phone:true,role:true}});
+    const next={...dto,email:dto.email?.toLowerCase()};
+    return this.prisma.$transaction(async tx=>{
+      const updated=await tx.user.update({where:{id},data:next,select:publicUserSelect});
+      for(const field of ['name','email','phone'] as const){const value=next[field];if(value!==undefined&&value!==current[field]){await tx.userChange.create({data:{userId:id,actorId,field,oldValue:current[field],newValue:value,action:`${field}_changed`}});await this.audit.create({userId:actorId,action:`${field}_changed`,entityType:'user',entityId:id,metadata:{oldValue:current[field],newValue:value}},tx)}}
+      return updated;
+    });
   }
   async changePassword(id: string, password: string, actorId: string) {
     await this.prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 12) } });
@@ -232,6 +246,42 @@ export class AdminService {
     await this.audit.create({userId:actorId,action:"admin_password_reset",entityType:"user",entityId:id});
     return { ok: true };
   }
+  async supportUsers(role:string){
+    const roles:Record<string,UserRole[]>={clientes:[UserRole.CUSTOMER],comercios:[UserRole.BUSINESS_OWNER,UserRole.BUSINESS_ADMIN],cajeros:[UserRole.CASHIER],administradores:[UserRole.MICLUB_ADMIN]};
+    const selected=roles[role];
+    if(!selected)throw new NotFoundException('Tipo de usuario inválido');
+    return this.prisma.user.findMany({where:{role:{in:selected}},select:{id:true,name:true,email:true,phone:true,rut:true,role:true,status:true,forcePasswordChange:true,lockedAt:true,birthDate:true,businessMemberships:{select:{business:{select:{name:true,rutBusiness:true}}}}},orderBy:{name:'asc'}});
+  }
+  async resetPassword(id:string,actorId:string){
+    const temporaryPassword=`MC-${randomBytes(9).toString('base64url')}!`;
+    await this.prisma.$transaction(async tx=>{
+      await tx.user.update({where:{id},data:{passwordHash:await bcrypt.hash(temporaryPassword,12),forcePasswordChange:true,failedLoginAttempts:0,lockedAt:null}});
+      await tx.authSession.updateMany({where:{userId:id,revokedAt:null},data:{revokedAt:new Date()}});
+      await tx.userChange.create({data:{userId:id,actorId,field:'password',action:'password_reset'}});
+      await this.audit.create({userId:actorId,action:'password_reset',entityType:'user',entityId:id},tx);
+    });
+    return {temporaryPassword,shownOnce:true,forcePasswordChange:true};
+  }
+  async unlockUser(id:string,actorId:string){
+    await this.prisma.$transaction(async tx=>{
+      await tx.user.update({where:{id},data:{lockedAt:null,failedLoginAttempts:0,status:UserStatus.ACTIVE}});
+      await tx.userChange.create({data:{userId:id,actorId,field:'account',action:'account_unlocked'}});
+      await this.audit.create({userId:actorId,action:'account_unlocked',entityType:'user',entityId:id},tx);
+    });
+    return {ok:true};
+  }
+  async correctRut(id:string,rut:string,confirmed:boolean,actorId:string){
+    if(!confirmed)throw new ConflictException('Debes confirmar la corrección del RUT.');
+    const current=await this.prisma.user.findUniqueOrThrow({where:{id},select:{rut:true}});
+    const updated=await this.prisma.$transaction(async tx=>{
+      const user=await tx.user.update({where:{id},data:{rut},select:publicUserSelect});
+      await tx.userChange.create({data:{userId:id,actorId,field:'rut',oldValue:current.rut,newValue:rut,action:'rut_corrected'}});
+      await this.audit.create({userId:actorId,action:'rut_corrected',entityType:'user',entityId:id,metadata:{old_rut:current.rut,new_rut:rut}},tx);
+      return user;
+    });
+    return updated;
+  }
+  userHistory(id:string){return this.prisma.userChange.findMany({where:{userId:id},select:{id:true,field:true,action:true,oldValue:true,newValue:true,createdAt:true,actor:{select:{id:true,name:true,email:true}}},orderBy:{createdAt:'desc'}})}
   async deleteUser(id: string) {
     await this.prisma.user.update({ where: { id }, data: { status: UserStatus.INACTIVE } });
     await this.prisma.authSession.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });

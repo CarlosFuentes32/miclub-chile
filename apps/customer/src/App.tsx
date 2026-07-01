@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthUser, logout, portalByRole, restoreSession } from '@miclub/shared';
+import { ForcePasswordChange } from '@miclub/ui';
 import { HashRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { QRScreen } from './components/QRScreen';
 import { CustomerLayout } from './layouts/CustomerLayout';
@@ -45,6 +46,7 @@ function AppRoutes() {
 
   async function signOut() { try{await logout()}finally{setDashboard(null);setUser(null);navigate('/welcome',{replace:true})} }
   if (booting) return <SplashPage />;
+  if (user?.forcePasswordChange) return <ForcePasswordChange onComplete={signOut} />;
 
   return <Routes>
     <Route path="/" element={<Navigate to={user ? '/app' : '/welcome'} replace />} />

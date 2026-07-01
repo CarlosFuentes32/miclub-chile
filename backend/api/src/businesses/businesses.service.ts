@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import {
   CycleStatus,
   MembershipStatus,
@@ -50,12 +50,12 @@ export class BusinessesService {
     dto: UpdateBusinessDto,
   ) {
     await this.access.requireManager(userId, businessId);
+    if(dto.rut_business!==undefined)throw new BadRequestException('El RUT del comercio no puede modificarse desde este panel. Contacte al administrador.');
     return this.prisma.business.update({
       where: { id: businessId },
       data: {
         name: dto.name,
         businessType: dto.business_type,
-        rutBusiness: dto.rut_business,
         address: dto.address,
         region: dto.region,
         commune: dto.commune,

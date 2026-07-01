@@ -82,7 +82,6 @@ export const customerService = {
         phone: profile.phone,
         email: profile.email,
         birthDate: profile.birthDate,
-        rut: profile.rut,
       }),
     });
     return {

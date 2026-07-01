@@ -25,9 +25,14 @@ export class AuthService {
     const user = identifier.includes('@')
       ? await this.prisma.user.findUnique({ where: { email: identifier } })
       : await this.prisma.user.findFirst({ where: { phone } });
-    if (!user || user.status !== UserStatus.ACTIVE || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('Correo o contraseña incorrecta.');
+    if (!user || user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('Correo o contraseña incorrecta.');
+    if (user.lockedAt) throw new UnauthorizedException('Cuenta bloqueada. Contacta a Soporte MiClub Chile.');
+    if (!(await bcrypt.compare(dto.password, user.passwordHash))) {
+      const attempts = user.failedLoginAttempts + 1;
+      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: attempts, lockedAt: attempts >= 5 ? new Date() : null } });
+      throw new UnauthorizedException(attempts >= 5 ? 'Cuenta bloqueada. Contacta a Soporte MiClub Chile.' : 'Correo o contraseña incorrecta.');
     }
+    if (user.failedLoginAttempts) await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0 } });
     return this.createSession(user.id);
   }
 

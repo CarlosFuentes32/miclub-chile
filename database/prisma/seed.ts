@@ -24,7 +24,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(password, 12);
   const businessName = value("PILOT_BUSINESS_NAME", "Minimarket Piloto");
   const businessSlug = value("PILOT_BUSINESS_SLUG", slugify(businessName));
-  const adminEmail = value("SEED_ADMIN_EMAIL", "admin@miclub.local");
+  const adminEmail = "administrador@miclubchile.cl";
   const ownerEmail = value("PILOT_OWNER_EMAIL", "owner@miclub.local");
   const cashierEmail = value("PILOT_CASHIER_EMAIL", "cashier@miclub.local");
   const customerEmail = value("PILOT_CUSTOMER_EMAIL", "customer@miclub.local");

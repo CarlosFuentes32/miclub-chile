@@ -7,6 +7,8 @@ import {
   GlobalSettings,
   Plan,
   UserStatus,
+  SupportUser,
+  UserChange,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
@@ -72,6 +74,11 @@ export const adminService = {
   },
   updateUser: (id: string, input: Partial<AdminUser>) => apiRequest(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   changeUserPassword: (id: string, password: string) => apiRequest(`/admin/users/${id}/password`, { method: "PATCH", body: JSON.stringify({ password }) }),
+  getSupportUsers: (role:string) => apiRequest<SupportUser[]>(`/admin/support/${role}`),
+  resetSupportPassword: (id:string) => apiRequest<{temporaryPassword:string}>(`/admin/support/users/${id}/reset-password`,{method:'POST'}),
+  unlockSupportUser: (id:string) => apiRequest(`/admin/support/users/${id}/unlock`,{method:'POST'}),
+  correctSupportRut: (id:string,rut:string) => apiRequest(`/admin/support/users/${id}/rut`,{method:'PATCH',body:JSON.stringify({rut,confirmed:true})}),
+  getUserHistory: (id:string) => apiRequest<UserChange[]>(`/admin/support/users/${id}/history`),
   deleteUser: (id: string) => apiRequest(`/admin/users/${id}`, { method: "DELETE" }),
   getPlans: () => apiRequest<Plan[]>("/admin/plans"),
   createPlan: (p: Omit<Plan, "id">) =>

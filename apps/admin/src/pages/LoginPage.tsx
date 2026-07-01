@@ -2,7 +2,7 @@ import { AuthUser, login } from "@miclub/shared";
 import { FormEvent, useState } from "react";
 export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
   const [email, setEmail] = useState(
-      import.meta.env.DEV ? "admin@miclub.local" : "",
+      import.meta.env.DEV ? "administrador@miclubchile.cl" : "",
     ),
     [password, setPassword] = useState(
       import.meta.env.DEV ? "MiClubDemo2026!" : "",

@@ -90,3 +90,5 @@ export interface GlobalSettings {
   statuses: string[];
   globalTexts: { welcome: string; support: string };
 }
+export interface SupportUser { id:string; name:string; email:string; phone:string; rut?:string; role:UserRole; status:string; forcePasswordChange:boolean; lockedAt?:string; birthDate?:string; businessMemberships?:{business:{name:string}}[] }
+export interface UserChange { id:string; field:string; action:string; oldValue?:string; newValue?:string; createdAt:string; actor?:{name:string;email:string} }

@@ -1,2 +1,1 @@
-// Los componentes reutilizables y neutrales de interfaz vivirán aquí.
-export {};
+export { ForcePasswordChange } from './ForcePasswordChange';

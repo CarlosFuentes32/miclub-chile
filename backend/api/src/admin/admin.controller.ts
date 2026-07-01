@@ -17,6 +17,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtUser } from "../auth/auth.types";
 import {
   ChangePasswordDto,
+  CorrectRutDto,
   CreateBusinessDto,
   PlanDto,
   StatusDto,
@@ -57,8 +58,9 @@ export class AdminController {
   @Patch("users/:id") updateUser(
     @Param("id") id: string,
     @Body() d: UpdateAdminUserDto,
+    @CurrentUser() actor: JwtUser,
   ) {
-    return this.admin.updateUser(id, d);
+    return this.admin.updateUser(id, d, actor.id);
   }
   @Patch("users/:id/status") userStatus(
     @Param("id") id: string,
@@ -73,6 +75,11 @@ export class AdminController {
   ) {
     return this.admin.changePassword(id, d.password, user.id);
   }
+  @Post("support/users/:id/reset-password") resetPassword(@Param("id") id:string,@CurrentUser() actor:JwtUser){return this.admin.resetPassword(id,actor.id)}
+  @Post("support/users/:id/unlock") unlock(@Param("id") id:string,@CurrentUser() actor:JwtUser){return this.admin.unlockUser(id,actor.id)}
+  @Patch("support/users/:id/rut") correctRut(@Param("id") id:string,@Body() d:CorrectRutDto,@CurrentUser() actor:JwtUser){return this.admin.correctRut(id,d.rut,d.confirmed,actor.id)}
+  @Get("support/users/:id/history") history(@Param("id") id:string){return this.admin.userHistory(id)}
+  @Get("support/:role") support(@Param("role") role:string){return this.admin.supportUsers(role)}
   @Delete("users/:id") deleteUser(@Param("id") id: string) {
     return this.admin.deleteUser(id);
   }

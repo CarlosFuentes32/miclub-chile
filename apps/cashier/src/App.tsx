@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthUser, logout, portalByRole, restoreSession } from "@miclub/shared";
+import { ForcePasswordChange } from "@miclub/ui";
 import {
   HashRouter,
   Navigate,
@@ -118,6 +119,7 @@ function AppRoutes() {
         Preparando caja…
       </main>
     );
+  if (user?.forcePasswordChange) return <ForcePasswordChange onComplete={out} />;
   return (
     <Routes>
       <Route
