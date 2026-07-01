@@ -17,7 +17,9 @@ export class UsersService {
     const phone = digits.length === 8 ? `+569${digits}` : dto.phone;
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findFirst({where:{OR:[{email},{phone},...(dto.rut?[{rut:dto.rut}]:[])]}});
-    if(existing)throw new ConflictException('El correo, teléfono o RUT ya está registrado');
+    if(existing?.status===UserStatus.DELETED)throw new ConflictException('Este teléfono o correo pertenece a una cuenta eliminada. Contacta a soporte para reactivarla.');
+    if(existing?.status===UserStatus.SUSPENDED)throw new ConflictException('Esta cuenta está suspendida. Contacta a soporte MiClub Chile.');
+    if(existing)throw new ConflictException('Este usuario ya está registrado. Inicia sesión o recupera tu contraseña.');
     const passwordHash=await bcrypt.hash(dto.password,12);
     return this.prisma.$transaction(async tx=>{
       const user=await tx.user.create({data:{name:dto.name.trim(),email,phone,passwordHash,birthDate:dto.birthDate?new Date(dto.birthDate):undefined,rut:dto.rut,role:UserRole.CUSTOMER,status:UserStatus.ACTIVE},select:publicUserSelect});

@@ -37,18 +37,20 @@ export const adminService = {
     return this.getBusinessDetail(id);
   },
   deleteBusiness: (id: string) => apiRequest(`/admin/businesses/${id}`, { method: "DELETE" }),
-  async getUsers(): Promise<AdminUser[]> {
-    const rows = await apiRequest<any[]>("/admin/users");
+  async getUsers(status='all'): Promise<AdminUser[]> {
+    const rows = await apiRequest<any[]>(`/admin/users?status=${status}`);
     return rows.map((u) => ({
       id: u.id,
       name: u.name,
       phone: u.phone,
       email: u.email,
       role: u.role,
-      status: u.status === "ACTIVE" ? "active" : "suspended",
+      status: u.status.toLowerCase(),
       createdAt: new Date(u.createdAt).toLocaleDateString("es-CL"),
       business: u.businessMemberships[0]?.business.name,
       lastAccess: "No disponible",
+      deletedAt:u.deletedAt?new Date(u.deletedAt).toLocaleString('es-CL'):undefined,
+      deletedBy:u.deletedBy,
     }));
   },
   getUserDetail: async (id: string) => {
@@ -59,10 +61,12 @@ export const adminService = {
       phone: u.phone,
       email: u.email,
       role: u.role,
-      status: u.status === "ACTIVE" ? "active" : "suspended",
+      status: u.status.toLowerCase(),
       createdAt: new Date(u.createdAt).toLocaleDateString("es-CL"),
       business: u.businessMemberships[0]?.business.name,
       lastAccess: "No disponible",
+      deletedAt:u.deletedAt?new Date(u.deletedAt).toLocaleString('es-CL'):undefined,
+      deletedBy:u.deletedBy,
     } as AdminUser;
   },
   async updateUserStatus(id: string, status: UserStatus) {
@@ -80,6 +84,7 @@ export const adminService = {
   correctSupportRut: (id:string,rut:string) => apiRequest(`/admin/support/users/${id}/rut`,{method:'PATCH',body:JSON.stringify({rut,confirmed:true})}),
   getUserHistory: (id:string) => apiRequest<UserChange[]>(`/admin/support/users/${id}/history`),
   deleteUser: (id: string) => apiRequest(`/admin/users/${id}`, { method: "DELETE" }),
+  reactivateUser: (id:string) => apiRequest(`/admin/users/${id}/reactivate`,{method:'POST'}),
   getPlans: () => apiRequest<Plan[]>("/admin/plans"),
   createPlan: (p: Omit<Plan, "id">) =>
     apiRequest<Plan>("/admin/plans", {

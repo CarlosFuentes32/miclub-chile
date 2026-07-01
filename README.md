@@ -224,6 +224,8 @@ El panel administrador incluye búsqueda por tipo de usuario, edición de datos 
 - `GET /api/admin/support/users/:id/history`
 - `PATCH /api/users/me/password`
 
+La eliminación de usuarios es lógica: conserva relaciones, ciclos, transacciones, recompensas y auditorías. Las cuentas eliminadas se consultan con `GET /api/admin/users?status=deleted` y se recuperan con `POST /api/admin/users/:id/reactivate`.
+
 ### Prueba automatizada básica
 
 Con la API ejecutándose y después del seed:

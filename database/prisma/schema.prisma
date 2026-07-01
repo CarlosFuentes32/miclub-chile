@@ -19,6 +19,7 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+  DELETED
 }
 
 model User {
@@ -34,6 +35,8 @@ model User {
   forcePasswordChange   Boolean            @default(false) @map("force_password_change")
   failedLoginAttempts   Int                @default(0) @map("failed_login_attempts")
   lockedAt              DateTime?          @map("locked_at")
+  deletedAt             DateTime?          @map("deleted_at")
+  deletedByUserId       String?             @map("deleted_by_user_id")
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
   sessions              AuthSession[]
@@ -49,6 +52,11 @@ model User {
   auditLogs             AuditLog[]
   changeHistory         UserChange[]       @relation("ChangedUser")
   changesPerformed      UserChange[]       @relation("ChangeActor")
+  deletedBy             User?              @relation("UserDeletion", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+  usersDeleted          User[]              @relation("UserDeletion")
+
+  @@index([status])
+  @@index([deletedByUserId])
 
   @@map("users")
 }

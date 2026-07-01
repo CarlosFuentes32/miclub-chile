@@ -1,7 +1,7 @@
 export type BusinessStatus =
   "active" | "suspended" | "grace_period" | "cancelled";
 export type UsageLevel = "frequent" | "low" | "inactive";
-export type UserStatus = "active" | "suspended";
+export type UserStatus = "active" | "suspended" | "deleted";
 export type UserRole =
   "CUSTOMER" | "CASHIER" | "BUSINESS_ADMIN" | "BUSINESS_OWNER" | "MICLUB_ADMIN";
 export interface AdminDashboard {
@@ -55,6 +55,8 @@ export interface AdminUser {
   createdAt: string;
   business?: string;
   lastAccess: string;
+  deletedAt?: string;
+  deletedBy?: { id:string;name:string;email:string };
 }
 export interface Plan {
   id: string;

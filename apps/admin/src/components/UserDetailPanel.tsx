@@ -15,6 +15,7 @@ export function UserDetailPanel({
   onSave,
   onPassword,
   onDelete,
+  onReactivate,
 }: {
   user: AdminUser;
   onClose: () => void;
@@ -22,6 +23,7 @@ export function UserDetailPanel({
   onSave: (v: AdminUser) => Promise<void>;
   onPassword: (p: string) => Promise<void>;
   onDelete: () => Promise<void>;
+  onReactivate: () => Promise<void>;
 }) {
   const [value, setValue] = useState(user),
     [password, setPassword] = useState(""),
@@ -38,7 +40,8 @@ export function UserDetailPanel({
   async function changePassword() {
     if (!validarPassword(password))
       return setMessage("La contraseña debe tener al menos 4 caracteres.");
-    if (password !== confirmPassword) return setMessage("Las contraseñas no coinciden.");
+    if (password !== confirmPassword)
+      return setMessage("Las contraseñas no coinciden.");
     await onPassword(password);
     setPassword("");
     setConfirmPassword("");
@@ -66,6 +69,16 @@ export function UserDetailPanel({
         <div className="mt-3">
           <StatusBadge status={user.status} />
         </div>
+        {user.status === "deleted" && (
+          <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm">
+            <b>Cuenta eliminada</b>
+            <p>Fecha: {user.deletedAt ?? "No registrada"}</p>
+            <p>
+              Eliminada por:{" "}
+              {user.deletedBy?.name ?? "Flujo anterior / no disponible"}
+            </p>
+          </div>
+        )}
         <div className="mt-7 space-y-4">
           <label className="field">
             Nombre
@@ -148,9 +161,42 @@ export function UserDetailPanel({
                 {show ? <EyeOff /> : <Eye />}
               </button>
             </span>
-            <input className="input" type={show?"text":"password"} minLength={4} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" />
-            <div className="mt-3 grid gap-2 sm:grid-cols-2"><button type="button" className="secondary" onClick={()=>{const next=`MiClub-${crypto.randomUUID().slice(0,8)}`;setPassword(next);setConfirmPassword(next);setGenerated(next);setShow(true)}}>Generar contraseña temporal</button><button type="button" className="secondary" disabled={!generated} onClick={()=>navigator.clipboard.writeText(generated)}>Copiar contraseña</button></div>
-            {generated&&<p className="mt-3 rounded-xl bg-cyan-50 p-3 text-sm"><strong>Temporal:</strong> <code>{generated}</code></p>}
+            <input
+              className="input"
+              type={show ? "text" : "password"}
+              minLength={4}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirmar contraseña"
+            />
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  const next = `MiClub-${crypto.randomUUID().slice(0, 8)}`;
+                  setPassword(next);
+                  setConfirmPassword(next);
+                  setGenerated(next);
+                  setShow(true);
+                }}
+              >
+                Generar contraseña temporal
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={!generated}
+                onClick={() => navigator.clipboard.writeText(generated)}
+              >
+                Copiar contraseña
+              </button>
+            </div>
+            {generated && (
+              <p className="mt-3 rounded-xl bg-cyan-50 p-3 text-sm">
+                <strong>Temporal:</strong> <code>{generated}</code>
+              </p>
+            )}
             <button className="secondary mt-3 w-full" onClick={changePassword}>
               Establecer nueva contraseña
             </button>
@@ -160,17 +206,33 @@ export function UserDetailPanel({
               {message}
             </p>
           )}
-          <button
-            onClick={() =>
-              onStatus(user.status === "active" ? "suspended" : "active")
-            }
-            className={`w-full ${user.status === "active" ? "danger" : "primary"}`}
-          >
-            {user.status === "active" ? "Suspender usuario" : "Activar usuario"}
-          </button>
-          <button onClick={onDelete} className="danger w-full">
-            Desactivar cuenta
-          </button>
+          {user.status !== "deleted" && (
+            <button
+              onClick={() =>
+                onStatus(user.status === "active" ? "suspended" : "active")
+              }
+              className={`w-full ${user.status === "active" ? "danger" : "primary"}`}
+            >
+              {user.status === "active"
+                ? "Suspender usuario"
+                : "Activar usuario"}
+            </button>
+          )}
+          {user.status === "deleted" ? (
+            <button onClick={onReactivate} className="primary w-full">
+              Reactivar usuario
+            </button>
+          ) : (
+            <button onClick={onDelete} className="danger w-full">
+              Eliminar usuario
+            </button>
+          )}
+          {user.status !== "deleted" && (
+            <p className="text-xs text-slate-500">
+              Esta acción no borra el historial. La cuenta quedará desactivada y
+              podrá reactivarse desde Usuarios Eliminados.
+            </p>
+          )}
         </div>
       </aside>
     </div>

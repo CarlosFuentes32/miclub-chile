@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
@@ -49,8 +50,8 @@ export class AdminController {
   @Delete("businesses/:id") deleteBusiness(@Param("id") id: string) {
     return this.admin.deleteBusiness(id);
   }
-  @Get("users") users() {
-    return this.admin.users();
+  @Get("users") users(@Query("status") status?: string) {
+    return this.admin.users(status);
   }
   @Get("users/:id") user(@Param("id") id: string) {
     return this.admin.user(id);
@@ -65,8 +66,9 @@ export class AdminController {
   @Patch("users/:id/status") userStatus(
     @Param("id") id: string,
     @Body() d: StatusDto,
+    @CurrentUser() actor: JwtUser,
   ) {
-    return this.admin.userStatus(id, d.status);
+    return this.admin.userStatus(id, d.status, actor.id);
   }
   @Patch("users/:id/password") password(
     @Param("id") id: string,
@@ -75,13 +77,42 @@ export class AdminController {
   ) {
     return this.admin.changePassword(id, d.password, user.id);
   }
-  @Post("support/users/:id/reset-password") resetPassword(@Param("id") id:string,@CurrentUser() actor:JwtUser){return this.admin.resetPassword(id,actor.id)}
-  @Post("support/users/:id/unlock") unlock(@Param("id") id:string,@CurrentUser() actor:JwtUser){return this.admin.unlockUser(id,actor.id)}
-  @Patch("support/users/:id/rut") correctRut(@Param("id") id:string,@Body() d:CorrectRutDto,@CurrentUser() actor:JwtUser){return this.admin.correctRut(id,d.rut,d.confirmed,actor.id)}
-  @Get("support/users/:id/history") history(@Param("id") id:string){return this.admin.userHistory(id)}
-  @Get("support/:role") support(@Param("role") role:string){return this.admin.supportUsers(role)}
-  @Delete("users/:id") deleteUser(@Param("id") id: string) {
-    return this.admin.deleteUser(id);
+  @Post("support/users/:id/reset-password") resetPassword(
+    @Param("id") id: string,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.resetPassword(id, actor.id);
+  }
+  @Post("support/users/:id/unlock") unlock(
+    @Param("id") id: string,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.unlockUser(id, actor.id);
+  }
+  @Patch("support/users/:id/rut") correctRut(
+    @Param("id") id: string,
+    @Body() d: CorrectRutDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.correctRut(id, d.rut, d.confirmed, actor.id);
+  }
+  @Get("support/users/:id/history") history(@Param("id") id: string) {
+    return this.admin.userHistory(id);
+  }
+  @Get("support/:role") support(@Param("role") role: string) {
+    return this.admin.supportUsers(role);
+  }
+  @Delete("users/:id") deleteUser(
+    @Param("id") id: string,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.deleteUser(id, actor.id);
+  }
+  @Post("users/:id/reactivate") reactivateUser(
+    @Param("id") id: string,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.reactivateUser(id, actor.id);
   }
   @Get("plans") plans() {
     return this.admin.plans();

@@ -25,7 +25,10 @@ export class AuthService {
     const user = identifier.includes('@')
       ? await this.prisma.user.findUnique({ where: { email: identifier } })
       : await this.prisma.user.findFirst({ where: { phone } });
-    if (!user || user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('Correo o contraseña incorrecta.');
+    if (!user) throw new UnauthorizedException('Teléfono o contraseña incorrecta.');
+    if (user.status === UserStatus.DELETED) throw new UnauthorizedException('No puedes iniciar sesión. Cuenta eliminada. Contacta a soporte.');
+    if (user.status === UserStatus.SUSPENDED) throw new UnauthorizedException('Cuenta suspendida. Contacta a soporte.');
+    if (user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('No puedes iniciar sesión. Contacta a soporte MiClub Chile.');
     if (user.lockedAt) throw new UnauthorizedException('Cuenta bloqueada. Contacta a Soporte MiClub Chile.');
     if (!(await bcrypt.compare(dto.password, user.passwordHash))) {
       const attempts = user.failedLoginAttempts + 1;
