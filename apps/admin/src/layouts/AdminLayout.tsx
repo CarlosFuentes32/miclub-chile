@@ -19,13 +19,13 @@ const nav = [
 ] as const;
 export function AdminLayout({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="border-b border-slate-200 bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:w-[260px]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <aside className="border-b border-white/10 bg-gradient-to-b from-slate-950 via-violet-950 to-slate-950 text-white lg:fixed lg:inset-y-0 lg:w-[280px]">
         <div className="flex items-center gap-3 px-5 py-5">
-          <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="h-12 w-20 rounded-xl bg-white object-contain" />
+          <img src="/logo-miclub-chile-icon.png" alt="MiClub Chile" className="h-16 w-16 object-contain" />
           <div>
             <strong>MiClub Admin</strong>
-            <small className="block text-slate-400">Control global</small>
+            <small className="block text-cyan-300">Control global</small>
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1">
@@ -34,7 +34,7 @@ export function AdminLayout({ onLogout }: { onLogout: () => void }) {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold ${isActive ? "bg-violet-500 text-white" : "text-slate-400 hover:bg-white/5"}`
+                `flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${isActive ? "bg-white text-violet-800 shadow-lg" : "text-slate-300 hover:bg-white/10 hover:text-white"}`
               }
             >
               <Icon size={19} />

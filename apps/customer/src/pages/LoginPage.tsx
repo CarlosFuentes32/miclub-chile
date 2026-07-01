@@ -36,7 +36,7 @@ export function LoginPage({
     }
   }
   return (
-    <main className="min-h-screen bg-white p-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <main className="min-h-screen bg-gradient-to-b from-white to-violet-50/50 p-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
       <Link
         to="/welcome"
         className="grid h-11 w-11 place-items-center rounded-full bg-slate-100"
@@ -45,9 +45,9 @@ export function LoginPage({
       </Link>
       <div className="mx-auto mt-10 max-w-sm">
         <img
-          src="/logo-miclub-chile.jpeg"
+          src="/logo-miclub-chile-transparent.png"
           alt="MiClub Chile"
-          className="mx-auto mb-6 h-28 w-auto rounded-2xl object-contain"
+          className="auth-logo mb-6"
         />
         <p className="font-bold text-violet-600">Bienvenido de vuelta</p>
         <h1 className="mt-2 text-3xl font-black">Ingresa a MiClub</h1>
@@ -113,7 +113,7 @@ export function LoginPage({
           )}
           <button
             disabled={loading}
-            className="w-full rounded-2xl bg-slate-950 py-4 font-bold text-white"
+            className="brand-button w-full"
           >
             {loading ? "Ingresando…" : "Ingresar"}
           </button>

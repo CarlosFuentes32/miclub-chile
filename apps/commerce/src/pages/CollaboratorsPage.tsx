@@ -92,7 +92,7 @@ export function CollaboratorsPage() {
         </button>
       </div>
       {credentials && (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
+        <div className="mt-5 rounded-2xl border border-violet-200 bg-violet-50 p-5 text-slate-950">
           <strong>Cuenta creada correctamente</strong>
           <p className="mt-2">
             Correo: <code>{credentials.email}</code>

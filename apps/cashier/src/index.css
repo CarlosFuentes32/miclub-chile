@@ -1,5 +1,5 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@layer base{*{-webkit-tap-highlight-color:transparent}html{@apply bg-slate-200}body{@apply m-0 min-h-screen bg-slate-50 text-slate-900 antialiased}button,a,input{@apply touch-manipulation}}
-@layer components{.input{@apply mt-1.5 w-full rounded-2xl border border-slate-200 px-4 py-3.5 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100}}
+@layer base{*{-webkit-tap-highlight-color:transparent}html{@apply bg-slate-100}body{@apply m-0 min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50/60 font-sans text-slate-950 antialiased}button,a,input{@apply touch-manipulation}}
+@layer components{.input{@apply mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100}.auth-shell{@apply grid min-h-screen place-items-center bg-gradient-to-br from-slate-950 via-violet-950 to-cyan-950 p-5}.auth-card{@apply w-full max-w-md rounded-[2rem] border border-white bg-white p-7 shadow-2xl md:p-9}.auth-logo{@apply mx-auto h-32 w-auto object-contain}.cashier-shell{@apply mx-auto min-h-screen max-w-md bg-gradient-to-b from-white to-violet-50/50 px-5 pb-8 shadow-xl shadow-slate-200/40}}

@@ -1,1 +1,1 @@
-export function BrandMark({ compact=false }:{compact?:boolean}){return <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className={`${compact?'h-12':'h-24'} w-auto rounded-2xl object-contain`}/>}
+export function BrandMark({ compact=false }:{compact?:boolean}){return <img src="/logo-miclub-chile-transparent.png" alt="MiClub Chile" className={`${compact?'h-12':'h-24'} w-auto rounded-2xl object-contain`}/>}

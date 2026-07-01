@@ -25,13 +25,13 @@ export function CommerceLayout({
   onLogout: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="border-b border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:w-[260px] lg:border-b-0 lg:border-r">
+    <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <aside className="border-b border-white/10 bg-gradient-to-r from-slate-950 via-violet-950 to-slate-950 text-white lg:fixed lg:inset-y-0 lg:w-[280px] lg:border-b-0 lg:border-r">
         <div className="flex items-center gap-3 px-5 py-5">
-          <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="h-12 w-20 rounded-xl object-contain" />
+          <img src="/logo-miclub-chile-icon.png" alt="MiClub Chile" className="h-16 w-16 object-contain" />
           <div>
             <strong className="block">{businessName}</strong>
-            <small className="text-slate-400">MiClub Comercio</small>
+            <small className="text-cyan-300">MiClub Comercio</small>
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1">
@@ -40,7 +40,7 @@ export function CommerceLayout({
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold ${isActive ? "bg-emerald-50 text-emerald-700" : "text-slate-500 hover:bg-slate-50"}`
+                `flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${isActive ? "bg-white text-violet-800 shadow-lg" : "text-slate-300 hover:bg-white/10 hover:text-white"}`
               }
             >
               <Icon size={19} />

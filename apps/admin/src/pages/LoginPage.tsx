@@ -27,12 +27,12 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
     }
   }
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 p-6">
+    <main className="auth-shell">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm rounded-3xl bg-white p-7 shadow-2xl"
+        className="auth-card"
       >
-        <img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="mx-auto h-28 w-auto rounded-2xl object-contain" />
+        <img src="/logo-miclub-chile-transparent.png" alt="MiClub Chile" className="auth-logo" />
         <p className="mt-6 text-sm font-black uppercase tracking-wider text-violet-700">
           MiClub Chile
         </p>

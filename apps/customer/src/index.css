@@ -1,20 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@layer base {
-  * { -webkit-tap-highlight-color: transparent; }
-  html { @apply bg-slate-100; }
-  body { @apply m-0 min-h-screen bg-slate-50 font-sans text-slate-900 antialiased; }
-  button, a, input { @apply touch-manipulation; }
-}
-
-@layer components {
-  .input { @apply mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100; }
-  .phone-field { @apply mt-1.5 flex items-center rounded-2xl border border-slate-200 bg-white pl-4; }
-  .phone-field b { @apply text-violet-700; }
-  .phone-field .input { @apply mt-0 border-0 focus:ring-0; }
-}
-
-@keyframes soft-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
-.animate-soft-in { animation: soft-in .45s ease-out both; }
+@layer base{*{-webkit-tap-highlight-color:transparent}html{@apply bg-slate-100}body{@apply m-0 min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/50 font-sans text-slate-950 antialiased}button,a,input{@apply touch-manipulation}}
+@layer components{.input{@apply mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100}.phone-field{@apply mt-2 flex items-center rounded-2xl border border-slate-200 bg-slate-50 pl-4}.phone-field b{@apply text-violet-700}.phone-field .input{@apply mt-0 border-0 bg-transparent focus:ring-0}.customer-card{@apply rounded-3xl border border-white bg-white p-5 shadow-lg shadow-violet-100/40}.brand-button{@apply flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-700 px-5 font-black text-white shadow-lg shadow-violet-200/60}.auth-logo{@apply mx-auto h-32 w-auto object-contain}}
+@keyframes soft-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}.animate-soft-in{animation:soft-in .45s ease-out both}

@@ -28,7 +28,7 @@ function Protected({ user }: { user: AuthUser | null }) {
           </p>
           <a
             href={portalByRole[user.role]}
-            className="mt-5 inline-block font-bold text-amber-700"
+            className="mt-5 inline-block font-bold text-violet-700"
           >
             Ir al portal autorizado
           </a>
