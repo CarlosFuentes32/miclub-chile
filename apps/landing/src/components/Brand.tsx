@@ -1,1 +1,1 @@
-import{Link}from'react-router-dom';export function Brand(){return <Link to="/" className="inline-flex items-center"><img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="h-16 w-auto rounded-xl object-contain"/></Link>}
+import{Link}from'react-router-dom';export function Brand(){return <Link to="/" className="inline-flex items-center"><img src="/logo-miclub-chile.jpeg" alt="MiClub Chile" className="h-20 w-auto rounded-xl object-contain md:h-24"/></Link>}
