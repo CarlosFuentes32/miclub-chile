@@ -2,6 +2,7 @@ import {
   AccumulationType,
   CycleStatus,
   MembershipStatus,
+  ManualCustomerSegment,
   PrismaClient,
   ProgramStatus,
   UserRole,
@@ -347,6 +348,17 @@ async function main() {
         targetValue: testProgram.targetValue,
       },
     });
+  // El mismo usuario global participa en ambos comercios mediante relaciones independientes.
+  await prisma.customerBusiness.upsert({
+    where: { customerUserId_businessId: { customerUserId: testCustomer.id, businessId: business.id } },
+    update: { status: MembershipStatus.ACTIVE },
+    create: { customerUserId: testCustomer.id, businessId: business.id, status: MembershipStatus.ACTIVE },
+  });
+  await prisma.manualCustomer.upsert({
+    where: { businessId_rut: { businessId: business.id, rut: "999999999" } },
+    update: { firstName: "Elena", lastName: "Demo", segment: ManualCustomerSegment.SENIOR, status: MembershipStatus.ACTIVE },
+    create: { businessId: business.id, firstName: "Elena", lastName: "Demo", rut: "999999999", segment: ManualCustomerSegment.SENIOR, observation: "Cliente ficticio para pruebas v1.1" },
+  });
   console.log(
     `Piloto listo: ${business.name}, dueño ${ownerEmail}, cajero ${cashierEmail}, cliente ${customerEmail}.`,
   );

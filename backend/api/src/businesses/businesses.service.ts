@@ -119,10 +119,9 @@ export class BusinessesService {
   }
   async customerDetail(userId: string, businessId: string, customerId: string) {
     await this.access.requireManager(userId, businessId);
-    const customer = await this.prisma.user.findUniqueOrThrow({
-      where: { id: customerId },
-      select: { id: true, name: true, phone: true, email: true },
-    });
+    const membership = await this.prisma.customerBusiness.findUnique({ where: { customerUserId_businessId: { customerUserId: customerId, businessId } }, include: { customer: { select: { id: true, name: true, phone: true, email: true } } } });
+    if (!membership) throw new BadRequestException('El cliente no está inscrito en este comercio');
+    const customer = membership.customer;
     const [cycles, rewards, history] = await Promise.all([
       this.prisma.cycle.findMany({
         where: { businessId, customerUserId: customerId },
@@ -139,7 +138,13 @@ export class BusinessesService {
         take: 20,
       }),
     ]);
-    return { customer, cycles, rewards, history };
+    return { customer, membership: { id: membership.id, status: membership.status, joinedAt: membership.joinedAt }, cycles, rewards, history };
+  }
+  async updateCustomerStatus(userId: string, businessId: string, customerId: string, status: 'ACTIVE' | 'INACTIVE') {
+    await this.access.requireManager(userId, businessId);
+    const membership = await this.prisma.customerBusiness.findUnique({ where: { customerUserId_businessId: { customerUserId: customerId, businessId } } });
+    if (!membership) throw new BadRequestException('El cliente no está inscrito en este comercio');
+    return this.prisma.customerBusiness.update({ where: { id: membership.id }, data: { status: status as MembershipStatus } });
   }
   async rewards(userId: string, businessId: string, status?: string) {
     await this.access.requireManager(userId, businessId);
@@ -211,7 +216,7 @@ export class BusinessesService {
     const { business } = await this.access.requireManager(userId, businessId);
     return {
       businessCode: business.slug.toUpperCase(),
-      registrationUrl: `${this.config.get('CUSTOMER_APP_URL','http://localhost:5173')}/#/register?business=${business.slug}`,
+      registrationUrl: `${this.config.get('CUSTOMER_APP_URL','http://localhost:5173')}/#/join?business=${business.slug}`,
       businessName: business.name,
     };
   }

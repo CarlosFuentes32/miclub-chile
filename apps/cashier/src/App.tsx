@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthUser, logout, portalByRole, restoreSession } from "@miclub/shared";
-import { ForcePasswordChange } from "@miclub/ui";
+import { ForcePasswordChange, PwaInstallPrompt } from "@miclub/ui";
 import {
   HashRouter,
   Navigate,
@@ -12,6 +12,7 @@ import {
 import { ActionResultMessage } from "./components/ActionResultMessage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { ManualCustomersPage } from "./pages/ManualCustomersPage";
 import { RedeemPage } from "./pages/RedeemPage";
 import { ScanPage } from "./pages/ScanPage";
 import { SearchPage } from "./pages/SearchPage";
@@ -139,6 +140,7 @@ function AppRoutes() {
           element={<SearchPage onRegister={register} onCancel={cancel} />}
         />
         <Route path="/redeem" element={<RedeemPage onRedeemed={redeemed} />} />
+        <Route path="/manual-customers" element={<ManualCustomersPage />} />
         <Route
           path="/result"
           element={
@@ -156,8 +158,8 @@ function AppRoutes() {
 }
 export function App() {
   return (
-    <HashRouter>
+    <><PwaInstallPrompt appName="MiClub Cajero" message="Instala MiClub Cajero en tu celular para registrar visitas y canjes más rápido."/><HashRouter>
       <AppRoutes />
-    </HashRouter>
+    </HashRouter></>
   );
 }

@@ -50,6 +50,7 @@ model User {
   rewards               Reward[]           @relation("RewardCustomer")
   redeemedRewards       Reward[]           @relation("RewardRedeemer")
   auditLogs             AuditLog[]
+  manualCustomerMovements ManualCustomerMovement[]
   changeHistory         UserChange[]       @relation("ChangedUser")
   changesPerformed      UserChange[]       @relation("ChangeActor")
   deletedBy             User?              @relation("UserDeletion", fields: [deletedByUserId], references: [id], onDelete: SetNull)
@@ -140,6 +141,26 @@ enum RewardStatus {
   CANCELLED @map("cancelled")
 }
 
+enum ManualCustomerSegment {
+  GENERAL      @map("general")
+  SENIOR       @map("senior")
+}
+
+enum ManualRegistrationReason {
+  SENIOR        @map("senior")
+  NO_SMARTPHONE @map("no_smartphone")
+  NO_INTERNET   @map("no_internet")
+  PREFERRED     @map("preferred")
+  OTHER         @map("other")
+}
+
+enum ManualMovementType {
+  STAMP            @map("stamp")
+  PURCHASE         @map("purchase")
+  POINTS           @map("points")
+  BENEFIT_REDEEMED @map("benefit_redeemed")
+}
+
 model Plan {
   id                String     @id @default(cuid())
   name              String     @unique
@@ -181,8 +202,56 @@ model Business {
   transactions Transaction[]
   rewards      Reward[]
   auditLogs    AuditLog[]
+  manualCustomers ManualCustomer[]
 
   @@map("businesses")
+}
+
+model ManualCustomer {
+  id                String                @id @default(cuid())
+  businessId        String                @map("business_id")
+  firstName         String                @map("first_name")
+  lastName          String                @map("last_name")
+  rut               String?
+  phone             String?
+  birthDate         DateTime?             @map("birth_date") @db.Date
+  segment           ManualCustomerSegment @default(GENERAL)
+  registrationReason ManualRegistrationReason @default(SENIOR) @map("registration_reason")
+  observation       String?
+  status            MembershipStatus      @default(ACTIVE)
+  points            Decimal               @default(0) @db.Decimal(14, 2)
+  stamps            Int                   @default(0)
+  purchases         Int                   @default(0)
+  programProgress   Decimal               @default(0) @map("program_progress") @db.Decimal(14, 2)
+  availableBenefits Int                   @default(0) @map("available_benefits")
+  redeemedBenefits  Int                   @default(0) @map("redeemed_benefits")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  business          Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  movements         ManualCustomerMovement[]
+
+  @@unique([businessId, rut])
+  @@unique([businessId, phone])
+  @@index([businessId, status, segment])
+  @@index([businessId, firstName, lastName])
+  @@map("manual_customers")
+}
+
+model ManualCustomerMovement {
+  id               String             @id @default(cuid())
+  manualCustomerId String             @map("manual_customer_id")
+  businessId       String             @map("business_id")
+  performedByUserId String            @map("performed_by_user_id")
+  type             ManualMovementType
+  value            Decimal            @default(1) @db.Decimal(14, 2)
+  note             String?
+  createdAt        DateTime           @default(now()) @map("created_at")
+  manualCustomer   ManualCustomer     @relation(fields: [manualCustomerId], references: [id], onDelete: Cascade)
+  performedBy      User               @relation(fields: [performedByUserId], references: [id])
+
+  @@index([manualCustomerId, createdAt])
+  @@index([businessId, createdAt])
+  @@map("manual_customer_movements")
 }
 
 model BusinessUser {

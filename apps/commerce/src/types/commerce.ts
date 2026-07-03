@@ -3,8 +3,9 @@ export interface DashboardSummary{registeredCustomers:number;transactions:number
 export interface BusinessSettings{id:string;name:string;category:string;rut?:string;address:string;region?:string;commune?:string;phone:string;email:string;logoUrl?:string}
 export interface LoyaltyProgram{id:string;version:number;type:ProgramType;earningRule:string;goal:number;goalLabel:string;reward:string;validity:'none'|'30'|'60'|'90'|'custom';customExpiry?:string;status:'draft'|'active'|'archived'}
 export type LoyaltyProgramDraft=Omit<LoyaltyProgram,'id'|'version'|'status'>;
-export interface BusinessCustomer{id:string;name:string;phone:string;progress:string;rewardsAvailable:number;lastVisit:string;history:string[]}
+export interface BusinessCustomer{id:string;name:string;phone:string;progress:string;rewardsAvailable:number;lastVisit:string;history:string[];membershipStatus?:'ACTIVE'|'INACTIVE'}
 export interface Collaborator{id:string;name:string;email:string;role:'BUSINESS_ADMIN'|'CASHIER';status:'active'|'inactive'}
 export interface CreatedCollaborator extends Collaborator{temporaryPassword:string}
 export interface BusinessReward{id:string;customer:string;description:string;program:string;generatedAt:string;expiresAt:string;status:RewardStatus}
 export interface QRMaterial{businessCode:string;registrationUrl:string;businessName:string}
+export interface ManualCustomer{id:string;firstName:string;lastName:string;rut?:string;phone?:string;birthDate?:string;segment:'GENERAL'|'SENIOR';observation?:string;status:'ACTIVE'|'INACTIVE';points:number;stamps:number;purchases:number;programProgress:number;availableBenefits:number;redeemedBenefits:number;warning?:string;movements?:Array<{id:string;type:string;value:number;note?:string;createdAt:string;performedBy?:{name:string}}> ;program?:{type:string;target:number;reward:string}|null}

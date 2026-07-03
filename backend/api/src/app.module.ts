@@ -12,6 +12,7 @@ import { AuditModule } from './audit/audit.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CustomerModule } from './customer/customer.module';
 import { AdminModule } from './admin/admin.module';
+import { ManualCustomersModule } from './manual-customers/manual-customers.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AdminModule } from './admin/admin.module';
     AuditModule,
     CustomerModule,
     AdminModule,
+    ManualCustomersModule,
   ],
   controllers: [AppController],
 })

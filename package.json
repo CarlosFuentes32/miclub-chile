@@ -1,6 +1,6 @@
 {
   "name": "miclub-chile",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "workspaces": ["apps/*", "backend/api", "packages/*"],
   "scripts": {
@@ -16,6 +16,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema=database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=database/prisma/schema.prisma",
     "prisma:seed": "npm run seed --workspace=@miclub/api"
+    ,"test:multi-commerce": "tsx scripts/test-multi-commerce.ts"
+    ,"test:manual-customers": "tsx scripts/test-manual-customers.ts"
+    ,"test:doc-links": "node scripts/check-doc-links.mjs"
   },
   "devDependencies": {
     "prisma": "^6.19.0"

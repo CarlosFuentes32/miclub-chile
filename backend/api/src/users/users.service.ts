@@ -25,11 +25,10 @@ export class UsersService {
       const user=await tx.user.create({data:{name:dto.name.trim(),email,phone,passwordHash,birthDate:dto.birthDate?new Date(dto.birthDate):undefined,rut:dto.rut,role:UserRole.CUSTOMER,status:UserStatus.ACTIVE},select:publicUserSelect});
       if(dto.businessSlug){
         const business=await tx.business.findUnique({where:{slug:dto.businessSlug}});
-        if(business){
-          await tx.customerBusiness.create({data:{customerUserId:user.id,businessId:business.id}});
-          const program=await tx.loyaltyProgram.findFirst({where:{businessId:business.id,status:'ACTIVE'},orderBy:{version:'desc'}});
-          if(program)await tx.cycle.create({data:{customerUserId:user.id,businessId:business.id,loyaltyProgramId:program.id,targetValue:program.targetValue}});
-        }
+        if(!business)throw new BadRequestException('El comercio indicado por el QR no existe.');
+        await tx.customerBusiness.create({data:{customerUserId:user.id,businessId:business.id}});
+        const program=await tx.loyaltyProgram.findFirst({where:{businessId:business.id,status:'ACTIVE'},orderBy:{version:'desc'}});
+        if(program)await tx.cycle.create({data:{customerUserId:user.id,businessId:business.id,loyaltyProgramId:program.id,targetValue:program.targetValue}});
       }
       return user;
     });

@@ -30,7 +30,7 @@ export function RegisterPage() {
       if (data.password.length < 4)
         throw new Error("La contraseña debe tener al menos 4 caracteres");
       await customerService.register({ ...data, phone: `+569${data.phone}` });
-      navigate("/login", { replace: true });
+      navigate(businessSlug ? `/login?business=${encodeURIComponent(businessSlug)}` : "/login", { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No pudimos crear tu cuenta");
     } finally {

@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { formatearTelefonoChile, login, telefonoLocal } from "@miclub/shared";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 export function LoginPage({
   onLogin,
 }: {
@@ -17,6 +17,8 @@ export function LoginPage({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const businessSlug = params.get('business');
   async function submit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -28,7 +30,7 @@ export function LoginPage({
         return;
       }
       onLogin(user);
-      navigate("/app", { replace: true });
+      navigate(businessSlug ? `/join?business=${encodeURIComponent(businessSlug)}` : "/app", { replace: true });
     } catch (e) {
       const message=e instanceof Error?e.message:"No pudimos iniciar sesión";setError(message.includes("Correo o contraseña")?"Teléfono o contraseña incorrecta.":message);
     } finally {
@@ -120,7 +122,7 @@ export function LoginPage({
         </form>
         <p className="mt-6 text-center text-sm text-slate-500">
           ¿Aún no tienes cuenta?{" "}
-          <Link to="/register" className="font-bold text-violet-700">
+          <Link to={businessSlug ? `/register?business=${encodeURIComponent(businessSlug)}` : "/register"} className="font-bold text-violet-700">
             Créala aquí
           </Link>
         </p>

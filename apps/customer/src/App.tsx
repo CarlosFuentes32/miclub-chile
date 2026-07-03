@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AuthUser, logout, portalByRole, restoreSession } from '@miclub/shared';
-import { ForcePasswordChange } from '@miclub/ui';
+import { ForcePasswordChange, PwaInstallPrompt } from '@miclub/ui';
 import { HashRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { QRScreen } from './components/QRScreen';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { JoinBusinessPage } from './pages/JoinBusinessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RegisterPage } from './pages/RegisterPage';
 import { RecoverPasswordPage } from './pages/RecoverPasswordPage';
@@ -53,6 +54,7 @@ function AppRoutes() {
     <Route path="/welcome" element={user ? <Navigate to="/app" replace /> : <WelcomePage />} />
     <Route path="/login" element={user ? <Navigate to="/app" replace /> : <LoginPage onLogin={setUser} />} />
     <Route path="/register" element={user ? <Navigate to="/app" replace /> : <RegisterPage />} />
+    <Route path="/join" element={<JoinBusinessPage user={user} />} />
     <Route path="/recover-password" element={user ? <Navigate to="/app" replace /> : <RecoverPasswordPage />} />
     <Route element={<Protected user={user} />}>
       <Route path="/qr" element={dashboard?<QRScreen profile={{...customerService.getProfile(user!),shortCode:dashboard.shortCode}} token={dashboard.qrToken}/>:<main className="grid min-h-screen place-items-center">Cargando QR…</main>} />
@@ -67,4 +69,4 @@ function AppRoutes() {
   </Routes>;
 }
 
-export function App() { return <HashRouter><AppRoutes /></HashRouter>; }
+export function App() { return <><PwaInstallPrompt appName="MiClub Chile" message="Instala MiClub Chile en tu celular para acceder más rápido a tus beneficios."/><HashRouter><AppRoutes /></HashRouter></>; }

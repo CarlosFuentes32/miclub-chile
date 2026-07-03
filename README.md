@@ -1,4 +1,8 @@
-# MiClub Chile
+# MiClub Chile v1.1 – Piloto Comercial
+
+Versión oficial: **1.1.0**. Incluye usuario global multi-comercio, Cliente Manual / Adulto Mayor y experiencia de instalación PWA para Cliente, Cajero y Comercio.
+
+Documentación canónica: [Libro Maestro](docs/libro-maestro.md) · [Arquitectura](docs/architecture.md) · [API](docs/api.md) · [Base de datos](docs/database.md) · [Flujos](docs/flujos-v1.1.md) · [Pruebas v1.1](docs/informe-verificacion-v1.1.md) · [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md).
 
 > Estado actual de publicación: [docs/estado-publicacion.md](docs/estado-publicacion.md)
 
@@ -24,6 +28,10 @@ La landing y la demo guiada son autocontenidas. Los cuatro paneles consumen la A
 - El cajero busca o escanea al cliente, registra compras, genera y canjea recompensas y anula transacciones permitidas.
 - El cliente consulta QR, progreso, recompensas, historial y perfil.
 - Comercio y administrador ven los resultados actualizados en sus dashboards.
+- El cliente tiene una cuenta global y puede inscribirse en múltiples comercios desde `/#/join?business=<slug>` sin duplicarse.
+- Cada comercio mantiene ciclos, puntos, recompensas e historial independientes por `businessId`.
+- Comercio y Cajero administran clientes manuales sin correo, contraseña, QR ni cuenta global.
+- Cliente, Cajero y Comercio ofrecen instalación PWA propia, fallback manual y detección standalone.
 
 ## Arquitectura de producción
 

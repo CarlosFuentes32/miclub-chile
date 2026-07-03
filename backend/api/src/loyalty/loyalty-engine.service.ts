@@ -14,14 +14,13 @@ export class LoyaltyEngineService {
     await this.access.requireMember(input.performedByUserId, input.businessId);
     return this.prisma.$transaction(async tx => {
       const [customer, program] = await Promise.all([
-        tx.user.findUnique({ where: { id: input.customerUserId } }),
+        tx.user.findUnique({ where: { id: input.customerUserId }, include: { customerBusinesses: { where: { businessId: input.businessId, status: MembershipStatus.ACTIVE } } } }),
         tx.loyaltyProgram.findFirst({ where: { businessId: input.businessId, status: ProgramStatus.ACTIVE }, orderBy: { version: 'desc' } }),
       ]);
       if (!customer || customer.status !== UserStatus.ACTIVE) throw new NotFoundException('Cliente no encontrado o inactivo');
+      if (!customer.customerBusinesses.length) throw new NotFoundException('El cliente no está inscrito en este comercio');
       if (!program) throw new NotFoundException('El comercio no tiene un programa activo');
       const increment = this.resolveIncrement(program.accumulationType, input.value, input.amount);
-      await tx.customerBusiness.upsert({ where: { customerUserId_businessId: { customerUserId: customer.id, businessId: input.businessId } }, update: { status: MembershipStatus.ACTIVE }, create: { customerUserId: customer.id, businessId: input.businessId } });
-
       let cycle = await tx.cycle.findFirst({ where: { customerUserId: customer.id, businessId: input.businessId, status: CycleStatus.ACTIVE }, orderBy: { createdAt: 'desc' } });
       if (!cycle) {
         cycle = await tx.cycle.create({ data: { customerUserId: customer.id, businessId: input.businessId, loyaltyProgramId: program.id, targetValue: program.targetValue } });

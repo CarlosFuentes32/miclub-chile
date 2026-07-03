@@ -49,6 +49,12 @@ async function refresh(customer: CashierCustomer) {
 }
 export const cashierService = {
   async getBusinessName(){await currentBusiness();return businessName??"Comercio"},
+  async listManualCustomers(q='',filter='all'){const id=await currentBusiness();return apiRequest<any[]>(`/manual-customers?business_id=${id}&q=${encodeURIComponent(q)}&filter=${filter}`)},
+  async getManualCustomer(customerId:string){const id=await currentBusiness();return apiRequest<any>(`/manual-customers/${customerId}?business_id=${id}`)},
+  async createManualCustomer(data:any){const id=await currentBusiness();const clean=Object.fromEntries(Object.entries(data).filter(([,value])=>value!==''&&value!==undefined));return apiRequest<any>('/manual-customers',{method:'POST',body:JSON.stringify({...clean,business_id:id})})},
+  async updateManualCustomer(customerId:string,data:any){const id=await currentBusiness();const clean=Object.fromEntries(Object.entries(data).filter(([,value])=>value!==''&&value!==undefined));return apiRequest<any>(`/manual-customers/${customerId}?business_id=${id}`,{method:'PATCH',body:JSON.stringify(clean)})},
+  async addManualMovement(customerId:string,type:'STAMP'|'PURCHASE'|'POINTS',value=1){const id=await currentBusiness();return apiRequest(`/manual-customers/${customerId}/movements`,{method:'POST',body:JSON.stringify({business_id:id,type,value})})},
+  async redeemManualBenefit(customerId:string){const id=await currentBusiness();return apiRequest(`/manual-customers/${customerId}/redeem`,{method:'POST',body:JSON.stringify({business_id:id})})},
   async scanCustomer(qrPayload: string) {
     const id = await currentBusiness();
     return mapSnapshot(

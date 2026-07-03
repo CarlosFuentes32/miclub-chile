@@ -12,6 +12,7 @@ const nav = [
   ["/dashboard", "Dashboard", BarChart3],
   ["/program", "Programa", Gift],
   ["/customers", "Clientes", Users],
+  ["/manual-customers", "Clientes manuales", UserRoundCog],
   ["/collaborators", "Colaboradores", UserRoundCog],
   ["/rewards", "Recompensas", Gift],
   ["/qr-material", "Material QR", QrCode],

@@ -21,6 +21,9 @@ function profileFromUser(user: AuthUser): CustomerProfile {
   };
 }
 export const customerService = {
+  async getBusiness(slug:string){const response=await fetch(`${API_URL}/public/businesses/${encodeURIComponent(slug)}`);if(!response.ok){const error=await response.json().catch(()=>({}));throw new Error(error.message??'Comercio no encontrado')}return response.json()},
+  getMembership:(slug:string)=>apiRequest<any>(`/customer/businesses/${encodeURIComponent(slug)}/membership`),
+  joinBusiness:(slug:string)=>apiRequest<any>(`/customer/businesses/${encodeURIComponent(slug)}/join`,{method:'POST'}),
   async getDashboard(): Promise<CustomerDashboard> {
     const [home, rewards, history] = await Promise.all([
       apiRequest<any>("/customer/home"),

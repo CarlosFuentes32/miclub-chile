@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CycleStatus, ProgramStatus, RewardStatus, UserRole, UserStatus } from '@prisma/client';
+import { CycleStatus, MembershipStatus, ProgramStatus, RewardStatus, UserStatus } from '@prisma/client';
 import { BusinessAccessService } from '../businesses/business-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -21,11 +21,13 @@ export class CashierService {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 3) return [];
     const normalized = digits.length === 8 ? `+569${digits}` : digits;
-    const users = await this.prisma.user.findMany({ where: { role: UserRole.CUSTOMER, status: UserStatus.ACTIVE, phone: { contains: normalized } }, select: { id: true, name: true, phone: true, email: true }, take: 10 });
-    return Promise.all(users.map(user => this.snapshot(user.id, businessId)));
+    const memberships = await this.prisma.customerBusiness.findMany({ where: { businessId, status: MembershipStatus.ACTIVE, customer: { status: UserStatus.ACTIVE, phone: { contains: normalized } } }, select: { customerUserId: true }, take: 10 });
+    return Promise.all(memberships.map(row => this.snapshot(row.customerUserId, businessId)));
   }
 
   async snapshot(customerId: string, businessId: string) {
+    const membership = await this.prisma.customerBusiness.findUnique({ where: { customerUserId_businessId: { customerUserId: customerId, businessId } } });
+    if (!membership || membership.status !== MembershipStatus.ACTIVE) throw new NotFoundException('El cliente no está inscrito en este comercio');
     await this.expireRewards(customerId, businessId);
     const [customer, program, cycle, rewards, lastTransaction] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: customerId }, select: { id: true, name: true, phone: true, email: true, status: true } }),

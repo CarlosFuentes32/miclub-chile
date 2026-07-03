@@ -1,7 +1,10 @@
-# Panel Cliente
+# Manual — Panel Cliente
 
-El Panel Cliente consume la API real para QR, progreso, recompensas, historial y perfil. El registro admite correo opcional y permite iniciar sesión con correo o teléfono.
+Acceso: https://app.miclubchile.cl. Local: http://localhost:5173.
 
-Cuando el registro se abre desde el QR de un comercio, la URL incluye `business=<slug>` y el backend crea la asociación con ese comercio. El QR personal del cliente dura cinco minutos y se valida nuevamente en la API antes de mostrar su ficha al cajero.
-
-El flujo principal no utiliza mocks.
+- Registro global único por QR o acceso directo.
+- Unirse a comercio: `/#/join?business=<slug>`.
+- Si ya existe la cuenta, iniciar sesión y confirmar; no volver a registrarse.
+- Beneficios, recompensas e historial muestran el comercio correspondiente.
+- El QR personal es temporal y sirve para identificación en caja.
+- El modal PWA permite instalar o muestra fallback manual. Reset de prueba: `/?reset-pwa-install=1`.

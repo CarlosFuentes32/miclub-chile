@@ -61,6 +61,12 @@ export class BusinessesController {
   ) {
     return this.businesses.customerDetail(u.id, id, cid);
   }
+  @Patch("customers/:customerId/status") customerStatus(
+    @CurrentUser() u: JwtUser,
+    @Param("customerId") cid: string,
+    @Query("business_id") id: string,
+    @Body() body: { status: "ACTIVE" | "INACTIVE" },
+  ) { return this.businesses.updateCustomerStatus(u.id, id, cid, body.status); }
   @Get("rewards") rewards(
     @CurrentUser() u: JwtUser,
     @Query("business_id") id: string,
