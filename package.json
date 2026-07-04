@@ -18,6 +18,7 @@
     "prisma:seed": "npm run seed --workspace=@miclub/api"
     ,"test:multi-commerce": "tsx scripts/test-multi-commerce.ts"
     ,"test:manual-customers": "tsx scripts/test-manual-customers.ts"
+    ,"test:user-reactivation": "tsx scripts/test-user-reactivation.ts"
     ,"test:doc-links": "node scripts/check-doc-links.mjs"
   },
   "devDependencies": {

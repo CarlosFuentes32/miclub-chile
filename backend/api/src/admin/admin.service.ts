@@ -266,7 +266,10 @@ export class AdminService {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id },
-        data: { status: value },
+        data:
+          value === UserStatus.ACTIVE
+            ? this.activeUserState()
+            : { status: value },
       });
       await tx.userChange.create({
         data: {
@@ -564,13 +567,7 @@ export class AdminService {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id },
-        data: {
-          status: UserStatus.ACTIVE,
-          deletedAt: null,
-          deletedByUserId: null,
-          lockedAt: null,
-          failedLoginAttempts: 0,
-        },
+        data: this.activeUserState(),
         select: publicUserSelect,
       });
       await tx.userChange.create({
@@ -594,6 +591,15 @@ export class AdminService {
       );
       return user;
     });
+  }
+  private activeUserState() {
+    return {
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+      deletedByUserId: null,
+      lockedAt: null,
+      failedLoginAttempts: 0,
+    } as const;
   }
   async plans() {
     const rows = await this.prisma.plan.findMany({
