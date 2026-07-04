@@ -30,19 +30,18 @@ export const customerService = {
       apiRequest<any[]>("/customer/rewards"),
       apiRequest<any[]>("/customer/history"),
     ]);
-    const p = home.primary_progress ?? {
-      business: { name: "Sin programa activo" },
-      current_value: 0,
-      target_value: 1,
-      next_reward: "Aún no tienes progreso",
-    };
+    const units:Record<string,string>={PURCHASE_COUNT:'compras',VISIT_COUNT:'sellos',POINTS:'puntos',AMOUNT_SPENT:'acumulado'};
+    const programs=(home.programs??(home.primary_progress?[home.primary_progress]:[])).map((program:any)=>({
+      businessId:program.business.id,
+      business:program.business.name,
+      current:Number(program.current_value),
+      goal:Number(program.target_value),
+      reward:program.next_reward,
+      unit:units[program.accumulation_type]??'avances',
+      active:program.status!=='NO_PROGRAM',
+    }));
     return {
-      progress: {
-        business: p.business.name,
-        current: Number(p.current_value),
-        goal: Number(p.target_value),
-        reward: p.next_reward,
-      },
+      programs,
       rewards: rewards.map((r) => ({
         id: r.id,
         title: r.rewardDescription,
