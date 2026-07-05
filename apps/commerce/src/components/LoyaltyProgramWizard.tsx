@@ -1,4 +1,226 @@
-import { useState } from 'react';import { ArrowLeft,ArrowRight,Check } from 'lucide-react';import { LoyaltyProgramDraft,ProgramType } from '../types/commerce';import { ProgramSummaryCard } from './ProgramSummaryCard';
-const types:{id:ProgramType;label:string;desc:string}[]=[{id:'stamps',label:'Sellos',desc:'Una marca por acción'},{id:'points',label:'Puntos',desc:'Acumulación flexible'},{id:'cashback',label:'Cashback',desc:'Retorno como beneficio'},{id:'visits',label:'Visitas',desc:'Premia la frecuencia'},{id:'amount',label:'Monto acumulado',desc:'Avance según gasto'}];const rules:Record<ProgramType,string[]>={stamps:['Cada compra suma 1','Cada $X acumulados suma 1','Valor personalizado'],points:['Cada compra suma 1','Cada $X acumulados suma 1','Valor personalizado'],cashback:['Cada monto acumulado avanza directamente','Valor personalizado'],visits:['Cada visita suma 1','Valor personalizado'],amount:['Cada monto acumulado avanza directamente','Valor personalizado']};
-const initial:LoyaltyProgramDraft={type:'stamps',earningRule:'Cada compra suma 1',goal:10,goalLabel:'10 compras',reward:'',validity:'30'};
-export function LoyaltyProgramWizard({onCreate}:{onCreate:(draft:LoyaltyProgramDraft)=>Promise<void>}){const[step,setStep]=useState(1),[draft,setDraft]=useState(initial),[busy,setBusy]=useState(false);const update=<K extends keyof LoyaltyProgramDraft>(k:K,v:LoyaltyProgramDraft[K])=>setDraft(c=>({...c,[k]:v}));async function create(){setBusy(true);await onCreate(draft);setBusy(false)}const canNext=step!==4||draft.reward.trim().length>2;return <div className="mx-auto max-w-3xl"><div className="mb-7 flex items-center gap-2">{Array.from({length:6},(_,i)=><span key={i} className={`h-2 flex-1 rounded-full ${i<step?'bg-violet-500':'bg-slate-200'}`}/>)}</div><div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8"><p className="text-sm font-bold text-violet-700">Paso {step} de 6</p>{step===1&&<section><h2 className="wizard-title">¿Qué tipo de programa quieres crear?</h2><div className="grid gap-3 sm:grid-cols-2">{types.map(t=><button key={t.id} onClick={()=>{update('type',t.id);update('earningRule',rules[t.id][0])}} className={`choice ${draft.type===t.id?'choice-active':''}`}><strong>{t.label}</strong><small>{t.desc}</small></button>)}</div></section>}{step===2&&<section><h2 className="wizard-title">¿Cómo acumula el cliente?</h2><div className="grid gap-3">{rules[draft.type].map(r=><button key={r} onClick={()=>update('earningRule',r)} className={`choice ${draft.earningRule===r?'choice-active':''}`}><strong>{r}</strong></button>)}</div>{draft.earningRule==='Valor personalizado'&&<input autoFocus className="input mt-4" placeholder="Describe la regla de acumulación" onBlur={e=>update('earningRule',e.target.value||'Valor personalizado')}/>}</section>}{step===3&&<section><h2 className="wizard-title">¿Cuál es la meta del ciclo?</h2><p className="mb-4 text-slate-500">Ejemplos: 10 compras, 8 visitas, 500 puntos o $80.000 acumulados.</p><label className="field">Meta numérica<input className="input" inputMode="numeric" type="number" min="1" value={draft.goal} onChange={e=>update('goal',Number(e.target.value))}/></label><label className="field mt-4">Cómo se mostrará<input className="input" value={draft.goalLabel} onChange={e=>update('goalLabel',e.target.value)}/></label></section>}{step===4&&<section><h2 className="wizard-title">¿Cuál será la recompensa?</h2><p className="mb-4 text-slate-500">Puede ser un descuento, producto, servicio, regalo o cualquier beneficio definido por tu comercio.</p><textarea autoFocus className="input min-h-32 resize-none" value={draft.reward} onChange={e=>update('reward',e.target.value)} placeholder="Ej: 10% de descuento en frutas y verduras"/><p className="mt-3 text-sm text-slate-400">También podría ser “1 corte de cabello gratis”, “Lavado premium gratis” o “Producto seleccionado gratis”.</p></section>}{step===5&&<section><h2 className="wizard-title">Vigencia de la recompensa</h2><div className="grid gap-3 sm:grid-cols-2">{[['none','Sin vencimiento'],['30','30 días'],['60','60 días'],['90','90 días'],['custom','Fecha personalizada']].map(([id,label])=><button key={id} onClick={()=>update('validity',id as LoyaltyProgramDraft['validity'])} className={`choice ${draft.validity===id?'choice-active':''}`}><strong>{label}</strong></button>)}</div>{draft.validity==='custom'&&<input className="input mt-4" type="date" onChange={e=>update('customExpiry',e.target.value)}/>}</section>}{step===6&&<section><h2 className="wizard-title">Revisa tu programa</h2><p className="mb-5 text-slate-500">Podrás activar un programa en este MVP. Los cambios críticos futuros crearán una nueva versión.</p><ProgramSummaryCard program={draft}/></section>}<div className="mt-7 flex gap-3">{step>1&&<button onClick={()=>setStep(s=>s-1)} className="secondary"><ArrowLeft size={18}/> Volver</button>}<button disabled={!canNext||busy} onClick={()=>step<6?setStep(s=>s+1):create()} className="primary flex-1">{step===6?<><Check size={18}/>{busy?'Creando…':'Crear programa'}</>:<>Continuar <ArrowRight size={18}/></>}</button></div></div></div>}
+import { useState } from "react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { LoyaltyProgramDraft, ProgramType } from "../types/commerce";
+import { ProgramSummaryCard } from "./ProgramSummaryCard";
+const types: { id: ProgramType; label: string; desc: string }[] = [
+  { id: "stamps", label: "Sellos", desc: "Una marca por acción" },
+  { id: "points", label: "Puntos", desc: "Acumulación flexible" },
+  { id: "cashback", label: "Cashback", desc: "Retorno como beneficio" },
+  { id: "visits", label: "Visitas", desc: "Premia la frecuencia" },
+  { id: "amount", label: "Monto acumulado", desc: "Avance según gasto" },
+];
+const rules: Record<ProgramType, string[]> = {
+  stamps: [
+    "Cada compra suma 1",
+    "Cada $X acumulados suma 1",
+    "Valor personalizado",
+  ],
+  points: [
+    "Cada compra suma 1",
+    "Cada $X acumulados suma 1",
+    "Valor personalizado",
+  ],
+  cashback: ["Cada monto acumulado avanza directamente", "Valor personalizado"],
+  visits: ["Cada visita suma 1", "Valor personalizado"],
+  amount: ["Cada monto acumulado avanza directamente", "Valor personalizado"],
+};
+const initial: LoyaltyProgramDraft = {
+  type: "stamps",
+  earningRule: "Cada compra suma 1",
+  goal: 10,
+  goalLabel: "10 compras",
+  reward: "",
+  validity: "30",
+};
+export function LoyaltyProgramWizard({
+  onCreate,
+}: {
+  onCreate: (draft: LoyaltyProgramDraft) => Promise<void>;
+}) {
+  const [step, setStep] = useState(1),
+    [draft, setDraft] = useState(initial),
+    [busy, setBusy] = useState(false);
+  const update = <K extends keyof LoyaltyProgramDraft>(
+    k: K,
+    v: LoyaltyProgramDraft[K],
+  ) => setDraft((c) => ({ ...c, [k]: v }));
+  async function create() {
+    setBusy(true);
+    await onCreate(draft);
+    setBusy(false);
+  }
+  const canNext = step !== 4 || draft.reward.trim().length > 2;
+  return (
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-7 flex items-center gap-2">
+        {Array.from({ length: 6 }, (_, i) => (
+          <span
+            key={i}
+            className={`h-2 flex-1 rounded-full ${i < step ? "bg-violet-500" : "bg-slate-200"}`}
+          />
+        ))}
+      </div>
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-8">
+        <p className="text-sm font-bold text-violet-700">Paso {step} de 6</p>
+        {step === 1 && (
+          <section>
+            <h2 className="wizard-title">
+              ¿Qué tipo de programa quieres crear?
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {types.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    update("type", t.id);
+                    update("earningRule", rules[t.id][0]);
+                  }}
+                  className={`choice ${draft.type === t.id ? "choice-active" : ""}`}
+                >
+                  <strong>{t.label}</strong>
+                  <small>{t.desc}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {step === 2 && (
+          <section>
+            <h2 className="wizard-title">¿Cómo acumula el cliente?</h2>
+            <div className="grid gap-3">
+              {rules[draft.type].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => update("earningRule", r)}
+                  className={`choice ${draft.earningRule === r ? "choice-active" : ""}`}
+                >
+                  <strong>{r}</strong>
+                </button>
+              ))}
+            </div>
+            {draft.earningRule === "Valor personalizado" && (
+              <input
+                autoFocus
+                className="input mt-4"
+                placeholder="Describe la regla de acumulación"
+                onBlur={(e) =>
+                  update("earningRule", e.target.value || "Valor personalizado")
+                }
+              />
+            )}
+          </section>
+        )}
+        {step === 3 && (
+          <section>
+            <h2 className="wizard-title">¿Cuál es la meta del ciclo?</h2>
+            <p className="mb-4 text-slate-500">
+              Ejemplos: 10 compras, 8 visitas, 500 puntos o $80.000 acumulados.
+            </p>
+            <label className="field">
+              Meta numérica
+              <input
+                className="input"
+                inputMode="numeric"
+                type="number"
+                min="1"
+                value={draft.goal}
+                onChange={(e) => update("goal", Number(e.target.value))}
+              />
+            </label>
+            <label className="field mt-4">
+              Cómo se mostrará
+              <input
+                className="input"
+                value={draft.goalLabel}
+                onChange={(e) => update("goalLabel", e.target.value)}
+              />
+            </label>
+          </section>
+        )}
+        {step === 4 && (
+          <section>
+            <h2 className="wizard-title">¿Cuál será la recompensa?</h2>
+            <p className="mb-4 text-slate-500">
+              Puede ser un descuento, producto, servicio, regalo o cualquier
+              beneficio definido por tu comercio.
+            </p>
+            <textarea
+              autoFocus
+              className="input min-h-32 resize-none"
+              value={draft.reward}
+              onChange={(e) => update("reward", e.target.value)}
+              placeholder="Ej: 10% de descuento en frutas y verduras"
+            />
+            <p className="mt-3 text-sm text-slate-400">
+              También podría ser “1 corte de cabello gratis”, “Lavado premium
+              gratis” o “Producto seleccionado gratis”.
+            </p>
+          </section>
+        )}
+        {step === 5 && (
+          <section>
+            <h2 className="wizard-title">Vigencia de la recompensa</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["none", "Sin vencimiento"],
+                ["30", "30 días"],
+                ["60", "60 días"],
+                ["90", "90 días"],
+                ["custom", "Fecha personalizada"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() =>
+                    update("validity", id as LoyaltyProgramDraft["validity"])
+                  }
+                  className={`choice ${draft.validity === id ? "choice-active" : ""}`}
+                >
+                  <strong>{label}</strong>
+                </button>
+              ))}
+            </div>
+            {draft.validity === "custom" && (
+              <input
+                className="input mt-4"
+                type="date"
+                onChange={(e) => update("customExpiry", e.target.value)}
+              />
+            )}
+          </section>
+        )}
+        {step === 6 && (
+          <section>
+            <h2 className="wizard-title">Revisa tu programa</h2>
+            <p className="mb-5 text-slate-500">
+              Confirma los datos antes de activar el programa para tus clientes.
+            </p>
+            <ProgramSummaryCard program={draft} />
+          </section>
+        )}
+        <div className="mt-7 flex gap-3">
+          {step > 1 && (
+            <button onClick={() => setStep((s) => s - 1)} className="secondary">
+              <ArrowLeft size={18} /> Volver
+            </button>
+          )}
+          <button
+            disabled={!canNext || busy}
+            onClick={() => (step < 6 ? setStep((s) => s + 1) : create())}
+            className="primary flex-1"
+          >
+            {step === 6 ? (
+              <>
+                <Check size={18} />
+                {busy ? "Creando…" : "Crear programa"}
+              </>
+            ) : (
+              <>
+                Continuar <ArrowRight size={18} />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

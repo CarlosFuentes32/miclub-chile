@@ -1,2 +1,47 @@
-import { useState } from 'react';import { LoyaltyProgramWizard } from '../components/LoyaltyProgramWizard';import { ProgramSummaryCard } from '../components/ProgramSummaryCard';import { commerceService } from '../services/commerce.service';import { LoyaltyProgram,LoyaltyProgramDraft } from '../types/commerce';
-export function ProgramPage({initial,onChange}:{initial:LoyaltyProgram|null;onChange:(p:LoyaltyProgram)=>void}){const[program,setProgram]=useState(initial),[wizard,setWizard]=useState(!initial);async function create(draft:LoyaltyProgramDraft){const p=await commerceService.createLoyaltyProgram(draft);setProgram(p);onChange(p);setWizard(false)}return <div className="page"><p className="eyebrow">Motor de fidelización</p><h1 className="title">Programa</h1><p className="subtitle">Configura una experiencia válida para cualquier tipo de comercio.</p>{wizard?<div className="mt-7"><LoyaltyProgramWizard onCreate={create}/></div>:program&&<div className="mt-7 max-w-2xl"><div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-black">Programa activo</h2><p className="text-sm text-slate-500">Versión {program.version}</p></div><button onClick={()=>setWizard(true)} className="secondary">Crear nuevo borrador</button></div><ProgramSummaryCard program={program}/><p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">Los cambios críticos futuros crearán una versión nueva para no romper ciclos activos.</p></div>}</div>}
+import { useState } from "react";
+import { LoyaltyProgramWizard } from "../components/LoyaltyProgramWizard";
+import { ProgramSummaryCard } from "../components/ProgramSummaryCard";
+import { commerceService } from "../services/commerce.service";
+import { LoyaltyProgram, LoyaltyProgramDraft } from "../types/commerce";
+export function ProgramPage({
+  initial,
+  onChange,
+}: {
+  initial: LoyaltyProgram | null;
+  onChange: (p: LoyaltyProgram) => void;
+}) {
+  const [program, setProgram] = useState(initial),
+    [wizard, setWizard] = useState(!initial);
+  async function create(draft: LoyaltyProgramDraft) {
+    const p = await commerceService.createLoyaltyProgram(draft);
+    setProgram(p);
+    onChange(p);
+    setWizard(false);
+  }
+  return (
+    <div className="page">
+      <p className="eyebrow">Motor de fidelización</p>
+      <h1 className="title">Programa</h1>
+      <p className="subtitle">
+        Configura una experiencia válida para cualquier tipo de comercio.
+      </p>
+      {wizard ? (
+        <div className="mt-7">
+          <LoyaltyProgramWizard onCreate={create} />
+        </div>
+      ) : (
+        program && (
+          <div className="mt-7 max-w-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-black">Programa activo</h2>
+              <button onClick={() => setWizard(true)} className="secondary">
+                Crear nuevo programa
+              </button>
+            </div>
+            <ProgramSummaryCard program={program} />
+          </div>
+        )
+      )}
+    </div>
+  );
+}

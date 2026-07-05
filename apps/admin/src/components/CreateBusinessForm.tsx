@@ -96,6 +96,7 @@ export function CreateBusinessForm({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4">
       <form
         onSubmit={submit}
+        autoComplete="off"
         className="mx-auto my-6 max-w-3xl rounded-3xl bg-white p-6 shadow-2xl"
       >
         <div className="flex items-center justify-between">
@@ -242,6 +243,8 @@ export function CreateBusinessForm({
               <input
                 className="input pr-12"
                 type={show ? "text" : "password"}
+                name="new-business-owner-password"
+                autoComplete="new-password"
                 minLength={4}
                 value={field.ownerPassword}
                 onChange={(e) => change("ownerPassword", e.target.value)}
@@ -262,6 +265,8 @@ export function CreateBusinessForm({
             <input
               className="input"
               type={show ? "text" : "password"}
+              name="confirm-new-business-owner-password"
+              autoComplete="new-password"
               minLength={4}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
