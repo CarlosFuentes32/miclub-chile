@@ -15,7 +15,7 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
     setError("");
     try {
       const u = await login(email, password);
-      if (u.role !== "MICLUB_ADMIN") {
+      if (u.role !== "MICLUB_ADMIN" && u.role !== "SUPER_ADMIN") {
         setError("Esta cuenta no tiene acceso al panel administrador.");
         return;
       }
@@ -28,11 +28,12 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
   }
   return (
     <main className="auth-shell">
-      <form
-        onSubmit={submit}
-        className="auth-card"
-      >
-        <img src="/logo-miclub-chile-transparent.png" alt="MiClub Chile" className="auth-logo" />
+      <form onSubmit={submit} className="auth-card">
+        <img
+          src="/logo-miclub-chile-transparent.png"
+          alt="MiClub Chile"
+          className="auth-logo"
+        />
         <p className="mt-6 text-sm font-black uppercase tracking-wider text-violet-700">
           MiClub Chile
         </p>

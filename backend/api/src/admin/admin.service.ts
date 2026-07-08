@@ -5,7 +5,9 @@ import {
 } from "@nestjs/common";
 import {
   BusinessStatus,
+  CycleStatus,
   MembershipStatus,
+  ProgramStatus,
   Prisma,
   RewardStatus,
   TransactionStatus,
@@ -19,6 +21,8 @@ import { AuditService } from "../audit/audit.service";
 import { publicUserSelect } from "../users/users.service";
 import {
   CreateBusinessDto,
+  ManualAdjustmentDto,
+  ManualRewardDto,
   PlanDto,
   UpdateAdminUserDto,
 } from "./dto/admin.dto";
@@ -110,7 +114,104 @@ export class AdminService {
       }),
     );
   }
-  async createBusiness(d: CreateBusinessDto) {
+  async superDashboard() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const week = new Date(Date.now() - 7 * 86_400_000);
+    const [
+      totalBusinesses,
+      activeBusinesses,
+      suspendedBusinesses,
+      deletedBusinesses,
+      totalCustomers,
+      totalCashiers,
+      totalAdmins,
+      activePrograms,
+      totalPurchases,
+      totalRedeems,
+      rewardsDelivered,
+      activityToday,
+      activityWeek,
+      topBusinesses,
+      topCustomers,
+    ] = await Promise.all([
+      this.prisma.business.count(),
+      this.prisma.business.count({ where: { status: BusinessStatus.ACTIVE } }),
+      this.prisma.business.count({
+        where: { status: BusinessStatus.SUSPENDED },
+      }),
+      this.prisma.business.count({ where: { status: BusinessStatus.DELETED } }),
+      this.prisma.user.count({ where: { role: UserRole.CUSTOMER } }),
+      this.prisma.user.count({ where: { role: UserRole.CASHIER } }),
+      this.prisma.user.count({
+        where: { role: { in: [UserRole.MICLUB_ADMIN, UserRole.SUPER_ADMIN] } },
+      }),
+      this.prisma.loyaltyProgram.count({
+        where: { status: ProgramStatus.ACTIVE },
+      }),
+      this.prisma.transaction.count({
+        where: { status: TransactionStatus.VALID },
+      }),
+      this.prisma.reward.count({ where: { status: RewardStatus.REDEEMED } }),
+      this.prisma.reward.count(),
+      this.prisma.auditLog.count({ where: { createdAt: { gte: today } } }),
+      this.prisma.auditLog.count({ where: { createdAt: { gte: week } } }),
+      this.prisma.business.findMany({
+        take: 5,
+        include: {
+          _count: {
+            select: { transactions: true, rewards: true, customers: true },
+          },
+        },
+        orderBy: { transactions: { _count: "desc" } },
+      }),
+      this.prisma.user.findMany({
+        where: { role: UserRole.CUSTOMER },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          _count: { select: { customerTransactions: true, rewards: true } },
+        },
+        orderBy: { customerTransactions: { _count: "desc" } },
+      }),
+    ]);
+    return {
+      totalBusinesses,
+      activeBusinesses,
+      suspendedBusinesses,
+      deletedBusinesses,
+      totalCustomers,
+      totalCashiers,
+      totalAdmins,
+      activePrograms,
+      totalPurchases,
+      totalRedeems,
+      rewardsDelivered,
+      activityToday,
+      activityWeek,
+      topBusinesses: topBusinesses.map((b) => ({
+        id: b.id,
+        name: b.name,
+        status: b.status.toLowerCase(),
+        transactions: b._count.transactions,
+        rewards: b._count.rewards,
+        customers: b._count.customers,
+      })),
+      topCustomers: topCustomers.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        transactions: u._count.customerTransactions,
+        rewards: u._count.rewards,
+      })),
+    };
+  }
+
+  async createBusiness(d: CreateBusinessDto, actorId?: string) {
     const email = d.ownerEmail.toLowerCase();
     if (await this.prisma.user.findUnique({ where: { email } }))
       throw new ConflictException(
@@ -171,33 +272,123 @@ export class AdminService {
         },
       };
     });
+    if (actorId)
+      await this.audit.create({
+        userId: actorId,
+        businessId: result.business.id,
+        action: "business_created",
+        entityType: "business",
+        entityId: result.business.id,
+        metadata: { owner_email: email },
+      });
     return result;
   }
   async business(id: string) {
     const all = await this.businesses();
     return all.find((b) => b.id === id) ?? null;
   }
-  async businessStatus(id: string, status: string) {
+  async businessStatus(id: string, status: string, actorId?: string) {
     const value =
       BusinessStatus[status.toUpperCase() as keyof typeof BusinessStatus];
     if (!value) throw new NotFoundException("Estado inválido");
-    return this.prisma.business.update({
+    const updated = await this.prisma.business.update({
       where: { id },
       data: { status: value },
     });
+    if (actorId)
+      await this.audit.create({
+        userId: actorId,
+        businessId: id,
+        action: "business_status_changed",
+        entityType: "business",
+        entityId: id,
+        metadata: { status: value },
+      });
+    return updated;
   }
-  async deleteBusiness(id: string) {
+  async deleteBusiness(id: string, actorId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const business = await tx.business.update({
         where: { id },
-        data: { status: BusinessStatus.CANCELLED },
+        data: { status: BusinessStatus.DELETED },
       });
       await tx.businessUser.updateMany({
         where: { businessId: id },
         data: { status: MembershipStatus.INACTIVE },
       });
+      if (actorId)
+        await this.audit.create(
+          {
+            userId: actorId,
+            businessId: id,
+            action: "business_deleted",
+            entityType: "business",
+            entityId: id,
+          },
+          tx,
+        );
       return business;
     });
+  }
+  async restoreBusiness(id: string, actorId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const business = await tx.business.update({
+        where: { id },
+        data: { status: BusinessStatus.ACTIVE },
+      });
+      await tx.businessUser.updateMany({
+        where: { businessId: id },
+        data: { status: MembershipStatus.ACTIVE },
+      });
+      await this.audit.create(
+        {
+          userId: actorId,
+          businessId: id,
+          action: "business_restored",
+          entityType: "business",
+          entityId: id,
+        },
+        tx,
+      );
+      return business;
+    });
+  }
+  async businessFull(id: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { id },
+      include: {
+        owner: { select: publicUserSelect },
+        plan: true,
+        users: { include: { user: { select: publicUserSelect } } },
+        programs: { orderBy: { createdAt: "desc" } },
+        rewards: {
+          orderBy: { generatedAt: "desc" },
+          take: 50,
+          include: {
+            customer: { select: { name: true, email: true, phone: true } },
+          },
+        },
+        transactions: {
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          include: {
+            customer: { select: { name: true, email: true, phone: true } },
+            performedBy: { select: { name: true, email: true } },
+          },
+        },
+        planHistory: { orderBy: { createdAt: "desc" }, take: 30 },
+        _count: {
+          select: {
+            customers: true,
+            transactions: true,
+            rewards: true,
+            programs: true,
+          },
+        },
+      },
+    });
+    if (!business) throw new NotFoundException("Comercio no encontrado");
+    return business;
   }
   async users(status?: string) {
     const normalized =
@@ -623,6 +814,409 @@ export class AdminService {
       data: { ...d, monthlyPrice: new Prisma.Decimal(d.monthlyPrice) },
     });
     return { ...p, monthlyPrice: Number(p.monthlyPrice) };
+  }
+  async globalUsers(role: keyof typeof UserRole, q = "") {
+    const where: Prisma.UserWhereInput = {
+      role: UserRole[role],
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q } },
+              { rut: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+    return this.prisma.user.findMany({
+      where,
+      take: 100,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        rut: true,
+        role: true,
+        status: true,
+        birthDate: true,
+        createdAt: true,
+        customerBusinesses: {
+          include: {
+            business: { select: { id: true, name: true, status: true } },
+          },
+        },
+        businessMemberships: {
+          include: {
+            business: { select: { id: true, name: true, status: true } },
+          },
+        },
+        _count: { select: { customerTransactions: true, rewards: true } },
+      },
+    });
+  }
+  async cashiers(businessId?: string, q = "") {
+    const memberships = await this.prisma.businessUser.findMany({
+      where: {
+        role: UserRole.CASHIER,
+        ...(businessId ? { businessId } : {}),
+        user: q
+          ? {
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+                { phone: { contains: q } },
+              ],
+            }
+          : undefined,
+      },
+      take: 100,
+      include: {
+        business: { select: { id: true, name: true, status: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            status: true,
+            lockedAt: true,
+            _count: {
+              select: { performedTransactions: true, redeemedRewards: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return memberships.map((m) => ({
+      ...m.user,
+      membershipStatus: m.status,
+      business: m.business,
+    }));
+  }
+  async customerFull(id: string) {
+    const customer = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        rut: true,
+        birthDate: true,
+        status: true,
+        customerBusinesses: { include: { business: true } },
+        cycles: {
+          include: {
+            business: { select: { id: true, name: true } },
+            loyaltyProgram: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        rewards: {
+          include: { business: { select: { id: true, name: true } } },
+          orderBy: { generatedAt: "desc" },
+          take: 50,
+        },
+        customerTransactions: {
+          include: {
+            business: { select: { id: true, name: true } },
+            performedBy: { select: { name: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        },
+        manualAdjustmentsFor: {
+          include: {
+            business: { select: { name: true } },
+            actor: { select: { name: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+        },
+      },
+    });
+    if (!customer) throw new NotFoundException("Cliente no encontrado");
+    return customer;
+  }
+  async manualAdjustment(
+    customerId: string,
+    dto: ManualAdjustmentDto,
+    actorId: string,
+  ) {
+    if (!dto.reason.trim())
+      throw new ConflictException("El motivo es obligatorio.");
+    return this.prisma.$transaction(async (tx) => {
+      const cycle = await tx.cycle.findFirst({
+        where: {
+          customerUserId: customerId,
+          businessId: dto.businessId,
+          status: CycleStatus.ACTIVE,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!cycle)
+        throw new NotFoundException(
+          "El cliente no tiene ciclo activo en ese comercio",
+        );
+      const next = Math.max(0, Number(cycle.currentValue) + Number(dto.value));
+      await tx.cycle.update({
+        where: { id: cycle.id },
+        data: { currentValue: new Prisma.Decimal(next) },
+      });
+      const adjustment = await tx.manualAdjustment.create({
+        data: {
+          customerUserId: customerId,
+          businessId: dto.businessId,
+          actorUserId: actorId,
+          type: dto.type,
+          value: new Prisma.Decimal(dto.value),
+          reason: dto.reason,
+        },
+      });
+      await this.audit.create(
+        {
+          userId: actorId,
+          businessId: dto.businessId,
+          action: "manual_customer_adjustment",
+          entityType: "user",
+          entityId: customerId,
+          metadata: {
+            type: dto.type,
+            value: dto.value,
+            reason: dto.reason,
+            new_progress: next,
+          },
+        },
+        tx,
+      );
+      return adjustment;
+    });
+  }
+  async manualReward(
+    customerId: string,
+    dto: ManualRewardDto,
+    actorId: string,
+  ) {
+    if (!dto.reason.trim())
+      throw new ConflictException("El motivo es obligatorio.");
+    return this.prisma.$transaction(async (tx) => {
+      const cycle = await tx.cycle.findFirst({
+        where: {
+          customerUserId: customerId,
+          businessId: dto.businessId,
+          status: CycleStatus.ACTIVE,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!cycle)
+        throw new NotFoundException(
+          "El cliente no tiene ciclo activo en ese comercio",
+        );
+      const reward = await tx.reward.create({
+        data: {
+          cycleId: cycle.id,
+          businessId: dto.businessId,
+          customerUserId: customerId,
+          rewardDescription: dto.description,
+        },
+      });
+      await tx.manualAdjustment.create({
+        data: {
+          customerUserId: customerId,
+          businessId: dto.businessId,
+          actorUserId: actorId,
+          type: "manual_reward",
+          value: new Prisma.Decimal(1),
+          reason: dto.reason,
+        },
+      });
+      await this.audit.create(
+        {
+          userId: actorId,
+          businessId: dto.businessId,
+          action: "manual_reward_granted",
+          entityType: "reward",
+          entityId: reward.id,
+          metadata: { customerId, reason: dto.reason },
+        },
+        tx,
+      );
+      return reward;
+    });
+  }
+  supportNotes(userId: string) {
+    return this.prisma.supportNote.findMany({
+      where: { subjectUserId: userId },
+      include: { author: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+  async addSupportNote(userId: string, note: string, actorId: string) {
+    const created = await this.prisma.supportNote.create({
+      data: { subjectUserId: userId, authorUserId: actorId, note },
+    });
+    await this.audit.create({
+      userId: actorId,
+      action: "support_note_created",
+      entityType: "user",
+      entityId: userId,
+    });
+    return created;
+  }
+  auditLogs(q: Record<string, string>) {
+    const where: Prisma.AuditLogWhereInput = {
+      ...(q.action
+        ? { action: { contains: q.action, mode: "insensitive" } }
+        : {}),
+      ...(q.role ? { user: { role: q.role as UserRole } } : {}),
+      ...(q.user
+        ? {
+            user: {
+              OR: [
+                { name: { contains: q.user, mode: "insensitive" } },
+                { email: { contains: q.user, mode: "insensitive" } },
+              ],
+            },
+          }
+        : {}),
+      ...(q.businessId ? { businessId: q.businessId } : {}),
+      ...(q.entityType ? { entityType: q.entityType } : {}),
+      ...(q.from || q.to
+        ? {
+            createdAt: {
+              ...(q.from ? { gte: new Date(q.from) } : {}),
+              ...(q.to ? { lte: new Date(q.to) } : {}),
+            },
+          }
+        : {}),
+    };
+    return this.prisma.auditLog.findMany({
+      where,
+      take: 200,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { name: true, email: true, role: true } },
+        business: { select: { name: true } },
+      },
+    });
+  }
+  async globalSettings() {
+    const row = await this.prisma.systemSetting.findUnique({
+      where: { key: "global" },
+    });
+    return (
+      row?.value ?? {
+        platformName: "MiClub Chile",
+        welcomeMessage: "Clientes que vuelven, comercios que crecen.",
+        primaryColor: "#6d28d9",
+        secondaryColor: "#06b6d4",
+        rewardExpirationDays: 30,
+        modules: {
+          notifications: false,
+          billing: false,
+          advancedExports: true,
+        },
+        policies: "Las acciones críticas requieren motivo y quedan auditadas.",
+      }
+    );
+  }
+  async updateGlobalSettings(value: any, actorId: string) {
+    const row = await this.prisma.systemSetting.upsert({
+      where: { key: "global" },
+      update: { value, updatedById: actorId },
+      create: { key: "global", value, updatedById: actorId },
+    });
+    await this.audit.create({
+      userId: actorId,
+      action: "global_settings_updated",
+      entityType: "system_setting",
+      entityId: "global",
+    });
+    return row.value;
+  }
+  async startImpersonation(actorId: string, targetId: string, reason: string) {
+    if (!reason.trim())
+      throw new ConflictException("El motivo es obligatorio.");
+    const target = await this.prisma.user.findUniqueOrThrow({
+      where: { id: targetId },
+      select: publicUserSelect,
+    });
+    const session = await this.prisma.impersonationSession.create({
+      data: {
+        actorUserId: actorId,
+        targetUserId: targetId,
+        targetRole: target.role,
+        reason,
+      },
+    });
+    await this.audit.create({
+      userId: actorId,
+      action: "impersonation_started",
+      entityType: "user",
+      entityId: targetId,
+      metadata: {
+        reason,
+        impersonation_session_id: session.id,
+        target_role: target.role,
+      },
+    });
+    return {
+      sessionId: session.id,
+      target,
+      reason,
+      banner: `Estás viendo como ${target.role}: ${target.name}`,
+    };
+  }
+  async maintenance() {
+    const [users, businesses, auditCount] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.business.count(),
+      this.prisma.auditLog.count(),
+    ]);
+    return {
+      api: "ok",
+      database: "ok",
+      users,
+      businesses,
+      auditCount,
+      frontendVersion: process.env.npm_package_version ?? "1.1.0",
+      backendVersion: process.env.npm_package_version ?? "1.1.0",
+      domains: [
+        "https://miclubchile.cl",
+        "https://app.miclubchile.cl",
+        "https://comercio.miclubchile.cl",
+        "https://cajero.miclubchile.cl",
+        "https://admin.miclubchile.cl",
+        "https://api.miclubchile.cl",
+      ],
+    };
+  }
+  async exportData(entity: string) {
+    if (entity === "businesses")
+      return this.prisma.business.findMany({
+        include: { plan: true, owner: { select: publicUserSelect } },
+      });
+    if (entity === "customers")
+      return this.prisma.user.findMany({
+        where: { role: UserRole.CUSTOMER },
+        select: publicUserSelect,
+      });
+    if (entity === "transactions")
+      return this.prisma.transaction.findMany({
+        take: 1000,
+        orderBy: { createdAt: "desc" },
+      });
+    if (entity === "rewards")
+      return this.prisma.reward.findMany({
+        take: 1000,
+        orderBy: { generatedAt: "desc" },
+      });
+    if (entity === "audit") return this.auditLogs({});
+    throw new NotFoundException("Exportación no soportada");
   }
   async reports() {
     const month = new Date();

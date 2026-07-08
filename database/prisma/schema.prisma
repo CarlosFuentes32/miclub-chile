@@ -13,6 +13,7 @@ enum UserRole {
   BUSINESS_ADMIN
   BUSINESS_OWNER
   MICLUB_ADMIN
+  SUPER_ADMIN
 }
 
 enum UserStatus {
@@ -55,6 +56,12 @@ model User {
   changesPerformed      UserChange[]       @relation("ChangeActor")
   deletedBy             User?              @relation("UserDeletion", fields: [deletedByUserId], references: [id], onDelete: SetNull)
   usersDeleted          User[]              @relation("UserDeletion")
+  supportNotesAuthored  SupportNote[]       @relation("SupportNoteAuthor")
+  supportNotesSubject   SupportNote[]       @relation("SupportNoteSubject")
+  impersonationsStarted ImpersonationSession[] @relation("ImpersonationActor")
+  impersonationsViewed  ImpersonationSession[] @relation("ImpersonationTarget")
+  manualAdjustmentsMade ManualAdjustment[]  @relation("ManualAdjustmentActor")
+  manualAdjustmentsFor  ManualAdjustment[]  @relation("ManualAdjustmentCustomer")
 
   @@index([status])
   @@index([deletedByUserId])
@@ -96,6 +103,7 @@ enum BusinessStatus {
   SUSPENDED    @map("suspended")
   GRACE_PERIOD @map("grace_period")
   CANCELLED    @map("cancelled")
+  DELETED      @map("deleted")
 }
 
 enum MembershipStatus {
@@ -203,8 +211,79 @@ model Business {
   rewards      Reward[]
   auditLogs    AuditLog[]
   manualCustomers ManualCustomer[]
+  planHistory   MerchantPlanHistory[]
+  manualAdjustments ManualAdjustment[]
 
   @@map("businesses")
+}
+
+model SystemSetting {
+  key         String   @id
+  value       Json
+  updatedById String?  @map("updated_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model SupportNote {
+  id            String   @id @default(cuid())
+  subjectUserId String   @map("subject_user_id")
+  authorUserId  String   @map("author_user_id")
+  note          String
+  createdAt     DateTime @default(now()) @map("created_at")
+  subject       User     @relation("SupportNoteSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  author        User     @relation("SupportNoteAuthor", fields: [authorUserId], references: [id])
+
+  @@index([subjectUserId, createdAt])
+  @@map("support_notes")
+}
+
+model ImpersonationSession {
+  id           String   @id @default(cuid())
+  actorUserId  String   @map("actor_user_id")
+  targetUserId String   @map("target_user_id")
+  targetRole   UserRole @map("target_role")
+  reason       String
+  startedAt    DateTime @default(now()) @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+  actor        User     @relation("ImpersonationActor", fields: [actorUserId], references: [id])
+  target       User     @relation("ImpersonationTarget", fields: [targetUserId], references: [id])
+
+  @@index([actorUserId, startedAt])
+  @@index([targetUserId, startedAt])
+  @@map("impersonation_sessions")
+}
+
+model ManualAdjustment {
+  id             String   @id @default(cuid())
+  customerUserId String   @map("customer_user_id")
+  businessId     String   @map("business_id")
+  actorUserId    String   @map("actor_user_id")
+  type           String
+  value          Decimal  @db.Decimal(14, 2)
+  reason         String
+  createdAt      DateTime @default(now()) @map("created_at")
+  customer       User     @relation("ManualAdjustmentCustomer", fields: [customerUserId], references: [id])
+  actor          User     @relation("ManualAdjustmentActor", fields: [actorUserId], references: [id])
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([customerUserId, businessId, createdAt])
+  @@map("manual_adjustments")
+}
+
+model MerchantPlanHistory {
+  id          String   @id @default(cuid())
+  businessId  String   @map("business_id")
+  oldPlanId   String?  @map("old_plan_id")
+  newPlanId   String?  @map("new_plan_id")
+  actorUserId String   @map("actor_user_id")
+  reason      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@map("merchant_plan_history")
 }
 
 model ManualCustomer {

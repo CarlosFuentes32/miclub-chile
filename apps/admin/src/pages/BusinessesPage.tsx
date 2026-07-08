@@ -44,8 +44,16 @@ export function BusinessesPage() {
     setSelected(b);
   }
   async function remove() {
-    if (!selected || !window.confirm("Acción delicada: el comercio perderá acceso, pero sus datos históricos se conservarán. ¿Continuar?")) return;
-    await adminService.deleteBusiness(selected.id); await load(); setSelected(null);
+    if (
+      !selected ||
+      !window.confirm(
+        "Acción delicada: el comercio perderá acceso, pero sus datos históricos se conservarán. ¿Continuar?",
+      )
+    )
+      return;
+    await adminService.deleteBusiness(selected.id);
+    await load();
+    setSelected(null);
   }
   async function create(input: CreateBusinessInput) {
     await adminService.createBusiness(input);
@@ -88,6 +96,7 @@ export function BusinessesPage() {
           <option value="suspended">Suspendidos</option>
           <option value="grace_period">Período de gracia</option>
           <option value="cancelled">Cancelados</option>
+          <option value="deleted">Eliminados</option>
         </select>
         <select
           className="input mt-0"
@@ -109,6 +118,12 @@ export function BusinessesPage() {
           onClose={() => setSelected(null)}
           onStatus={update}
           onDelete={remove}
+          onRestore={async () => {
+            if (!selected) return;
+            await adminService.restoreBusiness(selected.id);
+            await load();
+            setSelected(null);
+          }}
         />
       )}{" "}
       {creating && (

@@ -34,7 +34,7 @@ async function main() {
       name: value("PILOT_ADMIN_NAME", "Admin MiClub"),
       email: adminEmail,
       phone: value("PILOT_ADMIN_PHONE", "+56911111111"),
-      role: UserRole.MICLUB_ADMIN,
+      role: UserRole.SUPER_ADMIN,
     },
     {
       name: value("PILOT_OWNER_NAME", "Dueño Minimarket Piloto"),
@@ -216,7 +216,7 @@ async function main() {
       name: "prueba admin",
       email: "prueba.admin@miclubchile.cl",
       phone: "+56995026364",
-      role: UserRole.MICLUB_ADMIN,
+      role: UserRole.SUPER_ADMIN,
     },
     {
       name: "prueba comercio",
@@ -350,14 +350,35 @@ async function main() {
     });
   // El mismo usuario global participa en ambos comercios mediante relaciones independientes.
   await prisma.customerBusiness.upsert({
-    where: { customerUserId_businessId: { customerUserId: testCustomer.id, businessId: business.id } },
+    where: {
+      customerUserId_businessId: {
+        customerUserId: testCustomer.id,
+        businessId: business.id,
+      },
+    },
     update: { status: MembershipStatus.ACTIVE },
-    create: { customerUserId: testCustomer.id, businessId: business.id, status: MembershipStatus.ACTIVE },
+    create: {
+      customerUserId: testCustomer.id,
+      businessId: business.id,
+      status: MembershipStatus.ACTIVE,
+    },
   });
   await prisma.manualCustomer.upsert({
     where: { businessId_rut: { businessId: business.id, rut: "999999999" } },
-    update: { firstName: "Elena", lastName: "Demo", segment: ManualCustomerSegment.SENIOR, status: MembershipStatus.ACTIVE },
-    create: { businessId: business.id, firstName: "Elena", lastName: "Demo", rut: "999999999", segment: ManualCustomerSegment.SENIOR, observation: "Cliente ficticio para pruebas v1.1" },
+    update: {
+      firstName: "Elena",
+      lastName: "Demo",
+      segment: ManualCustomerSegment.SENIOR,
+      status: MembershipStatus.ACTIVE,
+    },
+    create: {
+      businessId: business.id,
+      firstName: "Elena",
+      lastName: "Demo",
+      rut: "999999999",
+      segment: ManualCustomerSegment.SENIOR,
+      observation: "Cliente ficticio para pruebas v1.1",
+    },
   });
   console.log(
     `Piloto listo: ${business.name}, dueño ${ownerEmail}, cajero ${cashierEmail}, cliente ${customerEmail}.`,

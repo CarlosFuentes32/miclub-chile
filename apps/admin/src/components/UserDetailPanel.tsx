@@ -134,6 +134,7 @@ export function UserDetailPanel({
                 "BUSINESS_ADMIN",
                 "BUSINESS_OWNER",
                 "MICLUB_ADMIN",
+                "SUPER_ADMIN",
               ].map((r) => (
                 <option key={r}>{r}</option>
               ))}

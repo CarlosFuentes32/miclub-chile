@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsArray,
   IsBoolean,
   IsEmail,
@@ -51,4 +52,28 @@ export class UpdateAdminUserDto {
 export class ChangePasswordDto {
   @IsString() @MinLength(4) password!: string;
 }
-export class CorrectRutDto { @IsString() @MinLength(7) rut!:string; @IsBoolean() confirmed!:boolean; }
+export class CorrectRutDto {
+  @IsString() @MinLength(7) rut!: string;
+  @IsBoolean() confirmed!: boolean;
+}
+
+export class ReasonDto {
+  @IsString() @MinLength(5) reason!: string;
+}
+
+export class SupportNoteDto {
+  @IsString() @MinLength(3) note!: string;
+}
+
+export class ManualAdjustmentDto {
+  @IsString() businessId!: string;
+  @IsIn(["points", "stamps", "purchases"]) type!: string;
+  @IsNumber() value!: number;
+  @IsString() @MinLength(5) reason!: string;
+}
+
+export class ManualRewardDto {
+  @IsString() businessId!: string;
+  @IsString() @MinLength(3) description!: string;
+  @IsString() @MinLength(5) reason!: string;
+}

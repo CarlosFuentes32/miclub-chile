@@ -16,13 +16,19 @@ import { LoginPage } from "./pages/LoginPage";
 import { PlansPage } from "./pages/PlansPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SuperAuditPage } from "./pages/SuperAuditPage";
+import { SuperCashiersPage } from "./pages/SuperCashiersPage";
+import { SuperCustomersPage } from "./pages/SuperCustomersPage";
+import { SuperDashboardPage } from "./pages/SuperDashboardPage";
+import { SuperMaintenancePage } from "./pages/SuperMaintenancePage";
+import { SuperSettingsPage } from "./pages/SuperSettingsPage";
 import { SupportPage } from "./pages/SupportPage";
 import { UsersPage } from "./pages/UsersPage";
 import { adminService } from "./services/admin.service";
 import { AdminDashboard, GlobalSettings, Reports } from "./types/admin";
 function Protected({ user }: { user: AuthUser | null }) {
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "MICLUB_ADMIN")
+  if (user.role !== "MICLUB_ADMIN" && user.role !== "SUPER_ADMIN")
     return (
       <main className="grid min-h-screen place-items-center">
         <div>
@@ -44,7 +50,7 @@ function AppRoutes() {
   useEffect(() => {
     restoreSession()
       .then(async (session) => {
-        if (session.role !== "MICLUB_ADMIN") {
+        if (session.role !== "MICLUB_ADMIN" && session.role !== "SUPER_ADMIN") {
           await logout();
           setUser(null);
           return;
@@ -98,7 +104,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<Protected user={user} />}>
         {" "}
-        <Route element={<AdminLayout onLogout={out} />}>
+        <Route element={<AdminLayout user={user} onLogout={out} />}>
           {" "}
           <Route
             path="/dashboard"
@@ -106,6 +112,16 @@ function AppRoutes() {
           />
           <Route path="/businesses" element={<BusinessesPage />} />
           <Route path="/users" element={<UsersPage />} />
+          {user.role === "SUPER_ADMIN" && (
+            <>
+              <Route path="/super" element={<SuperDashboardPage />} />
+              <Route path="/customers" element={<SuperCustomersPage />} />
+              <Route path="/cashiers" element={<SuperCashiersPage />} />
+              <Route path="/audit" element={<SuperAuditPage />} />
+              <Route path="/super-settings" element={<SuperSettingsPage />} />
+              <Route path="/maintenance" element={<SuperMaintenancePage />} />
+            </>
+          )}
           <Route path="/plans" element={<PlansPage />} />
           <Route path="/reports" element={<ReportsPage data={reports} />} />
           <Route path="/support" element={<SupportPage />} />

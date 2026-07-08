@@ -20,13 +20,17 @@ import {
   ChangePasswordDto,
   CorrectRutDto,
   CreateBusinessDto,
+  ManualAdjustmentDto,
+  ManualRewardDto,
   PlanDto,
+  ReasonDto,
   StatusDto,
+  SupportNoteDto,
   UpdateAdminUserDto,
 } from "./dto/admin.dto";
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.MICLUB_ADMIN)
+@Roles(UserRole.MICLUB_ADMIN, UserRole.SUPER_ADMIN)
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
   @Get("dashboard") dashboard() {
@@ -35,20 +39,75 @@ export class AdminController {
   @Get("businesses") businesses() {
     return this.admin.businesses();
   }
-  @Post("businesses") createBusiness(@Body() d: CreateBusinessDto) {
-    return this.admin.createBusiness(d);
+  @Get("super/dashboard")
+  @Roles(UserRole.SUPER_ADMIN)
+  superDashboard() {
+    return this.admin.superDashboard();
+  }
+  @Post("businesses") createBusiness(
+    @Body() d: CreateBusinessDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.createBusiness(d, actor.id);
   }
   @Get("businesses/:id") business(@Param("id") id: string) {
     return this.admin.business(id);
   }
+  @Get("businesses/:id/full")
+  @Roles(UserRole.SUPER_ADMIN)
+  businessFull(@Param("id") id: string) {
+    return this.admin.businessFull(id);
+  }
   @Patch("businesses/:id/status") businessStatus(
     @Param("id") id: string,
     @Body() d: StatusDto,
+    @CurrentUser() actor: JwtUser,
   ) {
-    return this.admin.businessStatus(id, d.status);
+    return this.admin.businessStatus(id, d.status, actor.id);
   }
-  @Delete("businesses/:id") deleteBusiness(@Param("id") id: string) {
-    return this.admin.deleteBusiness(id);
+  @Delete("businesses/:id") deleteBusiness(
+    @Param("id") id: string,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.deleteBusiness(id, actor.id);
+  }
+  @Post("businesses/:id/restore")
+  @Roles(UserRole.SUPER_ADMIN)
+  restoreBusiness(@Param("id") id: string, @CurrentUser() actor: JwtUser) {
+    return this.admin.restoreBusiness(id, actor.id);
+  }
+  @Get("customers")
+  @Roles(UserRole.SUPER_ADMIN)
+  customers(@Query("q") q = "") {
+    return this.admin.globalUsers("CUSTOMER", q);
+  }
+  @Get("cashiers")
+  @Roles(UserRole.SUPER_ADMIN)
+  cashiers(@Query("businessId") businessId?: string, @Query("q") q = "") {
+    return this.admin.cashiers(businessId, q);
+  }
+  @Get("customers/:id/full")
+  @Roles(UserRole.SUPER_ADMIN)
+  customerFull(@Param("id") id: string) {
+    return this.admin.customerFull(id);
+  }
+  @Post("customers/:id/adjust")
+  @Roles(UserRole.SUPER_ADMIN)
+  adjustCustomer(
+    @Param("id") id: string,
+    @Body() d: ManualAdjustmentDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.manualAdjustment(id, d, actor.id);
+  }
+  @Post("customers/:id/manual-reward")
+  @Roles(UserRole.SUPER_ADMIN)
+  manualReward(
+    @Param("id") id: string,
+    @Body() d: ManualRewardDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.manualReward(id, d, actor.id);
   }
   @Get("users") users(@Query("status") status?: string) {
     return this.admin.users(status);
@@ -99,6 +158,20 @@ export class AdminController {
   @Get("support/users/:id/history") history(@Param("id") id: string) {
     return this.admin.userHistory(id);
   }
+  @Get("support/users/:id/notes")
+  @Roles(UserRole.SUPER_ADMIN)
+  notes(@Param("id") id: string) {
+    return this.admin.supportNotes(id);
+  }
+  @Post("support/users/:id/notes")
+  @Roles(UserRole.SUPER_ADMIN)
+  addNote(
+    @Param("id") id: string,
+    @Body() d: SupportNoteDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.addSupportNote(id, d.note, actor.id);
+  }
   @Get("support/:role") support(@Param("role") role: string) {
     return this.admin.supportUsers(role);
   }
@@ -125,5 +198,39 @@ export class AdminController {
   }
   @Get("reports") reports() {
     return this.admin.reports();
+  }
+  @Get("audit")
+  @Roles(UserRole.SUPER_ADMIN)
+  audit(@Query() q: Record<string, string>) {
+    return this.admin.auditLogs(q);
+  }
+  @Get("global-settings")
+  @Roles(UserRole.SUPER_ADMIN)
+  globalSettings() {
+    return this.admin.globalSettings();
+  }
+  @Patch("global-settings")
+  @Roles(UserRole.SUPER_ADMIN)
+  updateGlobalSettings(@Body() body: any, @CurrentUser() actor: JwtUser) {
+    return this.admin.updateGlobalSettings(body, actor.id);
+  }
+  @Post("impersonation/:targetId")
+  @Roles(UserRole.SUPER_ADMIN)
+  impersonate(
+    @Param("targetId") targetId: string,
+    @Body() d: ReasonDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.startImpersonation(actor.id, targetId, d.reason);
+  }
+  @Get("maintenance")
+  @Roles(UserRole.SUPER_ADMIN)
+  maintenance() {
+    return this.admin.maintenance();
+  }
+  @Get("export/:entity")
+  @Roles(UserRole.SUPER_ADMIN)
+  export(@Param("entity") entity: string) {
+    return this.admin.exportData(entity);
   }
 }

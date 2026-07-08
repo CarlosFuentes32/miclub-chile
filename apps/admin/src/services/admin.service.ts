@@ -9,10 +9,13 @@ import {
   UserStatus,
   SupportUser,
   UserChange,
+  SuperDashboard,
+  AuditLog,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
   getAdminDashboard: () => apiRequest<any>("/admin/dashboard"),
+  getSuperDashboard: () => apiRequest<SuperDashboard>("/admin/super/dashboard"),
   createBusiness: (input: CreateBusinessInput) =>
     apiRequest<{ business: { id: string }; owner: { email: string } }>(
       "/admin/businesses",
@@ -36,8 +39,37 @@ export const adminService = {
     });
     return this.getBusinessDetail(id);
   },
-  deleteBusiness: (id: string) => apiRequest(`/admin/businesses/${id}`, { method: "DELETE" }),
-  async getUsers(status='all'): Promise<AdminUser[]> {
+  deleteBusiness: (id: string) =>
+    apiRequest(`/admin/businesses/${id}`, { method: "DELETE" }),
+  restoreBusiness: (id: string) =>
+    apiRequest(`/admin/businesses/${id}/restore`, { method: "POST" }),
+  getBusinessFull: (id: string) =>
+    apiRequest<any>(`/admin/businesses/${id}/full`),
+  getCustomers: (q = "") =>
+    apiRequest<any[]>(`/admin/customers?q=${encodeURIComponent(q)}`),
+  getCashiers: (businessId = "", q = "") =>
+    apiRequest<any[]>(
+      `/admin/cashiers?businessId=${encodeURIComponent(businessId)}&q=${encodeURIComponent(q)}`,
+    ),
+  getCustomerFull: (id: string) =>
+    apiRequest<any>(`/admin/customers/${id}/full`),
+  adjustCustomer: (
+    id: string,
+    input: { businessId: string; type: string; value: number; reason: string },
+  ) =>
+    apiRequest(`/admin/customers/${id}/adjust`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  grantManualReward: (
+    id: string,
+    input: { businessId: string; description: string; reason: string },
+  ) =>
+    apiRequest(`/admin/customers/${id}/manual-reward`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  async getUsers(status = "all"): Promise<AdminUser[]> {
     const rows = await apiRequest<any[]>(`/admin/users?status=${status}`);
     return rows.map((u) => ({
       id: u.id,
@@ -49,8 +81,10 @@ export const adminService = {
       createdAt: new Date(u.createdAt).toLocaleDateString("es-CL"),
       business: u.businessMemberships[0]?.business.name,
       lastAccess: "No disponible",
-      deletedAt:u.deletedAt?new Date(u.deletedAt).toLocaleString('es-CL'):undefined,
-      deletedBy:u.deletedBy,
+      deletedAt: u.deletedAt
+        ? new Date(u.deletedAt).toLocaleString("es-CL")
+        : undefined,
+      deletedBy: u.deletedBy,
     }));
   },
   getUserDetail: async (id: string) => {
@@ -65,8 +99,10 @@ export const adminService = {
       createdAt: new Date(u.createdAt).toLocaleDateString("es-CL"),
       business: u.businessMemberships[0]?.business.name,
       lastAccess: "No disponible",
-      deletedAt:u.deletedAt?new Date(u.deletedAt).toLocaleString('es-CL'):undefined,
-      deletedBy:u.deletedBy,
+      deletedAt: u.deletedAt
+        ? new Date(u.deletedAt).toLocaleString("es-CL")
+        : undefined,
+      deletedBy: u.deletedBy,
     } as AdminUser;
   },
   async updateUserStatus(id: string, status: UserStatus) {
@@ -76,15 +112,48 @@ export const adminService = {
     });
     return this.getUserDetail(id);
   },
-  updateUser: (id: string, input: Partial<AdminUser>) => apiRequest(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
-  changeUserPassword: (id: string, password: string) => apiRequest(`/admin/users/${id}/password`, { method: "PATCH", body: JSON.stringify({ password }) }),
-  getSupportUsers: (role:string) => apiRequest<SupportUser[]>(`/admin/support/${role}`),
-  resetSupportPassword: (id:string) => apiRequest<{temporaryPassword:string}>(`/admin/support/users/${id}/reset-password`,{method:'POST'}),
-  unlockSupportUser: (id:string) => apiRequest(`/admin/support/users/${id}/unlock`,{method:'POST'}),
-  correctSupportRut: (id:string,rut:string) => apiRequest(`/admin/support/users/${id}/rut`,{method:'PATCH',body:JSON.stringify({rut,confirmed:true})}),
-  getUserHistory: (id:string) => apiRequest<UserChange[]>(`/admin/support/users/${id}/history`),
-  deleteUser: (id: string) => apiRequest(`/admin/users/${id}`, { method: "DELETE" }),
-  reactivateUser: (id:string) => apiRequest(`/admin/users/${id}/reactivate`,{method:'POST'}),
+  updateUser: (id: string, input: Partial<AdminUser>) =>
+    apiRequest(`/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  changeUserPassword: (id: string, password: string) =>
+    apiRequest(`/admin/users/${id}/password`, {
+      method: "PATCH",
+      body: JSON.stringify({ password }),
+    }),
+  getSupportUsers: (role: string) =>
+    apiRequest<SupportUser[]>(`/admin/support/${role}`),
+  resetSupportPassword: (id: string) =>
+    apiRequest<{ temporaryPassword: string }>(
+      `/admin/support/users/${id}/reset-password`,
+      { method: "POST" },
+    ),
+  unlockSupportUser: (id: string) =>
+    apiRequest(`/admin/support/users/${id}/unlock`, { method: "POST" }),
+  correctSupportRut: (id: string, rut: string) =>
+    apiRequest(`/admin/support/users/${id}/rut`, {
+      method: "PATCH",
+      body: JSON.stringify({ rut, confirmed: true }),
+    }),
+  getUserHistory: (id: string) =>
+    apiRequest<UserChange[]>(`/admin/support/users/${id}/history`),
+  getSupportNotes: (id: string) =>
+    apiRequest<any[]>(`/admin/support/users/${id}/notes`),
+  addSupportNote: (id: string, note: string) =>
+    apiRequest(`/admin/support/users/${id}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  startImpersonation: (targetId: string, reason: string) =>
+    apiRequest<any>(`/admin/impersonation/${targetId}`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+  deleteUser: (id: string) =>
+    apiRequest(`/admin/users/${id}`, { method: "DELETE" }),
+  reactivateUser: (id: string) =>
+    apiRequest(`/admin/users/${id}/reactivate`, { method: "POST" }),
   getPlans: () => apiRequest<Plan[]>("/admin/plans"),
   createPlan: (p: Omit<Plan, "id">) =>
     apiRequest<Plan>("/admin/plans", {
@@ -97,6 +166,18 @@ export const adminService = {
       body: JSON.stringify(p),
     }),
   getReports: () => apiRequest<any>("/admin/reports"),
+  getAuditLogs: (params: Record<string, string>) =>
+    apiRequest<AuditLog[]>(
+      `/admin/audit?${new URLSearchParams(params).toString()}`,
+    ),
+  getSuperGlobalSettings: () => apiRequest<any>("/admin/global-settings"),
+  updateSuperGlobalSettings: (value: any) =>
+    apiRequest<any>("/admin/global-settings", {
+      method: "PATCH",
+      body: JSON.stringify(value),
+    }),
+  getMaintenance: () => apiRequest<any>("/admin/maintenance"),
+  exportData: (entity: string) => apiRequest<any[]>(`/admin/export/${entity}`),
   async getSupportTickets() {
     return structuredClone(ticketsMock);
   },

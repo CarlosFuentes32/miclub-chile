@@ -7,11 +7,13 @@ export function BusinessDetailPanel({
   onClose,
   onStatus,
   onDelete,
+  onRestore,
 }: {
   business: AdminBusiness;
   onClose: () => void;
   onStatus: (s: BusinessStatus) => void;
   onDelete: () => void;
+  onRestore?: () => void;
 }) {
   const fields = [
     ["Rubro", business.category],
@@ -55,7 +57,15 @@ export function BusinessDetailPanel({
             </div>
           ))}
         </div>
-        <button onClick={onDelete} className="danger mt-3 w-full">Eliminar comercio</button>
+        {business.status === "deleted" ? (
+          <button onClick={onRestore} className="primary mt-3 w-full">
+            Restaurar comercio eliminado
+          </button>
+        ) : (
+          <button onClick={onDelete} className="danger mt-3 w-full">
+            Eliminar comercio
+          </button>
+        )}
         <div className="mt-7 grid gap-3 sm:grid-cols-2">
           {business.status !== "active" && (
             <button onClick={() => onStatus("active")} className="primary">
