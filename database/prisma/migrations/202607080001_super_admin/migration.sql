@@ -82,8 +82,3 @@ BEGIN
     ALTER TABLE "merchant_plan_history" ADD CONSTRAINT "merchant_plan_history_business_id_fkey" FOREIGN KEY ("business_id") REFERENCES "businesses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   END IF;
 END $$;
-
-UPDATE "users"
-SET "role" = 'SUPER_ADMIN'
-WHERE "email" IN ('administrador@miclubchile.cl', 'prueba.admin@miclubchile.cl')
-  AND "role" = 'MICLUB_ADMIN';
