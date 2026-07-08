@@ -18,4 +18,4 @@ COPY --from=build /app/database ./database
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/backend/api/package.json ./backend/api/package.json
 EXPOSE 3000
-CMD ["node","backend/api/dist/main.js"]
+CMD ["sh","-c","npx prisma migrate deploy --schema=database/prisma/schema.prisma && node backend/api/dist/main.js"]
