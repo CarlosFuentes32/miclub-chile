@@ -1,2 +1,118 @@
-import { ArrowLeft,UserPlus } from 'lucide-react';import { useEffect,useState } from 'react';import { useNavigate,useSearchParams } from 'react-router-dom';import { CustomerQuickCard } from '../components/CustomerQuickCard';import { PhoneSearchInput } from '../components/PhoneSearchInput';import { cashierService } from '../services/cashier.service';import { CashierCustomer } from '../types/cashier';
-export function SearchPage({onRegister,onCancel}:{onRegister:(customer:CashierCustomer)=>void;onCancel:(customer:CashierCustomer)=>void}){const[digits,setDigits]=useState(''),[customer,setCustomer]=useState<CashierCustomer|null>(null),[searching,setSearching]=useState(false),[notFound,setNotFound]=useState(false);const navigate=useNavigate();const[params]=useSearchParams();const cancelMode=params.get('cancel')==='1';useEffect(()=>{setCustomer(null);setNotFound(false);if(digits.length!==8)return;let active=true;setSearching(true);const timer=window.setTimeout(()=>cashierService.searchCustomerByPhone(`+569${digits}`).then(result=>{if(active){setCustomer(result);setNotFound(!result)}}).finally(()=>active&&setSearching(false)),180);return()=>{active=false;window.clearTimeout(timer)}},[digits]);return <main className="mx-auto min-h-screen max-w-md bg-slate-50 p-5 pt-[max(1.25rem,env(safe-area-inset-top))]"><button onClick={()=>navigate('/')} className="grid h-11 w-11 place-items-center rounded-full bg-white shadow-sm" aria-label="Volver"><ArrowLeft/></button><h1 className="mt-5 text-3xl font-black">{cancelMode?'Anular transacción':'Buscar cliente'}</h1><p className="mt-1 text-slate-500">{cancelMode?'Busca al cliente para revisar su última transacción.':'Encontraremos su ficha mientras escribes.'}</p><div className="mt-6"><PhoneSearchInput digits={digits} onChange={setDigits} searching={searching}/></div>{customer&&<div className="mt-6"><CustomerQuickCard customer={customer} onRegister={cancelMode?undefined:()=>onRegister(customer)} onCancel={()=>onCancel(customer)} showRegister={!cancelMode}/></div>}{notFound&&<div className="mt-6 rounded-3xl bg-white p-6 text-center shadow-sm"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-violet-100 text-violet-700"><UserPlus/></span><h2 className="mt-4 text-xl font-black">No encontramos ese número.</h2><p className="mt-2 text-slate-500">¿Deseas registrarlo como nuevo cliente?</p><button disabled className="mt-5 w-full rounded-2xl bg-slate-100 py-4 font-bold text-slate-400">Registro disponible próximamente</button></div>}</main>}
+import { ArrowLeft, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { CustomerQuickCard } from "../components/CustomerQuickCard";
+import { PhoneSearchInput } from "../components/PhoneSearchInput";
+import { cashierService } from "../services/cashier.service";
+import { CashierCustomer } from "../types/cashier";
+
+export function SearchPage({
+  onRegister,
+  onCancel,
+}: {
+  onRegister: (customer: CashierCustomer) => void;
+  onCancel: (customer: CashierCustomer) => void;
+}) {
+  const [digits, setDigits] = useState(""),
+    [customer, setCustomer] = useState<CashierCustomer | null>(null),
+    [searching, setSearching] = useState(false),
+    [notFound, setNotFound] = useState(false),
+    [error, setError] = useState("");
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const cancelMode = params.get("cancel") === "1";
+
+  useEffect(() => {
+    setCustomer(null);
+    setNotFound(false);
+    setError("");
+    if (digits.length !== 8) {
+      setSearching(false);
+      return;
+    }
+    let active = true;
+    setSearching(true);
+    const timer = window.setTimeout(() => {
+      cashierService
+        .searchCustomerByPhone(`+569${digits}`)
+        .then((result) => {
+          if (active) {
+            setCustomer(result);
+            setNotFound(!result);
+          }
+        })
+        .catch(() => {
+          if (!active) return;
+          setError("No pudimos buscar ese teléfono. Intenta nuevamente.");
+          setNotFound(false);
+          setCustomer(null);
+        })
+        .finally(() => active && setSearching(false));
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [digits]);
+
+  return (
+    <main className="mx-auto min-h-screen max-w-md bg-slate-50 p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <button
+        onClick={() => navigate("/")}
+        className="grid h-11 w-11 place-items-center rounded-full bg-white shadow-sm"
+        aria-label="Volver"
+      >
+        <ArrowLeft />
+      </button>
+      <h1 className="mt-5 text-3xl font-black">
+        {cancelMode ? "Anular transacción" : "Buscar cliente"}
+      </h1>
+      <p className="mt-1 text-slate-500">
+        {cancelMode
+          ? "Busca al cliente para revisar su última transacción."
+          : "Encontraremos su ficha mientras escribes."}
+      </p>
+      <div className="mt-6">
+        <PhoneSearchInput
+          digits={digits}
+          onChange={setDigits}
+          searching={searching}
+        />
+      </div>
+      {customer && (
+        <div className="mt-6">
+          <CustomerQuickCard
+            customer={customer}
+            onRegister={cancelMode ? undefined : () => onRegister(customer)}
+            onCancel={() => onCancel(customer)}
+            showRegister={!cancelMode}
+          />
+        </div>
+      )}
+      {notFound && (
+        <div className="mt-6 rounded-3xl bg-white p-6 text-center shadow-sm">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-violet-100 text-violet-700">
+            <UserPlus />
+          </span>
+          <h2 className="mt-4 text-xl font-black">
+            No encontramos ese número.
+          </h2>
+          <p className="mt-2 text-slate-500">
+            ¿Deseas registrarlo como nuevo cliente?
+          </p>
+          <button
+            disabled
+            className="mt-5 w-full rounded-2xl bg-slate-100 py-4 font-bold text-slate-400"
+          >
+            Registro disponible próximamente
+          </button>
+        </div>
+      )}
+      {error && (
+        <p className="mt-5 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">
+          {error}
+        </p>
+      )}
+    </main>
+  );
+}
