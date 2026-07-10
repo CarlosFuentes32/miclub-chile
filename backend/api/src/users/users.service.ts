@@ -5,12 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 
 export const publicUserSelect = { id:true,name:true,email:true,phone:true,birthDate:true,rut:true,role:true,status:true,forcePasswordChange:true,lockedAt:true,createdAt:true,updatedAt:true } as const;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly email: EmailService) {}
 
   async createCustomer(dto: RegisterUserDto) {
     const digits = dto.phone.replace(/\D/g, '');
@@ -53,12 +54,14 @@ export class UsersService {
   }
 
   async changeOwnPassword(id:string,password:string){
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id }, select: { email: true, name: true } });
     await this.prisma.$transaction(async tx=>{
       await tx.user.update({where:{id},data:{passwordHash:await bcrypt.hash(password,12),forcePasswordChange:false,failedLoginAttempts:0,lockedAt:null}});
       await tx.authSession.updateMany({where:{userId:id,revokedAt:null},data:{revokedAt:new Date()}});
       await tx.userChange.create({data:{userId:id,actorId:id,field:'password',action:'password_changed'}});
       await this.audit.create({userId:id,action:'password_changed',entityType:'user',entityId:id},tx);
     });
+    void this.email.passwordChanged(user.email, user.name);
     return {ok:true};
   }
 }

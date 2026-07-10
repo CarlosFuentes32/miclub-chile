@@ -18,6 +18,7 @@ import {
 } from "./dto/business.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { BusinessAccessService } from "./business-access.service";
+import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class BusinessesService {
@@ -25,6 +26,7 @@ export class BusinessesService {
     private readonly prisma: PrismaService,
     private readonly access: BusinessAccessService,
     private readonly config: ConfigService,
+    private readonly email: EmailService,
   ) {}
   mine(userId: string) {
     return this.prisma.businessUser.findMany({
@@ -190,8 +192,10 @@ export class BusinessesService {
       data: { businessId, userId: user.id, role: dto.role },
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
+        business: { select: { name: true } },
       },
     });
+    void this.email.collaboratorInvited(user.email, user.name, member.business?.name ?? "tu comercio", dto.role);
     return { ...member, temporary_password: temporaryPassword };
   }
   async updateCollaborator(

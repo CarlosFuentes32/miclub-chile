@@ -7,15 +7,17 @@ import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from '../users/dto/register-user.dto';
 import { publicUserSelect, UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 import { RefreshTokenPayload } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService, private readonly users: UsersService, private readonly jwt: JwtService, private readonly config: ConfigService) {}
+  constructor(private readonly prisma: PrismaService, private readonly users: UsersService, private readonly jwt: JwtService, private readonly config: ConfigService, private readonly email: EmailService) {}
 
   async register(dto: RegisterUserDto) {
     const user = await this.users.createCustomer(dto);
+    void this.email.accountCreated(user.email, user.name, user.role);
     return this.createSession(user.id);
   }
 
@@ -79,7 +81,9 @@ export class AuthService {
           expiresAt: new Date(Date.now() + 30 * 60_000),
         },
       });
-      await this.sendPasswordResetEmail(user.email, user.name, token);
+      const appUrl = this.config.get<string>('APP_URL') ?? this.config.get<string>('CUSTOMER_APP_URL', 'https://app.miclubchile.cl');
+      const resetUrl = `${appUrl}/#/recover?token=${encodeURIComponent(token)}`;
+      await this.email.passwordReset(user.email, user.name, resetUrl, `password_reset:${user.id}:${Math.floor(Date.now() / 60_000)}`);
     }
     return { message: 'Si los datos existen, recibirás instrucciones para recuperar tu contraseña.' };
   }
@@ -99,28 +103,11 @@ export class AuthService {
           this.prisma.passwordResetToken.update({ where: { id: candidate.id }, data: { usedAt: new Date() } }),
           this.prisma.authSession.updateMany({ where: { userId: candidate.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
         ]);
+        void this.email.passwordChanged(candidate.user.email, candidate.user.name);
         return { message: 'Contraseña actualizada correctamente. Inicia sesión nuevamente.' };
       }
     }
     throw new UnauthorizedException('Token de recuperación inválido o vencido.');
-  }
-
-  private async sendPasswordResetEmail(email: string, name: string, token: string) {
-    const apiKey = this.config.get<string>('RESEND_API_KEY');
-    const from = this.config.get<string>('EMAIL_FROM', 'MiClub Chile <no-reply@miclubchile.cl>');
-    const customerUrl = this.config.get<string>('CUSTOMER_APP_URL', 'https://app.miclubchile.cl');
-    const resetUrl = `${customerUrl}/#/recover?token=${encodeURIComponent(token)}`;
-    if (!apiKey) return;
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from,
-        to: email,
-        subject: 'Recupera tu contraseña de MiClub Chile',
-        html: `<p>Hola ${name},</p><p>Para crear una nueva contraseña, abre este enlace:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace vence en 30 minutos.</p>`,
-      }),
-    }).catch(() => undefined);
   }
 
   private async createSession(userId: string) {

@@ -8,7 +8,10 @@
     "start:dev": "nest start --watch",
     "start:prod": "prisma migrate deploy --schema=../../database/prisma/schema.prisma && node dist/main.js",
     "prisma:generate": "prisma generate --schema=../../database/prisma/schema.prisma",
-    "seed": "tsx --env-file-if-exists=../../.env ../../database/prisma/seed.ts"
+    "seed": "tsx --env-file-if-exists=../../.env ../../database/prisma/seed.ts",
+    "test:email": "tsx ../../scripts/test-email-service.ts",
+    "test:password-reset": "tsx ../../scripts/test-password-reset-flow.ts",
+    "email:send-qa": "tsx ../../scripts/send-qa-email.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

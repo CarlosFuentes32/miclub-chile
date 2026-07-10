@@ -4,19 +4,21 @@ import { AuditService } from '../audit/audit.service';
 import { BusinessAccessService } from '../businesses/business-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBusinessRewardDto, UpdateBusinessRewardDto } from './dto/manage-reward.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class RewardsService {
-  constructor(private readonly prisma: PrismaService, private readonly access: BusinessAccessService, private readonly audit: AuditService) {}
+  constructor(private readonly prisma: PrismaService, private readonly access: BusinessAccessService, private readonly audit: AuditService, private readonly email: EmailService) {}
   async redeem(userId: string, rewardId: string, businessId: string) {
     await this.access.requireMember(userId, businessId);
     return this.prisma.$transaction(async tx => {
-      const reward = await tx.reward.findUnique({ where: { id: rewardId } });
+      const reward = await tx.reward.findUnique({ where: { id: rewardId }, include: { customer: { select: { name: true, email: true } }, business: { select: { name: true } } } });
       if (!reward || reward.businessId !== businessId) throw new NotFoundException('Recompensa no encontrada en este comercio');
       if (reward.expiresAt && reward.expiresAt <= new Date()) { await tx.reward.update({ where: { id: reward.id }, data: { status: RewardStatus.EXPIRED } }); throw new ConflictException('La recompensa está vencida'); }
       if (reward.status !== RewardStatus.AVAILABLE) throw new ConflictException('La recompensa no está disponible');
       const redeemed = await tx.reward.update({ where: { id: reward.id }, data: { status: RewardStatus.REDEEMED, redeemedAt: new Date(), redeemedByUserId: userId } });
       await this.audit.create({ userId, businessId, action: 'reward_redeemed', entityType: 'reward', entityId: reward.id }, tx);
+      void this.email.rewardRedeemed(reward.customer.email, reward.customer.name, reward.business.name, reward.rewardDescription);
       return { reward_id: redeemed.id, status: redeemed.status, redeemed_at: redeemed.redeemedAt };
     });
   }
@@ -43,6 +45,9 @@ export class RewardsService {
         },
       });
       await this.audit.create({ userId, businessId: dto.business_id, action: 'reward_created_manual', entityType: 'reward', entityId: reward.id }, tx);
+      const customer = await tx.user.findUnique({ where: { id: dto.customer_user_id }, select: { email: true, name: true } });
+      const business = await tx.business.findUnique({ where: { id: dto.business_id }, select: { name: true } });
+      if (customer && business) void this.email.rewardEarned(customer.email, customer.name, business.name, reward.rewardDescription, reward.expiresAt);
       return reward;
     });
   }

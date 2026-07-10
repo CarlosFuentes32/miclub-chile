@@ -3,12 +3,13 @@ import { AccumulationType, CycleStatus, MembershipStatus, Prisma, ProgramStatus,
 import { AuditService } from '../audit/audit.service';
 import { BusinessAccessService } from '../businesses/business-access.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 export interface RegisterTransactionInput { businessId: string; customerUserId: string; performedByUserId: string; value?: number; amount?: number; }
 
 @Injectable()
 export class LoyaltyEngineService {
-  constructor(private readonly prisma: PrismaService, private readonly access: BusinessAccessService, private readonly audit: AuditService) {}
+  constructor(private readonly prisma: PrismaService, private readonly access: BusinessAccessService, private readonly audit: AuditService, private readonly email: EmailService) {}
 
   async register(input: RegisterTransactionInput) {
     await this.access.requireMember(input.performedByUserId, input.businessId);
@@ -40,6 +41,8 @@ export class LoyaltyEngineService {
         const expiresAt = program.rewardExpirationDays ? new Date(Date.now() + program.rewardExpirationDays * 86_400_000) : undefined;
         reward = await tx.reward.create({ data: { cycleId: cycle.id, businessId: input.businessId, customerUserId: customer.id, rewardDescription: program.rewardDescription, expiresAt } });
         await this.audit.create({ userId: input.performedByUserId, businessId: input.businessId, action: 'reward_generated', entityType: 'reward', entityId: reward.id }, tx);
+        const business = await tx.business.findUnique({ where: { id: input.businessId }, select: { name: true } });
+        if (business) void this.email.rewardEarned(customer.email, customer.name, business.name, reward.rewardDescription, reward.expiresAt);
         newCycle = await tx.cycle.create({ data: { customerUserId: customer.id, businessId: input.businessId, loyaltyProgramId: program.id, currentValue: 0, targetValue: program.targetValue } });
         await this.audit.create({ userId: input.performedByUserId, businessId: input.businessId, action: 'cycle_created', entityType: 'cycle', entityId: newCycle.id, metadata: { source: 'cycle_completion' } }, tx);
       } else {

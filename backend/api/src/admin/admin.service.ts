@@ -18,6 +18,7 @@ import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { EmailService } from "../email/email.service";
 import { publicUserSelect } from "../users/users.service";
 import {
   CreateBusinessDto,
@@ -32,6 +33,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly email: EmailService,
   ) {}
   async dashboard() {
     const start = new Date();
@@ -282,6 +284,7 @@ export class AdminService {
         entityId: result.business.id,
         metadata: { owner_email: email },
       });
+    void this.email.collaboratorInvited(result.owner.email, result.owner.name, result.business.name, "BUSINESS_OWNER");
     return result;
   }
   async business(id: string) {
@@ -333,6 +336,7 @@ export class AdminService {
     if (!value) throw new NotFoundException("Estado inválido");
     const updated = await this.prisma.business.update({
       where: { id },
+      include: { owner: { select: { email: true, name: true } } },
       data: { status: value },
     });
     if (actorId)
@@ -344,6 +348,7 @@ export class AdminService {
         entityId: id,
         metadata: { status: value },
       });
+    void this.email.businessStatus(updated.owner.email, updated.owner.name, updated.name, value);
     return updated;
   }
   async deleteBusiness(id: string, actorId?: string) {
@@ -494,7 +499,7 @@ export class AdminService {
       );
     const action =
       value === UserStatus.SUSPENDED ? "user_suspended" : "user_status_changed";
-    return this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id },
         data:
@@ -524,6 +529,9 @@ export class AdminService {
       );
       return user;
     });
+    if (value === UserStatus.SUSPENDED) void this.email.accountStatus(user.email, user.name, "suspended");
+    if (value === UserStatus.ACTIVE) void this.email.accountStatus(user.email, user.name, "reactivated");
+    return user;
   }
   async updateUser(id: string, dto: UpdateAdminUserDto, actorId: string) {
     const current = await this.prisma.user.findUniqueOrThrow({
@@ -566,8 +574,9 @@ export class AdminService {
     });
   }
   async changePassword(id: string, password: string, actorId: string) {
-    await this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id },
+      select: { email: true, name: true },
       data: { passwordHash: await bcrypt.hash(password, 12) },
     });
     await this.prisma.authSession.updateMany({
@@ -580,6 +589,7 @@ export class AdminService {
       entityType: "user",
       entityId: id,
     });
+    void this.email.passwordChanged(user.email, user.name);
     return { ok: true };
   }
   async supportUsers(role: string) {
@@ -613,6 +623,7 @@ export class AdminService {
   }
   async resetPassword(id: string, actorId: string) {
     const temporaryPassword = `MC-${randomBytes(9).toString("base64url")}!`;
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id }, select: { email: true, name: true } });
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id },
@@ -645,6 +656,7 @@ export class AdminService {
         tx,
       );
     });
+    void this.email.passwordChanged(user.email, user.name);
     return { temporaryPassword, shownOnce: true, forcePasswordChange: true };
   }
   async unlockUser(id: string, actorId: string) {
@@ -795,7 +807,7 @@ export class AdminService {
       current.status !== UserStatus.SUSPENDED
     )
       throw new ConflictException("La cuenta no está eliminada ni suspendida.");
-    return this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.update({
         where: { id },
         data: this.activeUserState(),
@@ -822,6 +834,8 @@ export class AdminService {
       );
       return user;
     });
+    void this.email.accountStatus(user.email, user.name, "reactivated");
+    return user;
   }
   private activeUserState() {
     return {
@@ -1085,6 +1099,9 @@ export class AdminService {
         },
         tx,
       );
+      const customer = await tx.user.findUnique({ where: { id: customerId }, select: { name: true, email: true } });
+      const business = await tx.business.findUnique({ where: { id: dto.businessId }, select: { name: true } });
+      if (customer && business) void this.email.rewardEarned(customer.email, customer.name, business.name, reward.rewardDescription, reward.expiresAt);
       return reward;
     });
   }
