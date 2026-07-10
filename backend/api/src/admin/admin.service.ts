@@ -25,6 +25,7 @@ import {
   ManualRewardDto,
   PlanDto,
   UpdateAdminUserDto,
+  UpdateBusinessDto,
 } from "./dto/admin.dto";
 @Injectable()
 export class AdminService {
@@ -286,6 +287,45 @@ export class AdminService {
   async business(id: string) {
     const all = await this.businesses();
     return all.find((b) => b.id === id) ?? null;
+  }
+  async updateBusiness(id: string, d: UpdateBusinessDto, actorId?: string) {
+    const current = await this.prisma.business.findUnique({ where: { id } });
+    if (!current) throw new NotFoundException("Comercio no encontrado");
+    const data: Prisma.BusinessUpdateInput = {};
+    if (d.name !== undefined) data.name = d.name;
+    if (d.businessType !== undefined) data.businessType = d.businessType;
+    if (d.rutBusiness !== undefined)
+      data.rutBusiness = d.rutBusiness.trim() || null;
+    if (d.address !== undefined) data.address = d.address;
+    if (d.region !== undefined) data.region = d.region;
+    if (d.commune !== undefined) data.commune = d.commune;
+    if (d.phone !== undefined) data.phone = d.phone;
+    if (d.email !== undefined) data.email = d.email.toLowerCase();
+    if (d.planId !== undefined) data.plan = { connect: { id: d.planId } };
+    const updated = await this.prisma.business.update({
+      where: { id },
+      data,
+    });
+    if (actorId)
+      await this.audit.create({
+        userId: actorId,
+        businessId: id,
+        action: "business_updated",
+        entityType: "business",
+        entityId: id,
+        metadata: {
+          fields: Object.keys(d),
+          previous: {
+            name: current.name,
+            businessType: current.businessType,
+            rutBusiness: current.rutBusiness,
+            phone: current.phone,
+            email: current.email,
+            planId: current.planId,
+          },
+        },
+      });
+    return updated;
   }
   async businessStatus(id: string, status: string, actorId?: string) {
     const value =

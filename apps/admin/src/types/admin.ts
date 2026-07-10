@@ -50,6 +50,14 @@ export interface CreateBusinessInput {
   ownerPhone: string;
   ownerPassword: string;
 }
+export interface UpdateBusinessInput {
+  name: string;
+  businessType: string;
+  rutBusiness?: string;
+  phone: string;
+  email: string;
+  planId: string;
+}
 export interface AdminUser {
   id: string;
   name: string;

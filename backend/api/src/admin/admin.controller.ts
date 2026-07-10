@@ -27,6 +27,7 @@ import {
   StatusDto,
   SupportNoteDto,
   UpdateAdminUserDto,
+  UpdateBusinessDto,
 } from "./dto/admin.dto";
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,6 +53,13 @@ export class AdminController {
   }
   @Get("businesses/:id") business(@Param("id") id: string) {
     return this.admin.business(id);
+  }
+  @Patch("businesses/:id") updateBusiness(
+    @Param("id") id: string,
+    @Body() d: UpdateBusinessDto,
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.updateBusiness(id, d, actor.id);
   }
   @Get("businesses/:id/full")
   @Roles(UserRole.SUPER_ADMIN)

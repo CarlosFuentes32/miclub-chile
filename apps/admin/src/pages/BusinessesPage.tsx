@@ -43,6 +43,19 @@ export function BusinessesPage() {
     setItems((v) => v.map((x) => (x.id === b.id ? b : x)));
     setSelected(b);
   }
+  async function saveBusiness(input: {
+    name: string;
+    businessType: string;
+    rutBusiness?: string;
+    phone: string;
+    email: string;
+    planId: string;
+  }) {
+    if (!selected) return;
+    const b = await adminService.updateBusiness(selected.id, input);
+    setItems((v) => v.map((x) => (x.id === b.id ? b : x)));
+    setSelected(b);
+  }
   async function remove() {
     if (
       !selected ||
@@ -115,7 +128,9 @@ export function BusinessesPage() {
       {selected && (
         <BusinessDetailPanel
           business={selected}
+          plans={plans}
           onClose={() => setSelected(null)}
+          onSave={saveBusiness}
           onStatus={update}
           onDelete={remove}
           onRestore={async () => {

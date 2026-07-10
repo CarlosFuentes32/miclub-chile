@@ -43,6 +43,18 @@ export class CreateBusinessDto {
   @IsString() commune!: string;
 }
 
+export class UpdateBusinessDto {
+  @IsOptional() @IsString() @MinLength(2) name?: string;
+  @IsOptional() @IsString() @MinLength(2) businessType?: string;
+  @IsOptional() @IsString() rutBusiness?: string;
+  @IsOptional() @IsString() @MinLength(5) address?: string;
+  @IsOptional() @Matches(/^\+569\d{8}$/) phone?: string;
+  @IsOptional() @IsEmail() email?: string;
+  @IsOptional() @IsString() planId?: string;
+  @IsOptional() @IsString() region?: string;
+  @IsOptional() @IsString() commune?: string;
+}
+
 export class UpdateAdminUserDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
   @IsOptional() @IsEmail() email?: string;

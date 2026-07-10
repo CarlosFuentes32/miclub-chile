@@ -11,6 +11,7 @@ import {
   UserChange,
   SuperDashboard,
   AuditLog,
+  UpdateBusinessInput,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
@@ -32,6 +33,13 @@ export const adminService = {
   },
   getBusinessDetail: (id: string) =>
     apiRequest<AdminBusiness>(`/admin/businesses/${id}`),
+  async updateBusiness(id: string, input: UpdateBusinessInput) {
+    await apiRequest(`/admin/businesses/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+    return this.getBusinessDetail(id);
+  },
   async updateBusinessStatus(id: string, status: BusinessStatus) {
     await apiRequest(`/admin/businesses/${id}/status`, {
       method: "PATCH",
