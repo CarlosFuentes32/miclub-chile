@@ -34,11 +34,15 @@ const initial: LoyaltyProgramDraft = {
 };
 export function LoyaltyProgramWizard({
   onCreate,
+  initialDraft,
+  submitLabel = "Crear programa",
 }: {
   onCreate: (draft: LoyaltyProgramDraft) => Promise<void>;
+  initialDraft?: LoyaltyProgramDraft;
+  submitLabel?: string;
 }) {
   const [step, setStep] = useState(1),
-    [draft, setDraft] = useState(initial),
+    [draft, setDraft] = useState(initialDraft ?? initial),
     [busy, setBusy] = useState(false);
   const update = <K extends keyof LoyaltyProgramDraft>(
     k: K,
@@ -211,7 +215,7 @@ export function LoyaltyProgramWizard({
             {step === 6 ? (
               <>
                 <Check size={18} />
-                {busy ? "Creando…" : "Crear programa"}
+                {busy ? "Guardando…" : submitLabel}
               </>
             ) : (
               <>

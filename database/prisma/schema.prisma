@@ -41,6 +41,7 @@ model User {
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
   sessions              AuthSession[]
+  passwordResetTokens   PasswordResetToken[]
   ownedBusinesses       Business[]         @relation("BusinessOwner")
   businessMemberships   BusinessUser[]
   customerBusinesses    CustomerBusiness[]
@@ -67,6 +68,19 @@ model User {
   @@index([deletedByUserId])
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model UserChange {
@@ -224,6 +238,31 @@ model SystemSetting {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("system_settings")
+}
+
+enum LeadStatus {
+  NEW       @map("new")
+  CONTACTED @map("contacted")
+  CLOSED    @map("closed")
+  DISCARDED @map("discarded")
+}
+
+model CommercialLead {
+  id        String     @id @default(cuid())
+  name      String
+  phone     String
+  email     String
+  business  String
+  industry  String
+  message   String
+  source    String     @default("landing")
+  status    LeadStatus @default(NEW)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("commercial_leads")
 }
 
 model SupportNote {

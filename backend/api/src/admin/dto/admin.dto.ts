@@ -38,7 +38,7 @@ export class CreateBusinessDto {
   @IsString() @MinLength(2) ownerName!: string;
   @IsEmail() ownerEmail!: string;
   @Matches(/^\+569\d{8}$/) ownerPhone!: string;
-  @IsString() @MinLength(4) ownerPassword!: string;
+  @IsString() @MinLength(8) ownerPassword!: string;
   @IsString() region!: string;
   @IsString() commune!: string;
 }
@@ -62,7 +62,7 @@ export class UpdateAdminUserDto {
   @IsOptional() @IsEnum(UserRole) role?: UserRole;
 }
 export class ChangePasswordDto {
-  @IsString() @MinLength(4) password!: string;
+  @IsString() @MinLength(8) password!: string;
 }
 export class CorrectRutDto {
   @IsString() @MinLength(7) rut!: string;

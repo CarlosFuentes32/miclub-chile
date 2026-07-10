@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
-import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ConfirmPasswordResetDto, RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtUser } from './auth.types';
 
@@ -38,7 +38,10 @@ export class AuthController {
   }
 
   @Post('password-reset/request') @HttpCode(200)
-  passwordReset(@Body() _dto: RequestPasswordResetDto) { return this.auth.requestPasswordReset(); }
+  passwordReset(@Body() dto: RequestPasswordResetDto) { return this.auth.requestPasswordReset(dto.identifier); }
+
+  @Post('password-reset/confirm') @HttpCode(200)
+  confirmPasswordReset(@Body() dto: ConfirmPasswordResetDto) { return this.auth.confirmPasswordReset(dto.token, dto.password); }
 
   @Get('me') @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: JwtUser) { return this.users.findPublicById(user.id); }

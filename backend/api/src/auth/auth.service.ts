@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from '../users/dto/register-user.dto';
 import { publicUserSelect, UsersService } from '../users/users.service';
@@ -62,8 +63,64 @@ export class AuthService {
     } catch { /* La cookie se elimina aunque el token ya no sea válido. */ }
   }
 
-  requestPasswordReset() {
+  async requestPasswordReset(identifier: string) {
+    const normalized = identifier.trim().toLowerCase();
+    const digits = normalized.replace(/\D/g, '');
+    const phone = digits.length === 8 ? `+569${digits}` : normalized.startsWith('+') ? `+${digits}` : digits;
+    const user = normalized.includes('@')
+      ? await this.prisma.user.findUnique({ where: { email: normalized } })
+      : await this.prisma.user.findFirst({ where: { phone } });
+    if (user && user.status === UserStatus.ACTIVE) {
+      const token = randomBytes(32).toString('base64url');
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: await bcrypt.hash(token, 12),
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+        },
+      });
+      await this.sendPasswordResetEmail(user.email, user.name, token);
+    }
     return { message: 'Si los datos existen, recibirás instrucciones para recuperar tu contraseña.' };
+  }
+
+  async confirmPasswordReset(token: string, password: string) {
+    const candidates = await this.prisma.passwordResetToken.findMany({
+      where: { usedAt: null, expiresAt: { gt: new Date() } },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    for (const candidate of candidates) {
+      if (await bcrypt.compare(token, candidate.tokenHash)) {
+        if (candidate.user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('Cuenta no disponible.');
+        await this.prisma.$transaction([
+          this.prisma.user.update({ where: { id: candidate.userId }, data: { passwordHash: await bcrypt.hash(password, 12), forcePasswordChange: false, failedLoginAttempts: 0, lockedAt: null } }),
+          this.prisma.passwordResetToken.update({ where: { id: candidate.id }, data: { usedAt: new Date() } }),
+          this.prisma.authSession.updateMany({ where: { userId: candidate.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+        ]);
+        return { message: 'Contraseña actualizada correctamente. Inicia sesión nuevamente.' };
+      }
+    }
+    throw new UnauthorizedException('Token de recuperación inválido o vencido.');
+  }
+
+  private async sendPasswordResetEmail(email: string, name: string, token: string) {
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    const from = this.config.get<string>('EMAIL_FROM', 'MiClub Chile <no-reply@miclubchile.cl>');
+    const customerUrl = this.config.get<string>('CUSTOMER_APP_URL', 'https://app.miclubchile.cl');
+    const resetUrl = `${customerUrl}/#/recover?token=${encodeURIComponent(token)}`;
+    if (!apiKey) return;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from,
+        to: email,
+        subject: 'Recupera tu contraseña de MiClub Chile',
+        html: `<p>Hola ${name},</p><p>Para crear una nueva contraseña, abre este enlace:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>El enlace vence en 30 minutos.</p>`,
+      }),
+    }).catch(() => undefined);
   }
 
   private async createSession(userId: string) {

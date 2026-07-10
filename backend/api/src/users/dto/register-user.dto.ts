@@ -17,7 +17,7 @@ export class RegisterUserDto {
   @IsEmail() email!: string;
   @IsString() @Matches(/^\+?[0-9]{8,15}$/) phone!: string;
   @IsString()
-  @MinLength(4, { message: "La contraseña debe tener al menos 4 caracteres" })
+  @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres" })
   password!: string;
   @IsOptional() @IsDateString() birthDate?: string;
   @IsOptional() @IsString() rut?: string;

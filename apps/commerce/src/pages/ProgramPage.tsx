@@ -11,11 +11,16 @@ export function ProgramPage({
   onChange: (p: LoyaltyProgram) => void;
 }) {
   const [program, setProgram] = useState(initial),
-    [wizard, setWizard] = useState(!initial);
+    [wizard, setWizard] = useState(!initial),
+    [editing, setEditing] = useState(false);
   async function create(draft: LoyaltyProgramDraft) {
-    const p = await commerceService.createLoyaltyProgram(draft);
+    const p =
+      editing && program
+        ? await commerceService.updateLoyaltyProgram({ ...program, ...draft })
+        : await commerceService.createLoyaltyProgram(draft);
     setProgram(p);
     onChange(p);
+    setEditing(false);
     setWizard(false);
   }
   return (
@@ -27,16 +32,25 @@ export function ProgramPage({
       </p>
       {wizard ? (
         <div className="mt-7">
-          <LoyaltyProgramWizard onCreate={create} />
+          <LoyaltyProgramWizard
+            onCreate={create}
+            initialDraft={editing && program ? program : undefined}
+            submitLabel={editing ? "Guardar cambios" : "Crear programa"}
+          />
         </div>
       ) : (
         program && (
           <div className="mt-7 max-w-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-black">Programa activo</h2>
-              <button onClick={() => setWizard(true)} className="secondary">
-                Crear nuevo programa
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => { setEditing(true); setWizard(true); }} className="secondary">
+                  Editar programa
+                </button>
+                <button onClick={() => { setEditing(false); setWizard(true); }} className="secondary">
+                  Crear nuevo programa
+                </button>
+              </div>
             </div>
             <ProgramSummaryCard program={program} />
           </div>

@@ -11,3 +11,15 @@ export class CreateLoyaltyProgramDto {
   @IsString() @MinLength(2) reward_description!: string;
   @IsOptional() @IsInt() @Min(1) reward_expiration_days?: number;
 }
+
+export class UpdateLoyaltyProgramDto {
+  @IsString() business_id!: string;
+  @IsOptional() @IsString() @MinLength(2) name?: string;
+  @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.toUpperCase() : value)
+  @IsEnum(AccumulationType)
+  accumulation_type?: AccumulationType;
+  @IsOptional() @IsPositive() target_value?: number;
+  @IsOptional() @IsString() @MinLength(2) reward_description?: string;
+  @IsOptional() @IsInt() @Min(1) reward_expiration_days?: number;
+}

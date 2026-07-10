@@ -1,13 +1,17 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtUser } from '../auth/auth.types';
-import { CreateLoyaltyProgramDto } from './dto/create-loyalty-program.dto';
+import { CreateLoyaltyProgramDto, UpdateLoyaltyProgramDto } from './dto/create-loyalty-program.dto';
 import { LoyaltyProgramsService } from './loyalty-programs.service';
 
 @Controller('business/loyalty-programs') @UseGuards(JwtAuthGuard)
 export class LoyaltyProgramsController {
   constructor(private readonly programs: LoyaltyProgramsService) {}
   @Post() create(@CurrentUser() user: JwtUser, @Body() dto: CreateLoyaltyProgramDto) { return this.programs.create(user.id, dto); }
+  @Get() list(@CurrentUser() user: JwtUser, @Query('business_id') businessId: string) { return this.programs.list(user.id, businessId); }
   @Get('active') active(@CurrentUser() user: JwtUser, @Query('business_id') businessId: string) { return this.programs.active(user.id, businessId); }
+  @Patch(':id') update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdateLoyaltyProgramDto) { return this.programs.update(user.id, id, dto); }
+  @Post(':id/activate') activate(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: { business_id: string }) { return this.programs.activate(user.id, id, dto.business_id); }
+  @Delete(':id') archive(@CurrentUser() user: JwtUser, @Param('id') id: string, @Query('business_id') businessId: string) { return this.programs.archive(user.id, id, businessId); }
 }

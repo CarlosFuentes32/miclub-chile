@@ -114,4 +114,5 @@ export const customerService = {
     }
   },
   requestPasswordReset:(identifier:string)=>apiRequest<{message:string}>("/auth/password-reset/request",{method:"POST",body:JSON.stringify({identifier})}),
+  confirmPasswordReset:(token:string,password:string)=>apiRequest<{message:string}>("/auth/password-reset/confirm",{method:"POST",body:JSON.stringify({token,password})}),
 };
