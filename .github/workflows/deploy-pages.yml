@@ -17,8 +17,12 @@ env:
   VITE_CASHIER_URL: https://carlosfuentes32.github.io/miclub-chile/cashier/
   VITE_ADMIN_URL: https://carlosfuentes32.github.io/miclub-chile/admin/
 jobs:
+  e2e-staging:
+    uses: ./.github/workflows/e2e-staging.yml
+    secrets: inherit
   build:
     runs-on: ubuntu-latest
+    needs: e2e-staging
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
