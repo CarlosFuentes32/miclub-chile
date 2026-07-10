@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthUser, logout, portalByRole, restoreSession } from "@miclub/shared";
-import { ForcePasswordChange, PwaInstallPrompt } from "@miclub/ui";
+import { EnvironmentBanner, ForcePasswordChange, PwaInstallPrompt } from "@miclub/ui";
 import {
   HashRouter,
   Navigate,
@@ -158,8 +158,11 @@ function AppRoutes() {
 }
 export function App() {
   return (
+    <div>
+      <EnvironmentBanner />
     <><PwaInstallPrompt appName="MiClub Cajero" message="Instala MiClub Cajero en tu celular para registrar visitas y canjes más rápido."/><HashRouter>
       <AppRoutes />
     </HashRouter></>
+    </div>
   );
 }

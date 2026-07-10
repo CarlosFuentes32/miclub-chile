@@ -1,12 +1,13 @@
 param(
   [string]$Api = 'http://localhost:3000/api',
-  [string]$Password = 'MiClubDemo2026!',
+  [string]$Password = $env:SEED_PASSWORD,
   [string]$CashierEmail = 'cashier@miclub.local',
   [string]$OwnerEmail = 'owner@miclub.local',
   [string]$AdminEmail = 'admin@miclub.local',
   [string]$RewardDescription = '$5.000 de descuento'
 )
 $ErrorActionPreference='Stop'
+if (-not $Password) { throw 'Define SEED_PASSWORD antes de ejecutar esta prueba.' }
 function Login($identifier){Invoke-RestMethod -Method Post -Uri "$Api/auth/login" -ContentType 'application/json' -Body (@{email=$identifier;password=$Password}|ConvertTo-Json)}
 function Headers($session){@{Authorization="Bearer $($session.accessToken)"}}
 function Assert($condition,$message){if(-not $condition){throw "FALLO: $message"};Write-Host "OK: $message" -ForegroundColor Green}

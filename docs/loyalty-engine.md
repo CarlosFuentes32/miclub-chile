@@ -49,7 +49,8 @@ El seed crea o actualiza el comercio piloto, sus usuarios, plan y programa sin e
 
 ```powershell
 $api = 'http://localhost:3000/api'
-$password = 'MiClubDemo2026!'
+$password = $env:SEED_PASSWORD
+if (-not $password) { throw 'Define SEED_PASSWORD antes de ejecutar esta prueba.' }
 
 $cashierLogin = Invoke-RestMethod -Method Post -Uri "$api/auth/login" -ContentType 'application/json' -Body (@{ email='cashier@miclub.local'; password=$password } | ConvertTo-Json)
 $cashierHeaders = @{ Authorization = "Bearer $($cashierLogin.accessToken)" }

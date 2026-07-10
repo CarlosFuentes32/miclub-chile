@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuthUser, logout, portalByRole, restoreSession } from "@miclub/shared";
-import { ForcePasswordChange } from "@miclub/ui";
+import { EnvironmentBanner, ForcePasswordChange } from "@miclub/ui";
 import {
   HashRouter,
   Navigate,
@@ -139,8 +139,11 @@ function AppRoutes() {
 }
 export function App() {
   return (
-    <HashRouter>
-      <AppRoutes />
-    </HashRouter>
+    <>
+      <EnvironmentBanner />
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
+    </>
   );
 }

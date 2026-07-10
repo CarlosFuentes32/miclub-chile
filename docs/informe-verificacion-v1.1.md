@@ -8,12 +8,12 @@ Contraseñas provienen de `SEED_PASSWORD` y `TEST_ACCOUNT_PASSWORD`; los valores
 
 ### Credenciales demo locales
 
-- Administrador general: `http://localhost:5176`, `prueba.admin@miclubchile.cl`, `MiClubPrueba2026!`.
-- Comercio A: `http://localhost:5174`, `owner@miclub.local`, `MiClubDemo2026!`.
-- Cajero A: `http://localhost:5175`, `cashier@miclub.local`, `MiClubDemo2026!`.
-- Comercio B: `http://localhost:5174`, `prueba.comercio@miclubchile.cl`, `MiClubPrueba2026!`.
-- Cajero B: `http://localhost:5175`, `prueba.cajero@miclubchile.cl`, `MiClubPrueba2026!`.
-- Cliente digital: `http://localhost:5173`, teléfono `95026367`, `MiClubPrueba2026!`.
+- Administrador general: `http://localhost:5176`, `prueba.admin@miclubchile.cl`, contraseña configurada en `TEST_ACCOUNT_PASSWORD`.
+- Comercio A: `http://localhost:5174`, `owner@miclub.local`, contraseña configurada en `SEED_PASSWORD`.
+- Cajero A: `http://localhost:5175`, `cashier@miclub.local`, contraseña configurada en `SEED_PASSWORD`.
+- Comercio B: `http://localhost:5174`, `prueba.comercio@miclubchile.cl`, contraseña configurada en `TEST_ACCOUNT_PASSWORD`.
+- Cajero B: `http://localhost:5175`, `prueba.cajero@miclubchile.cl`, contraseña configurada en `TEST_ACCOUNT_PASSWORD`.
+- Cliente digital: `http://localhost:5173`, teléfono `95026367`, contraseña configurada en `TEST_ACCOUNT_PASSWORD`.
 
 No publicar estas claves ni usar `SEED_PASSWORD`/`TEST_ACCOUNT_PASSWORD` con estos valores en producción.
 

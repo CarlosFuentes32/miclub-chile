@@ -20,6 +20,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema=database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=database/prisma/schema.prisma",
     "prisma:seed": "npm run seed --workspace=@miclub/api",
+    "prisma:seed:staging": "tsx --env-file-if-exists=.env.staging database/prisma/seed-staging.ts",
     "test:multi-commerce": "tsx scripts/test-multi-commerce.ts",
     "test:manual-customers": "tsx scripts/test-manual-customers.ts",
     "test:user-reactivation": "tsx scripts/test-user-reactivation.ts",

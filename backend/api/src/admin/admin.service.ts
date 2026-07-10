@@ -1242,13 +1242,15 @@ export class AdminService {
       auditCount,
       frontendVersion: process.env.npm_package_version ?? "1.1.0",
       backendVersion: process.env.npm_package_version ?? "1.1.0",
+      environment: process.env.NODE_ENV ?? "development",
+      environmentLabel: process.env.ENVIRONMENT_LABEL ?? null,
       domains: [
-        "https://miclubchile.cl",
-        "https://app.miclubchile.cl",
-        "https://comercio.miclubchile.cl",
-        "https://cajero.miclubchile.cl",
-        "https://admin.miclubchile.cl",
-        "https://api.miclubchile.cl",
+        process.env.FRONTEND_URL ?? "https://miclubchile.cl",
+        process.env.CUSTOMER_APP_URL ?? "https://app.miclubchile.cl",
+        process.env.COMMERCE_APP_URL ?? "https://comercio.miclubchile.cl",
+        process.env.CASHIER_APP_URL ?? "https://cajero.miclubchile.cl",
+        process.env.ADMIN_APP_URL ?? "https://admin.miclubchile.cl",
+        process.env.API_URL ?? "https://api.miclubchile.cl/api",
       ],
     };
   }

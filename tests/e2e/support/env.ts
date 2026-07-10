@@ -26,7 +26,7 @@ export function getE2EConfig(): E2EConfig {
     customerUrl: required("E2E_CUSTOMER_URL"),
     adminEmail: required("E2E_ADMIN_EMAIL"),
     adminPassword: required("E2E_ADMIN_PASSWORD"),
-    defaultPassword: process.env.E2E_DEFAULT_PASSWORD ?? "MiClubQA2026!",
+    defaultPassword: required("E2E_DEFAULT_PASSWORD"),
   };
 }
 

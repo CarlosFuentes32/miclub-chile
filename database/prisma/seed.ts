@@ -21,7 +21,9 @@ const slugify = (text: string) =>
     .replace(/^-|-$/g, "");
 
 async function main() {
-  const password = value("SEED_PASSWORD", "MiClubDemo2026!");
+  const password = process.env.SEED_PASSWORD;
+  if (!password || password.length < 12)
+    throw new Error("Define SEED_PASSWORD con al menos 12 caracteres antes de ejecutar el seed.");
   const passwordHash = await bcrypt.hash(password, 12);
   const businessName = value("PILOT_BUSINESS_NAME", "Minimarket Piloto");
   const businessSlug = value("PILOT_BUSINESS_SLUG", slugify(businessName));
@@ -208,7 +210,7 @@ async function main() {
       },
     });
   const testPasswordHash = await bcrypt.hash(
-    value("TEST_ACCOUNT_PASSWORD", "MiClubPrueba2026!"),
+    process.env.TEST_ACCOUNT_PASSWORD || password,
     12,
   );
   const testUsers = [

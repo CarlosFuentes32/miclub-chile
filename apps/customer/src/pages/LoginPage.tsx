@@ -11,7 +11,7 @@ export function LoginPage({
       import.meta.env.DEV ? "customer@miclub.local" : "",
     ),
     [password, setPassword] = useState(
-      import.meta.env.DEV ? "MiClubDemo2026!" : "",
+      import.meta.env.DEV ? (import.meta.env.VITE_DEV_PASSWORD ?? "") : "",
     ),
     [showPassword, setShowPassword] = useState(false),
     [error, setError] = useState(""),

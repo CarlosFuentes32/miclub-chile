@@ -5,7 +5,7 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
       import.meta.env.DEV ? "owner@miclub.local" : "",
     ),
     [password, setPassword] = useState(
-      import.meta.env.DEV ? "MiClubDemo2026!" : "",
+      import.meta.env.DEV ? (import.meta.env.VITE_DEV_PASSWORD ?? "") : "",
     ),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);

@@ -167,7 +167,7 @@ npm.cmd run build
 
 ## Usuarios demo
 
-El seed usa la contraseña definida en `SEED_PASSWORD` (`MiClubDemo2026!` en el ejemplo local):
+El seed usa la contraseña definida manualmente en `SEED_PASSWORD`.
 
 | Portal | Email | Rol |
 |---|---|---|
@@ -216,10 +216,10 @@ Para cambiar la URL de la API, copie `.env.example` dentro de cada aplicación y
 
 | Perfil | Email | Contraseña | URL |
 |---|---|---|---|
-| Cliente Demo | `customer@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-customer.vercel.app |
-| Cajero Demo | `cashier@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-cashier.vercel.app |
-| Dueño Minimarket Piloto | `owner@miclub.local` | `MiClubDemo2026!` | https://miclub-chile-commerce.vercel.app |
-| Admin MiClub | `administrador@miclubchile.cl` | `MiClubDemo2026!` | https://miclub-chile-admin.vercel.app |
+| Cliente Demo | `customer@miclub.local` | `SEED_PASSWORD` | https://miclub-chile-customer.vercel.app |
+| Cajero Demo | `cashier@miclub.local` | `SEED_PASSWORD` | https://miclub-chile-cashier.vercel.app |
+| Dueño Minimarket Piloto | `owner@miclub.local` | `SEED_PASSWORD` | https://miclub-chile-commerce.vercel.app |
+| Admin MiClub | `administrador@miclubchile.cl` | `SEED_PASSWORD` | https://miclub-chile-admin.vercel.app |
 
 ### Soporte de usuarios
 

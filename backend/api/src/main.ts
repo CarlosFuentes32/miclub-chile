@@ -21,6 +21,7 @@ async function bootstrap() {
         response.json({
           status: "ok",
           service: "MiClub API",
+          environment: config.get<string>("NODE_ENV", "development"),
           timestamp: new Date().toISOString(),
         });
       },

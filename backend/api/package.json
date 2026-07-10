@@ -9,6 +9,7 @@
     "start:prod": "prisma migrate deploy --schema=../../database/prisma/schema.prisma && node dist/main.js",
     "prisma:generate": "prisma generate --schema=../../database/prisma/schema.prisma",
     "seed": "tsx --env-file-if-exists=../../.env ../../database/prisma/seed.ts",
+    "seed:staging": "tsx --env-file-if-exists=../../.env.staging ../../database/prisma/seed-staging.ts",
     "test:email": "tsx ../../scripts/test-email-service.ts",
     "test:password-reset": "tsx ../../scripts/test-password-reset-flow.ts",
     "email:send-qa": "tsx ../../scripts/send-qa-email.ts"
