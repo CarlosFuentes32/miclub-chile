@@ -14,6 +14,7 @@ async function bootstrap() {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const isStaging = config.get<string>("NODE_ENV", "development") === "staging";
 
   app
     .getHttpAdapter()
@@ -70,6 +71,14 @@ async function bootstrap() {
     origin: origins.length
       ? (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
           if (!origin || origins.includes(origin)) return callback(null, true);
+          if (isStaging) {
+            try {
+              const host = new URL(origin).hostname.toLowerCase();
+              if (host.endsWith(".vercel.app")) return callback(null, true);
+            } catch {
+              return callback(null, false);
+            }
+          }
           return callback(null, false);
         }
       : false,
