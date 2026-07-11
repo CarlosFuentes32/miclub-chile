@@ -5,7 +5,7 @@ import { EmailPayload, EmailResult } from "./email.types";
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly dedupe = new Map<string, number>();
+  private readonly sentDedupe = new Map<string, number>();
 
   constructor(private readonly config: ConfigService) {}
 
@@ -13,9 +13,24 @@ export class EmailService {
     const apiKey = this.config.get<string>("RESEND_API_KEY");
     const from = this.config.get<string>("EMAIL_FROM");
     if (!apiKey || !from) return { sent: false, skipped: true, reason: "email_not_configured" };
+    if (!this.validEmail(payload.to)) return { sent: false, skipped: true, reason: "invalid_recipient" };
     if (!this.allowedRecipient(payload.to)) return { sent: false, skipped: true, reason: "recipient_not_allowed_in_staging" };
     if (payload.dedupeKey && this.isDuplicate(payload.dedupeKey)) return { sent: false, skipped: true, reason: "duplicate_suppressed" };
 
+    let lastResult: EmailResult = { sent: false, reason: "provider_unavailable" };
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      const result = await this.deliver(payload, apiKey, from);
+      if (result.sent) {
+        if (payload.dedupeKey) this.markSent(payload.dedupeKey);
+        return result;
+      }
+      lastResult = result;
+      if (!this.retryable(result)) return result;
+    }
+    return lastResult;
+  }
+
+  private async deliver(payload: EmailPayload, apiKey: string, from: string): Promise<EmailResult> {
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -209,10 +224,18 @@ export class EmailService {
 
   private isDuplicate(key: string) {
     const now = Date.now();
-    const previous = this.dedupe.get(key);
+    const previous = this.sentDedupe.get(key);
     if (previous && previous > now) return true;
-    this.dedupe.set(key, now + 5 * 60_000);
     return false;
+  }
+
+  private markSent(key: string) {
+    this.sentDedupe.set(key, Date.now() + 5 * 60_000);
+  }
+
+  private retryable(result: EmailResult) {
+    if (result.status && (result.status === 429 || result.status >= 500)) return true;
+    return result.reason === "TypeError" || result.reason === "AbortError" || result.reason === "provider_unavailable";
   }
 
   private appUrl() { return this.config.get<string>("APP_URL") ?? this.config.get<string>("CUSTOMER_APP_URL", "https://app.miclubchile.cl"); }
@@ -220,6 +243,7 @@ export class EmailService {
   private cashierUrl() { return this.config.get<string>("CASHIER_APP_URL", "https://cajero.miclubchile.cl"); }
   private adminUrl() { return this.config.get<string>("ADMIN_APP_URL", "https://admin.miclubchile.cl"); }
   private supportEmail() { return this.config.get<string>("SUPPORT_EMAIL", "soporte@miclubchile.cl"); }
+  private validEmail(email: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
   private domain(email: string) { return email.split("@")[1] ?? "unknown"; }
   private escape(value: string) { return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] as string)); }
   private escapeAttr(value: string) { return this.escape(value); }

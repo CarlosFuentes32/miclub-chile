@@ -285,6 +285,17 @@ export class AdminService {
         metadata: { owner_email: email },
       });
     void this.email.collaboratorInvited(result.owner.email, result.owner.name, result.business.name, "BUSINESS_OWNER");
+    if (process.env.ADMIN_ALERT_EMAIL)
+      void this.email.adminNotice(
+        process.env.ADMIN_ALERT_EMAIL,
+        "Equipo MiClub",
+        "Nuevo comercio creado",
+        "Se creó un comercio desde el Panel Administrador.",
+        [
+          { label: "Comercio", value: result.business.name },
+          { label: "Dueño", value: result.owner.email },
+        ],
+      );
     return result;
   }
   async business(id: string) {
@@ -349,6 +360,17 @@ export class AdminService {
         metadata: { status: value },
       });
     void this.email.businessStatus(updated.owner.email, updated.owner.name, updated.name, value);
+    if (process.env.ADMIN_ALERT_EMAIL)
+      void this.email.adminNotice(
+        process.env.ADMIN_ALERT_EMAIL,
+        "Equipo MiClub",
+        "Estado de comercio actualizado",
+        "Se actualizó el estado administrativo de un comercio.",
+        [
+          { label: "Comercio", value: updated.name },
+          { label: "Estado", value },
+        ],
+      );
     return updated;
   }
   async deleteBusiness(id: string, actorId?: string) {

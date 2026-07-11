@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UserStatus } from '@prisma/client';
@@ -13,6 +13,8 @@ import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly passwordResetAttempts = new Map<string, { count: number; resetAt: number }>();
+
   constructor(private readonly prisma: PrismaService, private readonly users: UsersService, private readonly jwt: JwtService, private readonly config: ConfigService, private readonly email: EmailService) {}
 
   async register(dto: RegisterUserDto) {
@@ -65,8 +67,9 @@ export class AuthService {
     } catch { /* La cookie se elimina aunque el token ya no sea válido. */ }
   }
 
-  async requestPasswordReset(identifier: string) {
+  async requestPasswordReset(identifier: string, source = 'unknown') {
     const normalized = identifier.trim().toLowerCase();
+    this.assertPasswordResetRateLimit(normalized, source);
     const digits = normalized.replace(/\D/g, '');
     const phone = digits.length === 8 ? `+569${digits}` : normalized.startsWith('+') ? `+${digits}` : digits;
     const user = normalized.includes('@')
@@ -74,6 +77,10 @@ export class AuthService {
       : await this.prisma.user.findFirst({ where: { phone } });
     if (user && user.status === UserStatus.ACTIVE) {
       const token = randomBytes(32).toString('base64url');
+      await this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
+        data: { usedAt: new Date() },
+      });
       await this.prisma.passwordResetToken.create({
         data: {
           userId: user.id,
@@ -118,5 +125,19 @@ export class AuthService {
     const refreshToken = await this.jwt.signAsync({ sub: user.id, sid: session.id, type: 'refresh' }, { secret: this.config.getOrThrow('JWT_REFRESH_SECRET'), expiresIn: `${days}d` as any });
     await this.prisma.authSession.update({ where: { id: session.id }, data: { refreshTokenHash: await bcrypt.hash(refreshToken, 12) } });
     return { accessToken, refreshToken, refreshExpiresAt: session.expiresAt, user };
+  }
+
+  private assertPasswordResetRateLimit(identifier: string, source: string) {
+    const key = `${source}:${identifier}`;
+    const now = Date.now();
+    const current = this.passwordResetAttempts.get(key);
+    if (!current || current.resetAt <= now) {
+      this.passwordResetAttempts.set(key, { count: 1, resetAt: now + 15 * 60_000 });
+      return;
+    }
+    current.count += 1;
+    if (current.count > 3) {
+      throw new HttpException('Demasiadas solicitudes. Intenta nuevamente en unos minutos.', HttpStatus.TOO_MANY_REQUESTS);
+    }
   }
 }

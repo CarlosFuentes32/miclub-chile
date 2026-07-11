@@ -20,7 +20,7 @@ async function main() {
     process.exit(2);
   }
   const service = new EmailService(new EnvConfig() as any);
-  const result = await service.passwordReset(to!, "QA MiClub", `${process.env.APP_URL}/#/recover?token=qa-token-redacted`, `qa-send:${Date.now()}`);
+  const result = await service.passwordReset(to!, "QA MiClub", `${process.env.APP_URL}/#/recover?token=REDACTED_QA_TEST`, `qa-send:${Date.now()}`);
   if (!result.sent) {
     console.error(`No enviado: ${result.reason ?? result.status ?? "unknown"}`);
     process.exit(1);

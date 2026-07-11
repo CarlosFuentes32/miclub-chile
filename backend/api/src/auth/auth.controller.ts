@@ -38,7 +38,9 @@ export class AuthController {
   }
 
   @Post('password-reset/request') @HttpCode(200)
-  passwordReset(@Body() dto: RequestPasswordResetDto) { return this.auth.requestPasswordReset(dto.identifier); }
+  passwordReset(@Body() dto: RequestPasswordResetDto, @Req() request: Request) {
+    return this.auth.requestPasswordReset(dto.identifier, request.ip ?? 'unknown');
+  }
 
   @Post('password-reset/confirm') @HttpCode(200)
   confirmPasswordReset(@Body() dto: ConfirmPasswordResetDto) { return this.auth.confirmPasswordReset(dto.token, dto.password); }
