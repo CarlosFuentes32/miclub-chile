@@ -1,0 +1,49 @@
+name: Backup Validation
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+  push:
+    branches: [staging, develop, fix/mvp-comercial-readiness]
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate backup and DR logic
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://example:example@localhost:5432/miclub_backup_validation
+      APP_ENV: ci
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema=database/prisma/schema.prisma
+
+      - name: Run backup/restore/rollback unit checks
+        run: npm run test:enterprise-backups
+
+      - name: Run documentation link check
+        run: npm run test:doc-links

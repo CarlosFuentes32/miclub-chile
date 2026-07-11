@@ -32,6 +32,7 @@ const superNav = [
   ["/super-settings", "Config. global", Settings],
   ["/maintenance", "Mantenimiento", Database],
   ["/system-status", "Estado del Sistema", Database],
+  ["/backups", "Backups", Database],
 ] as const;
 
 export function AdminLayout({

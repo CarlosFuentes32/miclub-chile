@@ -23,6 +23,41 @@ enum UserStatus {
   DELETED
 }
 
+enum BackupType {
+  AUTOMATIC          @map("automatic")
+  MANUAL             @map("manual")
+  SCHEDULED          @map("scheduled")
+  PRE_DEPLOY         @map("pre_deploy")
+  PRE_MIGRATION      @map("pre_migration")
+  PRE_RESTORE        @map("pre_restore")
+  PRE_DATA_CLEANUP   @map("pre_data_cleanup")
+  SIMULATION         @map("simulation")
+}
+
+enum BackupStatus {
+  REQUESTED   @map("requested")
+  RUNNING     @map("running")
+  VERIFIED    @map("verified")
+  FAILED      @map("failed")
+  EXPIRED     @map("expired")
+}
+
+enum RestoreStatus {
+  REQUESTED   @map("requested")
+  VALIDATING   @map("validating")
+  VALIDATED    @map("validated")
+  FAILED       @map("failed")
+  BLOCKED      @map("blocked")
+}
+
+enum RollbackStatus {
+  PLANNED     @map("planned")
+  VALIDATED   @map("validated")
+  BLOCKED     @map("blocked")
+  COMPLETED   @map("completed")
+  FAILED      @map("failed")
+}
+
 model User {
   id                    String             @id @default(cuid())
   name                  String
@@ -552,6 +587,82 @@ model IncidentAlert {
 
   @@index([incidentId, channel, createdAt])
   @@map("incident_alerts")
+}
+
+model BackupRecord {
+  id              String       @id @default(cuid())
+  environment     String
+  databaseName    String       @map("database_name")
+  version         String
+  commit          String
+  branch          String?
+  responsibleId   String?      @map("responsible_id")
+  responsibleName String?      @map("responsible_name")
+  type            BackupType
+  status          BackupStatus @default(REQUESTED)
+  startedAt       DateTime     @default(now()) @map("started_at")
+  finishedAt      DateTime?    @map("finished_at")
+  durationMs      Int?         @map("duration_ms")
+  sizeBytes       BigInt?      @map("size_bytes")
+  checksum        String?
+  result          String?
+  storageProvider String       @default("provider_or_logical") @map("storage_provider")
+  storageRef      String?      @map("storage_ref")
+  validation      Json?
+  metadata        Json?
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  restores        RestoreRecord[]
+
+  @@index([environment, status, startedAt])
+  @@index([type, startedAt])
+  @@map("backup_records")
+}
+
+model RestoreRecord {
+  id                   String        @id @default(cuid())
+  backupId             String?       @map("backup_id")
+  environment          String
+  targetEnvironment    String        @map("target_environment")
+  temporaryDatabaseRef String?       @map("temporary_database_ref")
+  requestedById        String?       @map("requested_by_id")
+  requestedByName      String?       @map("requested_by_name")
+  status               RestoreStatus @default(REQUESTED)
+  startedAt            DateTime      @default(now()) @map("started_at")
+  finishedAt           DateTime?     @map("finished_at")
+  durationMs           Int?          @map("duration_ms")
+  validation           Json?
+  result               String?
+  safetyNotes          String?       @map("safety_notes")
+  metadata             Json?
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  backup               BackupRecord? @relation(fields: [backupId], references: [id], onDelete: SetNull)
+
+  @@index([environment, status, startedAt])
+  @@index([backupId])
+  @@map("restore_records")
+}
+
+model RollbackPlan {
+  id              String         @id @default(cuid())
+  environment     String
+  requestedById   String?        @map("requested_by_id")
+  requestedByName String?        @map("requested_by_name")
+  status          RollbackStatus @default(PLANNED)
+  reason          String
+  fromCommit      String?        @map("from_commit")
+  toCommit        String?        @map("to_commit")
+  backupId        String?        @map("backup_id")
+  migrationPlan   Json?          @map("migration_plan")
+  variablePlan    Json?          @map("variable_plan")
+  validation      Json?
+  result          String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([environment, status, createdAt])
+  @@map("rollback_plans")
 }
 
 model ManualCustomer {

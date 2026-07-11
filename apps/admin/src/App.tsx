@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { BusinessesPage } from "./pages/BusinessesPage";
+import { BackupsPage } from "./pages/BackupsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PlansPage } from "./pages/PlansPage";
@@ -122,6 +123,7 @@ function AppRoutes() {
               <Route path="/super-settings" element={<SuperSettingsPage />} />
               <Route path="/maintenance" element={<SuperMaintenancePage />} />
               <Route path="/system-status" element={<SystemStatusPage />} />
+              <Route path="/backups" element={<BackupsPage />} />
             </>
           )}
           <Route path="/plans" element={<PlansPage />} />

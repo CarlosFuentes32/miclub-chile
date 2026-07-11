@@ -16,6 +16,11 @@ import {
   Incident,
   IncidentSeverity,
   IncidentStatus,
+  BackupOverview,
+  BackupRecord,
+  BackupType,
+  RestoreRecord,
+  RollbackPlan,
   UpdateBusinessInput,
   SystemStatus,
 } from "../types/admin";
@@ -50,6 +55,42 @@ export const adminService = {
       method: "POST",
       body: JSON.stringify({ service }),
     }),
+  getBackupOverview: () => apiRequest<BackupOverview>("/admin/backups/overview"),
+  getBackups: () => apiRequest<BackupRecord[]>("/admin/backups"),
+  createBackup: (input: { type: BackupType; reason?: string; beforeOperation?: string }) =>
+    apiRequest<BackupRecord>("/admin/backups", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  validateLatestBackup: () =>
+    apiRequest<BackupRecord>("/admin/backups/validate-latest", { method: "POST" }),
+  createRestoreDrill: (input: {
+    backupId?: string;
+    targetEnvironment: string;
+    temporaryDatabaseRef: string;
+    reason: string;
+    confirmedTemporaryRestore: boolean;
+  }) =>
+    apiRequest<RestoreRecord>("/admin/backups/restores", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  createRollbackPlan: (input: {
+    reason: string;
+    toCommit?: string;
+    backupId?: string;
+    includeDatabase?: boolean;
+    includeVariables?: boolean;
+  }) =>
+    apiRequest<RollbackPlan>("/admin/backups/rollbacks", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  simulateBackupRecovery: () =>
+    apiRequest<{ backup: BackupRecord; restore: RestoreRecord; rollback: RollbackPlan }>(
+      "/admin/backups/simulate",
+      { method: "POST" },
+    ),
   createBusiness: (input: CreateBusinessInput) =>
     apiRequest<{ business: { id: string }; owner: { email: string } }>(
       "/admin/businesses",

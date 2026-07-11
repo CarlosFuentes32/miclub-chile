@@ -315,3 +315,85 @@ export interface Incident {
   actions?: IncidentAction[];
   alerts?: IncidentAlert[];
 }
+
+export type BackupType =
+  | "AUTOMATIC"
+  | "MANUAL"
+  | "SCHEDULED"
+  | "PRE_DEPLOY"
+  | "PRE_MIGRATION"
+  | "PRE_RESTORE"
+  | "PRE_DATA_CLEANUP"
+  | "SIMULATION";
+export type BackupStatus = "REQUESTED" | "RUNNING" | "VERIFIED" | "FAILED" | "EXPIRED";
+export type RestoreStatus = "REQUESTED" | "VALIDATING" | "VALIDATED" | "FAILED" | "BLOCKED";
+export type RollbackStatus = "PLANNED" | "VALIDATED" | "BLOCKED" | "COMPLETED" | "FAILED";
+
+export interface BackupRecord {
+  id: string;
+  environment: string;
+  databaseName: string;
+  version: string;
+  commit: string;
+  branch?: string;
+  responsibleName?: string;
+  type: BackupType;
+  status: BackupStatus;
+  startedAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  sizeBytes?: number;
+  checksum?: string;
+  result?: string;
+  storageProvider: string;
+  storageRef?: string;
+  validation?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  restores?: RestoreRecord[];
+}
+
+export interface RestoreRecord {
+  id: string;
+  backupId?: string;
+  environment: string;
+  targetEnvironment: string;
+  temporaryDatabaseRef?: string;
+  requestedByName?: string;
+  status: RestoreStatus;
+  startedAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  validation?: Record<string, unknown>;
+  result?: string;
+  safetyNotes?: string;
+  backup?: BackupRecord;
+}
+
+export interface RollbackPlan {
+  id: string;
+  environment: string;
+  requestedByName?: string;
+  status: RollbackStatus;
+  reason: string;
+  fromCommit?: string;
+  toCommit?: string;
+  backupId?: string;
+  validation?: Record<string, unknown>;
+  result?: string;
+  createdAt: string;
+}
+
+export interface BackupOverview {
+  environment: string;
+  strategy: {
+    providerBackups: string;
+    appCatalog: string;
+    restorePolicy: string;
+  };
+  lastBackup?: BackupRecord;
+  lastRestore?: RestoreRecord;
+  lastRollback?: RollbackPlan;
+  backups: BackupRecord[];
+  restores: RestoreRecord[];
+  rollbacks: RollbackPlan[];
+}
