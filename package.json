@@ -27,6 +27,7 @@
     "test:email": "tsx scripts/test-email-service.ts",
     "test:password-reset": "tsx scripts/test-password-reset-flow.ts",
     "test:billing": "tsx scripts/test-billing-model.ts",
+    "test:enterprise-health": "tsx scripts/test-enterprise-health.ts",
     "billing:backfill": "tsx scripts/backfill-billing-subscriptions.ts",
     "audit:qa-prod": "tsx --env-file-if-exists=.env scripts/audit-production-qa-data.ts",
     "audit:qa-dry-run-cleanup": "tsx scripts/dry-run-qa-cleanup.ts",

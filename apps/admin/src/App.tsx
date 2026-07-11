@@ -23,6 +23,7 @@ import { SuperDashboardPage } from "./pages/SuperDashboardPage";
 import { SuperMaintenancePage } from "./pages/SuperMaintenancePage";
 import { SuperSettingsPage } from "./pages/SuperSettingsPage";
 import { SupportPage } from "./pages/SupportPage";
+import { SystemStatusPage } from "./pages/SystemStatusPage";
 import { UsersPage } from "./pages/UsersPage";
 import { adminService } from "./services/admin.service";
 import { AdminDashboard, GlobalSettings, Reports } from "./types/admin";
@@ -120,6 +121,7 @@ function AppRoutes() {
               <Route path="/audit" element={<SuperAuditPage />} />
               <Route path="/super-settings" element={<SuperSettingsPage />} />
               <Route path="/maintenance" element={<SuperMaintenancePage />} />
+              <Route path="/system-status" element={<SystemStatusPage />} />
             </>
           )}
           <Route path="/plans" element={<PlansPage />} />

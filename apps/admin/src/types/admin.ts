@@ -195,3 +195,57 @@ export interface AuditLog {
   user?: { name: string; email: string; role: UserRole };
   business?: { name: string };
 }
+
+export type SystemCheckStatus = "ok" | "warning" | "error" | "unknown";
+
+export interface SystemCheck {
+  key: string;
+  label: string;
+  status: SystemCheckStatus;
+  message: string;
+  responseTimeMs?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SystemStatus {
+  status: "ok" | "degraded" | "down";
+  service: "MiClub API";
+  environment: string;
+  summary: Record<SystemCheckStatus, number>;
+  checks: Record<string, SystemCheck>;
+  version: {
+    version: string;
+    commit: string;
+    branch: string;
+    buildNumber: string;
+    buildTime: string;
+    generatedAt: string;
+  };
+  deployment: {
+    provider: string;
+    repository: string;
+    branch: string;
+    commit: string;
+    environment: string;
+    service: string;
+    deploymentId: string;
+  };
+  runtime: {
+    nodeVersion: string;
+    uptimeSeconds: number;
+    memory: {
+      rssMb: number;
+      heapUsedMb: number;
+      heapTotalMb: number;
+      externalMb: number;
+    };
+    responseTimeMs: number;
+  };
+  lastPlaywright: {
+    status: SystemCheckStatus;
+    runId: string;
+    runUrl: string;
+    executedAt: string;
+  };
+  timestamp: string;
+}

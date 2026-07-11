@@ -14,11 +14,13 @@ import {
   BillingPayment,
   BillingSubscription,
   UpdateBusinessInput,
+  SystemStatus,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
   getAdminDashboard: () => apiRequest<any>("/admin/dashboard"),
   getSuperDashboard: () => apiRequest<SuperDashboard>("/admin/super/dashboard"),
+  getSystemStatus: () => apiRequest<SystemStatus>("/admin/system-status"),
   createBusiness: (input: CreateBusinessInput) =>
     apiRequest<{ business: { id: string }; owner: { email: string } }>(
       "/admin/businesses",

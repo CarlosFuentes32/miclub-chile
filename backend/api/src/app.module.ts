@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { ManualCustomersModule } from './manual-customers/manual-customers.module';
 import { LeadsModule } from './leads/leads.module';
 import { BillingModule } from './billing/billing.module';
+import { ObservabilityModule } from './observability/observability.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { BillingModule } from './billing/billing.module';
     ManualCustomersModule,
     LeadsModule,
     BillingModule,
+    ObservabilityModule,
   ],
   controllers: [AppController],
 })

@@ -14,6 +14,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AdminService } from "./admin.service";
+import { ObservabilityService } from "../observability/observability.service";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtUser } from "../auth/auth.types";
 import {
@@ -37,7 +38,10 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.MICLUB_ADMIN, UserRole.SUPER_ADMIN)
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly observability: ObservabilityService,
+  ) {}
   @Get("dashboard") dashboard() {
     return this.admin.dashboard();
   }
@@ -48,6 +52,11 @@ export class AdminController {
   @Roles(UserRole.SUPER_ADMIN)
   superDashboard() {
     return this.admin.superDashboard();
+  }
+  @Get("system-status")
+  @Roles(UserRole.SUPER_ADMIN)
+  systemStatus() {
+    return this.observability.getEnterpriseHealth();
   }
   @Post("businesses") createBusiness(
     @Body() d: CreateBusinessDto,

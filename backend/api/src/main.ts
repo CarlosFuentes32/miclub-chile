@@ -3,12 +3,12 @@ import { NestFactory } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import cookieParser = require("cookie-parser");
 import { AppModule } from "./app.module";
-import { PrismaService } from "./prisma/prisma.service";
+import { ObservabilityService } from "./observability/observability.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const prisma = app.get(PrismaService);
+  const observability = app.get(ObservabilityService);
   const origins = config
     .get<string>("CORS_ORIGIN", "")
     .split(",")
@@ -21,30 +21,7 @@ async function bootstrap() {
     .get(
       "/health",
       async (_request: unknown, response: { json: (body: unknown) => void }) => {
-        const startedAt = Date.now();
-        let database: "ok" | "error" = "ok";
-        let databaseLatencyMs: number | null = null;
-
-        try {
-          const dbStartedAt = Date.now();
-          await prisma.$queryRaw`SELECT 1`;
-          databaseLatencyMs = Date.now() - dbStartedAt;
-        } catch {
-          database = "error";
-        }
-
-        response.json({
-          status: database === "ok" ? "ok" : "degraded",
-          service: "MiClub API",
-          environment: config.get<string>("NODE_ENV", "development"),
-          checks: {
-            database,
-            databaseLatencyMs,
-          },
-          responseTimeMs: Date.now() - startedAt,
-          commit: config.get<string>("GIT_COMMIT_SHA") ?? config.get<string>("RENDER_GIT_COMMIT") ?? "unknown",
-          timestamp: new Date().toISOString(),
-        });
+        response.json(await observability.getEnterpriseHealth());
       },
     );
 
