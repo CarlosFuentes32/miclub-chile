@@ -249,3 +249,69 @@ export interface SystemStatus {
   };
   timestamp: string;
 }
+
+export type IncidentSeverity = "CRITICAL" | "HIGH" | "MEDIUM";
+export type IncidentStatus =
+  | "DETECTED"
+  | "INVESTIGATING"
+  | "IDENTIFIED"
+  | "MONITORING"
+  | "RESOLVED";
+export type IncidentActionType =
+  | "DETECTED"
+  | "STATUS_CHANGED"
+  | "NOTE_ADDED"
+  | "ALERT_SENT"
+  | "ALERT_SUPPRESSED"
+  | "RECOVERY_DETECTED"
+  | "RESOLVED";
+export type IncidentAlertChannel = "EMAIL" | "SLACK" | "WHATSAPP";
+
+export interface IncidentAction {
+  id: string;
+  incidentId: string;
+  actorUserId?: string;
+  action: IncidentActionType;
+  note?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface IncidentAlert {
+  id: string;
+  incidentId: string;
+  channel: IncidentAlertChannel;
+  status: string;
+  recipient?: string;
+  message?: string;
+  providerId?: string;
+  sentAt?: string;
+  createdAt: string;
+}
+
+export interface Incident {
+  id: string;
+  dedupeKey: string;
+  title: string;
+  service: string;
+  environment: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  startedAt: string;
+  recoveredAt?: string;
+  closedAt?: string;
+  lastAlertAt?: string;
+  alertCooldownUntil?: string;
+  deployedVersion?: string;
+  commit?: string;
+  summary: string;
+  technicalDetail?: string;
+  source: string;
+  finalStatus?: string;
+  durationSeconds?: number;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  actions?: IncidentAction[];
+  alerts?: IncidentAlert[];
+}

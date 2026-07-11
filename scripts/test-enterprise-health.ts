@@ -25,6 +25,7 @@ function assert(condition: unknown, message: string) {
 
 function baseEnv(overrides: Env = {}): Env {
   return {
+    APP_ENV: "staging",
     NODE_ENV: "staging",
     DATABASE_URL: "postgresql://example:example@localhost:5432/miclub_test",
     JWT_SECRET: "configured",

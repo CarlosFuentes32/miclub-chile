@@ -24,6 +24,24 @@ async function bootstrap() {
         response.json(await observability.getEnterpriseHealth());
       },
     );
+  app
+    .getHttpAdapter()
+    .get(
+      "/health/live",
+      async (_request: unknown, response: { json: (body: unknown) => void }) => {
+        response.json(observability.getLiveness());
+      },
+    );
+  app
+    .getHttpAdapter()
+    .get(
+      "/health/ready",
+      async (_request: unknown, response: { status: (code: number) => { json: (body: unknown) => void }; json: (body: unknown) => void }) => {
+        const readiness = await observability.getReadiness();
+        if (readiness.status !== "ready") return response.status(503).json(readiness);
+        return response.json(readiness);
+      },
+    );
 
   app.setGlobalPrefix("api");
   app.use(cookieParser());

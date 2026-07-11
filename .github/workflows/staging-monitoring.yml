@@ -1,0 +1,94 @@
+name: Staging Monitoring
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-monitoring
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: External staging monitor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STAGING_API_URL: ${{ secrets.E2E_API_URL }}
+      STAGING_LANDING_URL: ${{ secrets.E2E_LANDING_URL }}
+      STAGING_ADMIN_URL: ${{ secrets.E2E_ADMIN_URL }}
+      STAGING_CUSTOMER_URL: ${{ secrets.E2E_CUSTOMER_URL }}
+      STAGING_COMMERCE_URL: ${{ secrets.E2E_COMMERCE_URL }}
+      STAGING_CASHIER_URL: ${{ secrets.E2E_CASHIER_URL }}
+      MONITORING_TOKEN: ${{ secrets.MONITORING_TOKEN }}
+      VERCEL_BYPASS_SECRET: ${{ secrets.E2E_VERCEL_BYPASS_SECRET }}
+    steps:
+      - name: Validate required monitor secrets
+        run: |
+          test -n "$STAGING_API_URL"
+          test -n "$MONITORING_TOKEN"
+
+      - name: Check API liveness
+        run: |
+          curl --fail --silent --show-error --max-time 10 "$STAGING_API_URL/health/live" | tee live.json
+          grep -q '"status":"ok"' live.json
+
+      - name: Check API readiness
+        run: |
+          curl --fail --silent --show-error --max-time 15 "$STAGING_API_URL/health/ready" | tee ready.json
+          grep -q '"status":"ready"' ready.json
+
+      - name: Check detailed enterprise health
+        run: |
+          curl --fail --silent --show-error --max-time 20 "$STAGING_API_URL/health" | tee health.json
+          grep -Eq '"status":"(ok|degraded)"' health.json
+          grep -q '"environment":"staging"' health.json
+
+      - name: Check staging frontends
+        shell: bash
+        run: |
+          set -euo pipefail
+          urls=(
+            "$STAGING_LANDING_URL"
+            "$STAGING_ADMIN_URL"
+            "$STAGING_CUSTOMER_URL"
+            "$STAGING_COMMERCE_URL"
+            "$STAGING_CASHIER_URL"
+          )
+          for url in "${urls[@]}"; do
+            if [ -z "$url" ]; then
+              continue
+            fi
+            if [ -n "$VERCEL_BYPASS_SECRET" ]; then
+              curl --fail --silent --show-error --max-time 20 \
+                -H "x-vercel-protection-bypass: $VERCEL_BYPASS_SECRET" \
+                -H "x-vercel-set-bypass-cookie: true" \
+                "$url" > /dev/null
+            else
+              curl --fail --silent --show-error --max-time 20 "$url" > /dev/null
+            fi
+          done
+
+      - name: Run internal incident evaluator
+        run: |
+          curl --fail --silent --show-error --max-time 20 \
+            -X POST \
+            -H "x-monitoring-token: $MONITORING_TOKEN" \
+            "$STAGING_API_URL/monitoring/run" | tee incidents.json
+
+      - name: Upload monitoring payloads
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-monitoring-payloads
+          path: |
+            live.json
+            ready.json
+            health.json
+            incidents.json
+          if-no-files-found: ignore
+          retention-days: 14

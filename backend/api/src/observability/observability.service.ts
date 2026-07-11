@@ -24,7 +24,7 @@ export class ObservabilityService {
 
   async getEnterpriseHealth(): Promise<EnterpriseHealth> {
     const startedAt = Date.now();
-    const environment = this.config.get<string>("NODE_ENV", "development");
+    const environment = this.environment();
     const checks = await this.collectChecks();
     const summary = Object.values(checks).reduce(
       (acc, check) => {
@@ -54,6 +54,36 @@ export class ObservabilityService {
         runUrl: this.config.get<string>("LAST_PLAYWRIGHT_RUN_URL", ""),
         executedAt: this.config.get<string>("LAST_PLAYWRIGHT_RUN_AT", "unknown"),
       },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  getLiveness() {
+    return {
+      status: "ok",
+      service: "MiClub API",
+      environment: this.environment(),
+      uptimeSeconds: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  async getReadiness() {
+    const startedAt = Date.now();
+    const [database, prisma, variables] = await Promise.all([
+      this.databaseCheck(),
+      this.prismaCheck(),
+      this.variablesCheck(),
+    ]);
+    const checks = { database, prisma, variables };
+    const ready = Object.values(checks).every((check) => check.status === "ok");
+    return {
+      status: ready ? "ready" : "not_ready",
+      service: "MiClub API",
+      environment: this.environment(),
+      checks,
+      version: this.versionInfo(),
+      responseTimeMs: Date.now() - startedAt,
       timestamp: new Date().toISOString(),
     };
   }
@@ -212,7 +242,7 @@ export class ObservabilityService {
   }
 
   private async variablesCheck(): Promise<SystemCheck> {
-    const required = ["DATABASE_URL", "JWT_SECRET", "JWT_REFRESH_SECRET", "NODE_ENV", "CORS_ORIGIN"];
+    const required = ["DATABASE_URL", "JWT_SECRET", "JWT_REFRESH_SECRET", "APP_ENV", "NODE_ENV", "CORS_ORIGIN"];
     const recommended = ["FRONTEND_URL", "APP_URL", "ADMIN_APP_URL", "COMMERCE_APP_URL", "CASHIER_APP_URL", "EMAIL_FROM", "SUPPORT_EMAIL"];
     const missingRequired = required.filter((key) => !this.config.get<string>(key));
     const missingRecommended = recommended.filter((key) => !this.config.get<string>(key));
@@ -323,7 +353,7 @@ export class ObservabilityService {
   }
 
   private async environmentCheck(): Promise<SystemCheck> {
-    const env = this.config.get<string>("NODE_ENV", "development");
+    const env = this.environment();
     return {
       key: "environment",
       label: "Ambiente",
@@ -476,6 +506,12 @@ export class ObservabilityService {
       ?? this.config.get<string>("GITHUB_REF_NAME")
       ?? this.config.get<string>("GIT_BRANCH")
       ?? "unknown";
+  }
+
+  private environment() {
+    return this.config.get<string>("APP_ENV")
+      ?? this.config.get<string>("NODE_ENV")
+      ?? "development";
   }
 
   private buildNumber() {

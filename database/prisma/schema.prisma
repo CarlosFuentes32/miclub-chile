@@ -224,6 +224,36 @@ enum WebhookEventStatus {
   FAILED    @map("failed")
 }
 
+enum IncidentSeverity {
+  CRITICAL @map("critical")
+  HIGH     @map("high")
+  MEDIUM   @map("medium")
+}
+
+enum IncidentStatus {
+  DETECTED      @map("detected")
+  INVESTIGATING @map("investigating")
+  IDENTIFIED    @map("identified")
+  MONITORING    @map("monitoring")
+  RESOLVED      @map("resolved")
+}
+
+enum IncidentActionType {
+  DETECTED          @map("detected")
+  STATUS_CHANGED    @map("status_changed")
+  NOTE_ADDED        @map("note_added")
+  ALERT_SENT        @map("alert_sent")
+  ALERT_SUPPRESSED  @map("alert_suppressed")
+  RECOVERY_DETECTED @map("recovery_detected")
+  RESOLVED          @map("resolved")
+}
+
+enum IncidentAlertChannel {
+  EMAIL    @map("email")
+  SLACK    @map("slack")
+  WHATSAPP @map("whatsapp")
+}
+
 model Plan {
   id                String     @id @default(cuid())
   name              String     @unique
@@ -457,6 +487,71 @@ model BillingWebhookEvent {
   @@unique([provider, eventId])
   @@index([status, createdAt])
   @@map("billing_webhook_events")
+}
+
+model Incident {
+  id                  String           @id @default(cuid())
+  dedupeKey           String           @map("dedupe_key")
+  title               String
+  service             String
+  environment         String
+  severity            IncidentSeverity
+  status              IncidentStatus   @default(DETECTED)
+  startedAt           DateTime         @default(now()) @map("started_at")
+  detectedAt          DateTime         @default(now()) @map("detected_at")
+  recoveredAt         DateTime?        @map("recovered_at")
+  closedAt            DateTime?        @map("closed_at")
+  durationSeconds     Int?             @map("duration_seconds")
+  deployedVersion     String?          @map("deployed_version")
+  commit              String?
+  summary             String
+  technicalDetail     String?          @map("technical_detail")
+  source              String           @default("monitor")
+  responsible         String?
+  finalStatus         String?          @map("final_status")
+  lastAlertAt         DateTime?        @map("last_alert_at")
+  alertCooldownUntil  DateTime?        @map("alert_cooldown_until")
+  metadata            Json?
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  actions             IncidentAction[]
+  alerts              IncidentAlert[]
+
+  @@index([environment, status, severity, createdAt])
+  @@index([service, environment, status])
+  @@index([dedupeKey, environment, status])
+  @@map("incidents")
+}
+
+model IncidentAction {
+  id          String             @id @default(cuid())
+  incidentId  String             @map("incident_id")
+  actorUserId String?            @map("actor_user_id")
+  action      IncidentActionType
+  note        String?
+  metadata    Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  incident    Incident           @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("incident_actions")
+}
+
+model IncidentAlert {
+  id          String               @id @default(cuid())
+  incidentId  String               @map("incident_id")
+  channel     IncidentAlertChannel
+  status      String
+  recipient   String?
+  message     String?
+  providerId  String?              @map("provider_id")
+  sentAt      DateTime?            @map("sent_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  incident    Incident             @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, channel, createdAt])
+  @@map("incident_alerts")
 }
 
 model ManualCustomer {

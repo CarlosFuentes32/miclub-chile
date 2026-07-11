@@ -13,6 +13,9 @@ import {
   AuditLog,
   BillingPayment,
   BillingSubscription,
+  Incident,
+  IncidentSeverity,
+  IncidentStatus,
   UpdateBusinessInput,
   SystemStatus,
 } from "../types/admin";
@@ -21,6 +24,32 @@ export const adminService = {
   getAdminDashboard: () => apiRequest<any>("/admin/dashboard"),
   getSuperDashboard: () => apiRequest<SuperDashboard>("/admin/super/dashboard"),
   getSystemStatus: () => apiRequest<SystemStatus>("/admin/system-status"),
+  getIncidents: (params: Record<string, string> = {}) =>
+    apiRequest<Incident[]>(
+      `/admin/incidents?${new URLSearchParams(params).toString()}`,
+    ),
+  getIncidentDetail: (id: string) =>
+    apiRequest<Incident>(`/admin/incidents/${id}`),
+  updateIncidentStatus: (id: string, status: IncidentStatus, note?: string) =>
+    apiRequest<Incident>(`/admin/incidents/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, note }),
+    }),
+  addIncidentNote: (id: string, note: string) =>
+    apiRequest<Incident>(`/admin/incidents/${id}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  simulateIncident: (service: string, severity: IncidentSeverity) =>
+    apiRequest<Incident>("/admin/incidents/simulate", {
+      method: "POST",
+      body: JSON.stringify({ service, severity }),
+    }),
+  resolveIncidentSimulation: (service: string) =>
+    apiRequest<Incident>("/admin/incidents/simulate/resolve", {
+      method: "POST",
+      body: JSON.stringify({ service }),
+    }),
   createBusiness: (input: CreateBusinessInput) =>
     apiRequest<{ business: { id: string }; owner: { email: string } }>(
       "/admin/businesses",
