@@ -31,6 +31,7 @@ jobs:
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_DEFAULT_PASSWORD: ${{ secrets.E2E_DEFAULT_PASSWORD }}
       E2E_BILLING_WEBHOOK_SECRET: ${{ secrets.E2E_BILLING_WEBHOOK_SECRET }}
+      E2E_VERCEL_BYPASS_SECRET: ${{ secrets.E2E_VERCEL_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@v4
 

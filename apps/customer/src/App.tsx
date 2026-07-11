@@ -81,7 +81,14 @@ function AppRoutes() {
   if (user?.forcePasswordChange) return <ForcePasswordChange onComplete={signOut} />;
 
   return (
-    <Routes>
+    <>
+      {user && (
+        <PwaInstallPrompt
+          appName="MiClub Chile"
+          message="Instala MiClub Chile en tu celular para acceder más rápido a tus beneficios."
+        />
+      )}
+      <Routes>
       <Route path="/" element={<Navigate to={user ? '/app' : '/welcome'} replace />} />
       <Route path="/welcome" element={user ? <Navigate to="/app" replace /> : <WelcomePage />} />
       <Route path="/login" element={user ? <Navigate to="/app" replace /> : <LoginPage onLogin={setUser} />} />
@@ -119,7 +126,8 @@ function AppRoutes() {
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
@@ -127,10 +135,6 @@ export function App() {
   return (
     <>
       <EnvironmentBanner />
-      <PwaInstallPrompt
-        appName="MiClub Chile"
-        message="Instala MiClub Chile en tu celular para acceder más rápido a tus beneficios."
-      />
       <HashRouter>
         <AppRoutes />
       </HashRouter>

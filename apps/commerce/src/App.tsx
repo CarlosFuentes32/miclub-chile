@@ -109,7 +109,12 @@ function AppRoutes() {
       </main>
     );
   return (
-    <Routes>
+    <>
+      <PwaInstallPrompt
+        appName="MiClub Comercio"
+        message="Instala MiClub Comercio para administrar tu programa desde el celular."
+      />
+      <Routes>
       <Route element={<Protected user={user} />}>
         {" "}
         <Route
@@ -152,17 +157,14 @@ function AppRoutes() {
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 export function App() {
   return (
     <>
       <EnvironmentBanner />
-      <PwaInstallPrompt
-        appName="MiClub Comercio"
-        message="Instala MiClub Comercio para administrar tu programa desde el celular."
-      />
       <HashRouter>
         <AppRoutes />
       </HashRouter>

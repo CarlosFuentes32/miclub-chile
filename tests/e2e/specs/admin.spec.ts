@@ -19,7 +19,7 @@ test.describe("Administrador", () => {
     await page.getByLabel(/correo/i).fill(e2e.adminEmail);
     await page.getByLabel(/contraseña/i).fill(e2e.adminPassword);
     await page.getByRole("button", { name: /ingresar/i }).click();
-    await expect(page.getByText(/dashboard|super administrador|vista general/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /dashboard global/i })).toBeVisible();
   });
 
   test("crear, editar, suspender, reactivar y eliminar comercio QA", async () => {
@@ -41,6 +41,7 @@ test.describe("Administrador", () => {
 
   test("validar RUT y permitir escribir, corregir y borrar RUT completo en formulario", async ({ page }) => {
     await loginUi(page, e2e.adminUrl, e2e.adminEmail, e2e.adminPassword);
+    await page.getByRole("link", { name: /comercios/i }).click();
     await page.getByRole("button", { name: /crear comercio|nuevo comercio|agregar/i }).first().click();
     const rut = page.getByLabel(/rut/i).first();
     await rut.fill(validRut("rut"));

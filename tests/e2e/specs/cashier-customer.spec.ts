@@ -116,7 +116,7 @@ test.describe("Cajero y Cliente", () => {
     await page.getByLabel(/nombre/i).fill("123");
     await page.getByLabel(/teléfono/i).fill("abc");
     await page.getByLabel(/correo/i).fill("correo-invalido");
-    await page.getByLabel(/contraseña/i).fill("123");
+    await page.getByLabel(/contraseña/i).first().fill("123");
     await page.getByRole("button", { name: /crear/i }).click();
     await expect(page.getByLabel(/nombre/i)).toBeVisible();
   });
