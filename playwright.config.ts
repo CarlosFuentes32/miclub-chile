@@ -20,7 +20,10 @@ export default defineConfig({
   use: {
     baseURL: e2e.customerUrl,
     extraHTTPHeaders: e2e.vercelBypassSecret
-      ? { "x-vercel-protection-bypass": e2e.vercelBypassSecret }
+      ? {
+          "x-vercel-protection-bypass": e2e.vercelBypassSecret,
+          "x-vercel-set-bypass-cookie": "true",
+        }
       : undefined,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
