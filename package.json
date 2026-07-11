@@ -28,6 +28,8 @@
     "test:password-reset": "tsx scripts/test-password-reset-flow.ts",
     "test:billing": "tsx scripts/test-billing-model.ts",
     "billing:backfill": "tsx scripts/backfill-billing-subscriptions.ts",
+    "audit:qa-prod": "tsx --env-file-if-exists=.env scripts/audit-production-qa-data.ts",
+    "audit:qa-dry-run-cleanup": "tsx scripts/dry-run-qa-cleanup.ts",
     "test:doc-links": "node scripts/check-doc-links.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
