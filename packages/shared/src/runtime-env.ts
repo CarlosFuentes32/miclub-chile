@@ -7,12 +7,12 @@ export function isMiClubVercelPreview() {
 }
 
 export function getApiUrl() {
+  if (isMiClubVercelPreview()) return STAGING_API_URL;
+
   return (
     import.meta.env.VITE_API_URL ??
-    (isMiClubVercelPreview()
-      ? STAGING_API_URL
-      : import.meta.env.PROD
-        ? "https://api.miclubchile.cl/api"
-        : "http://localhost:3000/api")
+    (import.meta.env.PROD
+      ? "https://api.miclubchile.cl/api"
+      : "http://localhost:3000/api")
   );
 }
