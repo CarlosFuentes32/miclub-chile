@@ -19,6 +19,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { BusinessAccessService } from "./business-access.service";
 import { EmailService } from "../email/email.service";
+import { AuditService } from "../audit/audit.service";
 
 @Injectable()
 export class BusinessesService {
@@ -27,6 +28,7 @@ export class BusinessesService {
     private readonly access: BusinessAccessService,
     private readonly config: ConfigService,
     private readonly email: EmailService,
+    private readonly audit: AuditService,
   ) {}
   mine(userId: string) {
     return this.prisma.businessUser.findMany({
@@ -279,5 +281,36 @@ export class BusinessesService {
           }
         : null,
     };
+  }
+
+  async billing(userId: string, businessId: string) {
+    await this.access.requireManager(userId, businessId);
+    const subscription = await this.prisma.businessSubscription.findUnique({
+      where: { businessId },
+      include: { plan: true, payments: { orderBy: { createdAt: "desc" }, take: 24, include: { history: { orderBy: { createdAt: "desc" } } } } },
+    });
+    if (!subscription) return { subscription: null, payments: [], paymentPortalReady: false, provider: null };
+    return {
+      subscription: {
+        ...subscription,
+        plan: { ...subscription.plan, monthlyPrice: Number(subscription.plan.monthlyPrice), features: subscription.plan.features },
+      },
+      payments: subscription.payments.map((payment) => ({ ...payment, amount: Number(payment.amount) })),
+      paymentPortalReady: false,
+      provider: null,
+      message: "El portal de pago se habilitará cuando se conecte el proveedor oficial en sandbox.",
+    };
+  }
+
+  async requestBillingChange(userId: string, businessId: string, requestedPlanId: string | undefined, reason: string) {
+    await this.access.requireManager(userId, businessId);
+    await this.audit.create({ userId, businessId, action: "billing_plan_change_requested", entityType: "business", entityId: businessId, metadata: { requestedPlanId, reason } });
+    return { ok: true, message: "Solicitud registrada. El equipo MiClub revisará el cambio de plan." };
+  }
+
+  async requestBillingCancel(userId: string, businessId: string, reason: string) {
+    await this.access.requireManager(userId, businessId);
+    await this.audit.create({ userId, businessId, action: "billing_cancel_requested", entityType: "business", entityId: businessId, metadata: { reason } });
+    return { ok: true, message: "Solicitud de cancelación registrada. No se cancela automáticamente hasta revisión administrativa." };
   }
 }

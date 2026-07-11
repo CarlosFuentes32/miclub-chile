@@ -13,6 +13,7 @@ import { CommerceLayout } from "./layouts/CommerceLayout";
 import { CollaboratorsPage } from "./pages/CollaboratorsPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { BillingPage } from "./pages/BillingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ManualCustomersPage } from "./pages/ManualCustomersPage";
 import { ProgramPage } from "./pages/ProgramPage";
@@ -147,6 +148,7 @@ function AppRoutes() {
               />
             }
           />
+          <Route path="/billing" element={<BillingPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

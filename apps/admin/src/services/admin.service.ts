@@ -11,6 +11,8 @@ import {
   UserChange,
   SuperDashboard,
   AuditLog,
+  BillingPayment,
+  BillingSubscription,
   UpdateBusinessInput,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
@@ -172,6 +174,42 @@ export const adminService = {
     apiRequest<Plan>(`/admin/plans/${p.id}`, {
       method: "PATCH",
       body: JSON.stringify(p),
+    }),
+  getBillingSubscriptions: (status = "all") =>
+    apiRequest<BillingSubscription[]>(`/admin/billing/subscriptions?status=${status}`),
+  getBillingPayments: (status = "all") =>
+    apiRequest<BillingPayment[]>(`/admin/billing/payments?status=${status}`),
+  registerManualPayment: (input: {
+    businessId: string;
+    planId: string;
+    amount: number;
+    reference: string;
+    reason: string;
+    paymentMethod?: string;
+  }) =>
+    apiRequest<BillingPayment>("/admin/billing/payments/manual", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  changeSubscriptionPlan: (businessId: string, planId: string, reason: string) =>
+    apiRequest(`/admin/billing/subscriptions/${businessId}/plan`, {
+      method: "PATCH",
+      body: JSON.stringify({ planId, reason }),
+    }),
+  grantTrial: (businessId: string, days: number, reason: string) =>
+    apiRequest(`/admin/billing/subscriptions/${businessId}/trial`, {
+      method: "POST",
+      body: JSON.stringify({ days, reason }),
+    }),
+  suspendSubscription: (businessId: string, reason: string) =>
+    apiRequest(`/admin/billing/subscriptions/${businessId}/suspend`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+  reactivateSubscription: (businessId: string, reason: string) =>
+    apiRequest(`/admin/billing/subscriptions/${businessId}/reactivate`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
     }),
   getReports: () => apiRequest<any>("/admin/reports"),
   getAuditLogs: (params: Record<string, string>) =>

@@ -17,6 +17,7 @@ import { UserRole } from "@prisma/client";
 import { BusinessesService } from "./businesses.service";
 import {
   CreateCollaboratorDto,
+  BillingRequestDto,
   UpdateBusinessDto,
   UpdateCollaboratorDto,
 } from "./dto/business.dto";
@@ -100,5 +101,25 @@ export class BusinessesController {
     @Query("business_id") id: string,
   ) {
     return this.businesses.qrMaterial(u.id, id);
+  }
+  @Get("billing") billing(
+    @CurrentUser() u: JwtUser,
+    @Query("business_id") id: string,
+  ) {
+    return this.businesses.billing(u.id, id);
+  }
+  @Post("billing/change-request") requestPlanChange(
+    @CurrentUser() u: JwtUser,
+    @Query("business_id") id: string,
+    @Body() d: BillingRequestDto,
+  ) {
+    return this.businesses.requestBillingChange(u.id, id, d.requested_plan_id, d.reason);
+  }
+  @Post("billing/cancel-request") requestCancel(
+    @CurrentUser() u: JwtUser,
+    @Query("business_id") id: string,
+    @Body() d: BillingRequestDto,
+  ) {
+    return this.businesses.requestBillingCancel(u.id, id, d.reason);
   }
 }

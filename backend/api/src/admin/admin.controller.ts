@@ -18,14 +18,18 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtUser } from "../auth/auth.types";
 import {
   ChangePasswordDto,
+  ChangeSubscriptionPlanDto,
+  CancelSubscriptionDto,
   CorrectRutDto,
   CreateBusinessDto,
   ManualAdjustmentDto,
+  ManualPaymentDto,
   ManualRewardDto,
   PlanDto,
   ReasonDto,
   StatusDto,
   SupportNoteDto,
+  TrialGrantDto,
   UpdateAdminUserDto,
   UpdateBusinessDto,
 } from "./dto/admin.dto";
@@ -203,6 +207,46 @@ export class AdminController {
   }
   @Patch("plans/:id") update(@Param("id") id: string, @Body() d: PlanDto) {
     return this.admin.updatePlan(id, d);
+  }
+  @Get("billing/subscriptions")
+  @Roles(UserRole.SUPER_ADMIN)
+  billingSubscriptions(@Query("status") status?: string) {
+    return this.admin.billingSubscriptions(status);
+  }
+  @Get("billing/payments")
+  @Roles(UserRole.SUPER_ADMIN)
+  billingPayments(@Query("status") status?: string) {
+    return this.admin.billingPayments(status);
+  }
+  @Post("billing/payments/manual")
+  @Roles(UserRole.SUPER_ADMIN)
+  manualPayment(@Body() d: ManualPaymentDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.registerManualPayment(d, actor.id);
+  }
+  @Patch("billing/subscriptions/:businessId/plan")
+  @Roles(UserRole.SUPER_ADMIN)
+  changeSubscriptionPlan(@Param("businessId") businessId: string, @Body() d: ChangeSubscriptionPlanDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.changeSubscriptionPlan(businessId, d.planId, d.reason, actor.id);
+  }
+  @Post("billing/subscriptions/:businessId/trial")
+  @Roles(UserRole.SUPER_ADMIN)
+  grantTrial(@Param("businessId") businessId: string, @Body() d: TrialGrantDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.grantTrial(businessId, d.days, d.reason, actor.id);
+  }
+  @Post("billing/subscriptions/:businessId/suspend")
+  @Roles(UserRole.SUPER_ADMIN)
+  suspendSubscription(@Param("businessId") businessId: string, @Body() d: ReasonDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.suspendSubscription(businessId, d.reason, actor.id);
+  }
+  @Post("billing/subscriptions/:businessId/reactivate")
+  @Roles(UserRole.SUPER_ADMIN)
+  reactivateSubscription(@Param("businessId") businessId: string, @Body() d: ReasonDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.reactivateSubscription(businessId, d.reason, actor.id);
+  }
+  @Post("billing/subscriptions/:businessId/cancel")
+  @Roles(UserRole.SUPER_ADMIN)
+  cancelSubscription(@Param("businessId") businessId: string, @Body() d: CancelSubscriptionDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.cancelSubscription(businessId, d.reason, actor.id);
   }
   @Get("reports") reports() {
     return this.admin.reports();

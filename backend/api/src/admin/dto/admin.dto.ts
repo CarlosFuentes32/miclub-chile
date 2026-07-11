@@ -21,10 +21,39 @@ export class StatusDto {
 export class PlanDto {
   @IsString() name!: string;
   @IsNumber() @IsPositive() monthlyPrice!: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsIn(["MONTHLY", "YEARLY"]) billingPeriod?: "MONTHLY" | "YEARLY";
+  @IsOptional() @IsInt() trialDays?: number;
   @IsInt() @IsPositive() customerLimit!: number;
   @IsInt() @IsPositive() collaboratorLimit!: number;
   @IsArray() @IsString({ each: true }) features!: string[];
   @IsOptional() @IsBoolean() active?: boolean;
+}
+
+export class ManualPaymentDto {
+  @IsString() businessId!: string;
+  @IsString() planId!: string;
+  @IsNumber() @IsPositive() amount!: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsString() @MinLength(3) reference!: string;
+  @IsString() @MinLength(5) reason!: string;
+  @IsOptional() @IsString() paymentMethod?: string;
+  @IsOptional() @IsString() idempotencyKey?: string;
+  @IsOptional() @IsString() paidAt?: string;
+}
+
+export class ChangeSubscriptionPlanDto {
+  @IsString() planId!: string;
+  @IsString() @MinLength(5) reason!: string;
+}
+
+export class TrialGrantDto {
+  @IsInt() @IsPositive() days!: number;
+  @IsString() @MinLength(5) reason!: string;
+}
+
+export class CancelSubscriptionDto {
+  @IsString() @MinLength(5) reason!: string;
 }
 
 export class CreateBusinessDto {

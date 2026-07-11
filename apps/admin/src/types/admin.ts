@@ -75,10 +75,37 @@ export interface Plan {
   id: string;
   name: string;
   monthlyPrice: number;
+  currency?: string;
+  billingPeriod?: "MONTHLY" | "YEARLY";
+  trialDays?: number;
   customerLimit: number;
   collaboratorLimit: number;
   features: string[];
   active: boolean;
+}
+export interface BillingSubscription {
+  id: string;
+  businessId: string;
+  business: { id: string; name: string; status: string };
+  plan: Plan;
+  status: string;
+  trialEndsAt?: string;
+  nextBillingAt?: string;
+  currentPeriodEndsAt?: string;
+  lastPaymentStatus?: string;
+}
+export interface BillingPayment {
+  id: string;
+  business: { id: string; name: string };
+  amount: number;
+  currency: string;
+  status: string;
+  provider: string;
+  paidAt?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  paymentMethod?: string;
+  reference?: string;
 }
 export interface Reports {
   newBusinesses: number;

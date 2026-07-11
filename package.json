@@ -26,6 +26,8 @@
     "test:user-reactivation": "tsx scripts/test-user-reactivation.ts",
     "test:email": "tsx scripts/test-email-service.ts",
     "test:password-reset": "tsx scripts/test-password-reset-flow.ts",
+    "test:billing": "tsx scripts/test-billing-model.ts",
+    "billing:backfill": "tsx scripts/backfill-billing-subscriptions.ts",
     "test:doc-links": "node scripts/check-doc-links.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

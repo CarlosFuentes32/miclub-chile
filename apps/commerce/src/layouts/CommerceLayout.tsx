@@ -4,6 +4,7 @@ import {
   LogOut,
   QrCode,
   Settings,
+  CreditCard,
   Users,
   UserRoundCog,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const nav = [
   ["/collaborators", "Colaboradores", UserRoundCog],
   ["/rewards", "Recompensas", Gift],
   ["/qr-material", "Material QR", QrCode],
+  ["/billing", "Plan y pagos", CreditCard],
   ["/settings", "Ajustes", Settings],
 ] as const;
 export function CommerceLayout({

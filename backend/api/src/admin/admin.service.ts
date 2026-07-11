@@ -5,11 +5,16 @@ import {
 } from "@nestjs/common";
 import {
   BusinessStatus,
+  BillingPeriod,
   CycleStatus,
   MembershipStatus,
+  PaymentProvider,
+  PaymentStatus,
+  PlanStatus,
   ProgramStatus,
   Prisma,
   RewardStatus,
+  SubscriptionStatus,
   TransactionStatus,
   UserRole,
   UserStatus,
@@ -22,6 +27,7 @@ import { EmailService } from "../email/email.service";
 import { publicUserSelect } from "../users/users.service";
 import {
   CreateBusinessDto,
+  ManualPaymentDto,
   ManualAdjustmentDto,
   ManualRewardDto,
   PlanDto,
@@ -230,6 +236,7 @@ export class AdminService {
     if (await this.prisma.business.findUnique({ where: { slug } }))
       slug = `${slug}-${Date.now().toString().slice(-6)}`;
     const result = await this.prisma.$transaction(async (tx) => {
+      const plan = await tx.plan.findUniqueOrThrow({ where: { id: d.planId } });
       const owner = await tx.user.create({
         data: {
           name: d.ownerName,
@@ -262,6 +269,23 @@ export class AdminService {
           userId: owner.id,
           role: UserRole.BUSINESS_OWNER,
           status: MembershipStatus.ACTIVE,
+        },
+      });
+      const start = new Date();
+      const trialEndsAt = plan.trialDays > 0 ? this.addDays(start, plan.trialDays) : null;
+      const firstBilling = trialEndsAt ?? this.addPeriod(start, plan.billingPeriod);
+      await tx.businessSubscription.create({
+        data: {
+          businessId: business.id,
+          planId: plan.id,
+          status: trialEndsAt ? SubscriptionStatus.TRIALING : SubscriptionStatus.ACTIVE,
+          startedAt: start,
+          trialEndsAt,
+          currentPeriodStartsAt: start,
+          currentPeriodEndsAt: firstBilling,
+          nextBillingAt: firstBilling,
+          lastPaymentStatus: plan.monthlyPrice.equals(0) ? PaymentStatus.APPROVED : null,
+          metadata: { source: "admin_create_business" },
         },
       });
       return {
@@ -872,24 +896,172 @@ export class AdminService {
     const rows = await this.prisma.plan.findMany({
       orderBy: { monthlyPrice: "asc" },
     });
-    return rows.map((p) => ({ ...p, monthlyPrice: Number(p.monthlyPrice) }));
+    return rows.map((p) => this.planDto(p));
   }
   async createPlan(d: PlanDto) {
     const p = await this.prisma.plan.create({
       data: {
-        ...d,
+        name: d.name,
+        currency: d.currency ?? "CLP",
+        billingPeriod: d.billingPeriod ?? BillingPeriod.MONTHLY,
+        trialDays: d.trialDays ?? 0,
+        customerLimit: d.customerLimit,
+        collaboratorLimit: d.collaboratorLimit,
+        features: d.features,
         monthlyPrice: new Prisma.Decimal(d.monthlyPrice),
         active: d.active ?? true,
+        status: d.active === false ? PlanStatus.INACTIVE : PlanStatus.ACTIVE,
       },
     });
-    return { ...p, monthlyPrice: Number(p.monthlyPrice) };
+    return this.planDto(p);
   }
   async updatePlan(id: string, d: PlanDto) {
     const p = await this.prisma.plan.update({
       where: { id },
-      data: { ...d, monthlyPrice: new Prisma.Decimal(d.monthlyPrice) },
+      data: {
+        name: d.name,
+        currency: d.currency ?? "CLP",
+        billingPeriod: d.billingPeriod ?? BillingPeriod.MONTHLY,
+        trialDays: d.trialDays ?? 0,
+        customerLimit: d.customerLimit,
+        collaboratorLimit: d.collaboratorLimit,
+        features: d.features,
+        monthlyPrice: new Prisma.Decimal(d.monthlyPrice),
+        active: d.active ?? true,
+        status: d.active === false ? PlanStatus.INACTIVE : PlanStatus.ACTIVE,
+      },
     });
-    return { ...p, monthlyPrice: Number(p.monthlyPrice) };
+    return this.planDto(p);
+  }
+
+  async billingSubscriptions(status?: string) {
+    const normalized = this.subscriptionStatus(status);
+    const rows = await this.prisma.businessSubscription.findMany({
+      where: normalized ? { status: normalized } : undefined,
+      include: { business: { select: { id: true, name: true, status: true } }, plan: true, payments: { orderBy: { createdAt: "desc" }, take: 5 } },
+      orderBy: { updatedAt: "desc" },
+    });
+    return rows.map((s) => ({
+      ...s,
+      plan: this.planDto(s.plan),
+      payments: s.payments.map((p) => ({ ...p, amount: Number(p.amount) })),
+    }));
+  }
+
+  async billingPayments(status?: string) {
+    const normalized = this.paymentStatus(status);
+    const rows = await this.prisma.billingPayment.findMany({
+      where: normalized ? { status: normalized } : undefined,
+      include: { business: { select: { id: true, name: true } }, subscription: { include: { plan: true } }, history: { orderBy: { createdAt: "desc" } } },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+    });
+    return rows.map((p) => ({ ...p, amount: Number(p.amount) }));
+  }
+
+  async registerManualPayment(dto: ManualPaymentDto, actorId: string) {
+    const idempotencyKey = dto.idempotencyKey ?? `manual:${dto.businessId}:${dto.reference}`;
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.billingPayment.findUnique({ where: { idempotencyKey } });
+      if (existing) return { ...existing, amount: Number(existing.amount), idempotent: true };
+      const business = await tx.business.findUniqueOrThrow({ where: { id: dto.businessId } });
+      const plan = await tx.plan.findUniqueOrThrow({ where: { id: dto.planId } });
+      const paidAt = dto.paidAt ? new Date(dto.paidAt) : new Date();
+      const periodStart = paidAt;
+      const periodEnd = this.addPeriod(periodStart, plan.billingPeriod);
+      const subscription = await tx.businessSubscription.upsert({
+        where: { businessId: business.id },
+        update: {
+          planId: plan.id,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodStartsAt: periodStart,
+          currentPeriodEndsAt: periodEnd,
+          nextBillingAt: periodEnd,
+          graceEndsAt: null,
+          cancelledAt: null,
+          cancellationReason: null,
+          externalProvider: PaymentProvider.MANUAL,
+          lastPaymentStatus: PaymentStatus.APPROVED,
+        },
+        create: {
+          businessId: business.id,
+          planId: plan.id,
+          status: SubscriptionStatus.ACTIVE,
+          startedAt: paidAt,
+          currentPeriodStartsAt: periodStart,
+          currentPeriodEndsAt: periodEnd,
+          nextBillingAt: periodEnd,
+          externalProvider: PaymentProvider.MANUAL,
+          lastPaymentStatus: PaymentStatus.APPROVED,
+        },
+      });
+      await tx.business.update({ where: { id: business.id }, data: { planId: plan.id, status: BusinessStatus.ACTIVE } });
+      const payment = await tx.billingPayment.create({
+        data: {
+          businessId: business.id,
+          subscriptionId: subscription.id,
+          provider: PaymentProvider.MANUAL,
+          amount: new Prisma.Decimal(dto.amount),
+          currency: dto.currency ?? plan.currency ?? "CLP",
+          status: PaymentStatus.APPROVED,
+          paidAt,
+          periodStart,
+          periodEnd,
+          paymentMethod: dto.paymentMethod ?? "transferencia",
+          reference: dto.reference,
+          idempotencyKey,
+          providerPayload: { reason: dto.reason, actorId },
+        },
+      });
+      await tx.billingPaymentHistory.create({ data: { paymentId: payment.id, newStatus: PaymentStatus.APPROVED, reason: dto.reason, metadata: { actorId, manual: true } } });
+      await this.audit.create({ userId: actorId, businessId: business.id, action: "manual_payment_registered", entityType: "billing_payment", entityId: payment.id, metadata: { amount: dto.amount, reference: dto.reference, periodEnd } }, tx);
+      return { ...payment, amount: Number(payment.amount) };
+    });
+  }
+
+  async changeSubscriptionPlan(businessId: string, planId: string, reason: string, actorId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { planId: true } });
+      const plan = await tx.plan.findUniqueOrThrow({ where: { id: planId } });
+      const subscription = await tx.businessSubscription.upsert({
+        where: { businessId },
+        update: { planId: plan.id },
+        create: { businessId, planId: plan.id, status: SubscriptionStatus.TRIALING, trialEndsAt: plan.trialDays ? this.addDays(new Date(), plan.trialDays) : null },
+      });
+      await tx.business.update({ where: { id: businessId }, data: { planId: plan.id } });
+      await tx.merchantPlanHistory.create({ data: { businessId, oldPlanId: current.planId, newPlanId: plan.id, actorUserId: actorId, reason } });
+      await this.audit.create({ userId: actorId, businessId, action: "subscription_plan_changed", entityType: "business_subscription", entityId: subscription.id, metadata: { oldPlanId: current.planId, newPlanId: plan.id, reason } }, tx);
+      return subscription;
+    });
+  }
+
+  async grantTrial(businessId: string, days: number, reason: string, actorId: string) {
+    const now = new Date();
+    const trialEndsAt = this.addDays(now, days);
+    const subscription = await this.prisma.businessSubscription.update({ where: { businessId }, data: { status: SubscriptionStatus.TRIALING, trialEndsAt, nextBillingAt: trialEndsAt, graceEndsAt: null } });
+    await this.audit.create({ userId: actorId, businessId, action: "subscription_trial_granted", entityType: "business_subscription", entityId: subscription.id, metadata: { days, reason } });
+    return subscription;
+  }
+
+  async suspendSubscription(businessId: string, reason: string, actorId: string) {
+    const subscription = await this.prisma.businessSubscription.update({ where: { businessId }, data: { status: SubscriptionStatus.SUSPENDED, graceEndsAt: null } });
+    await this.prisma.business.update({ where: { id: businessId }, data: { status: BusinessStatus.SUSPENDED } });
+    await this.audit.create({ userId: actorId, businessId, action: "subscription_suspended", entityType: "business_subscription", entityId: subscription.id, metadata: { reason } });
+    return subscription;
+  }
+
+  async reactivateSubscription(businessId: string, reason: string, actorId: string) {
+    const subscription = await this.prisma.businessSubscription.update({ where: { businessId }, data: { status: SubscriptionStatus.ACTIVE, graceEndsAt: null, cancelledAt: null, cancellationReason: null } });
+    await this.prisma.business.update({ where: { id: businessId }, data: { status: BusinessStatus.ACTIVE } });
+    await this.audit.create({ userId: actorId, businessId, action: "subscription_reactivated", entityType: "business_subscription", entityId: subscription.id, metadata: { reason } });
+    return subscription;
+  }
+
+  async cancelSubscription(businessId: string, reason: string, actorId: string) {
+    const subscription = await this.prisma.businessSubscription.update({ where: { businessId }, data: { status: SubscriptionStatus.CANCELLED, cancelledAt: new Date(), cancellationReason: reason } });
+    await this.prisma.business.update({ where: { id: businessId }, data: { status: BusinessStatus.CANCELLED } });
+    await this.audit.create({ userId: actorId, businessId, action: "subscription_cancelled", entityType: "business_subscription", entityId: subscription.id, metadata: { reason } });
+    return subscription;
   }
   async globalUsers(role: keyof typeof UserRole, q = "") {
     const where: Prisma.UserWhereInput = {
@@ -1335,5 +1507,35 @@ export class AdminService {
       activeBusinesses,
       suspendedBusinesses,
     };
+  }
+
+  private planDto(plan: any) {
+    return {
+      ...plan,
+      monthlyPrice: Number(plan.monthlyPrice),
+      features: Array.isArray(plan.features) ? plan.features : [],
+      active: plan.status ? plan.status === PlanStatus.ACTIVE : plan.active,
+    };
+  }
+
+  private addDays(date: Date, days: number) {
+    return new Date(date.getTime() + days * 86_400_000);
+  }
+
+  private addPeriod(date: Date, period: BillingPeriod) {
+    const next = new Date(date);
+    if (period === BillingPeriod.YEARLY) next.setFullYear(next.getFullYear() + 1);
+    else next.setMonth(next.getMonth() + 1);
+    return next;
+  }
+
+  private subscriptionStatus(status?: string) {
+    if (!status || status === "all") return undefined;
+    return SubscriptionStatus[status.toUpperCase() as keyof typeof SubscriptionStatus];
+  }
+
+  private paymentStatus(status?: string) {
+    if (!status || status === "all") return undefined;
+    return PaymentStatus[status.toUpperCase() as keyof typeof PaymentStatus];
   }
 }

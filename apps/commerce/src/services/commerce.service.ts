@@ -8,6 +8,7 @@ import {
   ManualCustomer,
   ProgramType,
   RewardStatus,
+  BillingSummary,
 } from "../types/commerce";
 
 let businessId: string | null = null;
@@ -163,6 +164,18 @@ export const commerceService = {
   async getQRMaterial() {
     const b = await id();
     return apiRequest(`/business/qr-material?business_id=${b}`);
+  },
+  async getBilling(): Promise<BillingSummary> {
+    const b = await id();
+    return apiRequest(`/business/billing?business_id=${b}`);
+  },
+  async requestPlanChange(planId: string | undefined, reason: string) {
+    const b = await id();
+    return apiRequest(`/business/billing/change-request?business_id=${b}`, { method: "POST", body: JSON.stringify({ requested_plan_id: planId, reason }) });
+  },
+  async requestBillingCancel(reason: string) {
+    const b = await id();
+    return apiRequest(`/business/billing/cancel-request?business_id=${b}`, { method: "POST", body: JSON.stringify({ reason }) });
   },
   async getManualCustomers(q = "", filter = "all"): Promise<ManualCustomer[]> {
     const b = await id();
