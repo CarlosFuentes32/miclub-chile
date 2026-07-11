@@ -1,8 +1,14 @@
 const env = (import.meta as any).env?.VITE_APP_ENV ?? "";
 const label = (import.meta as any).env?.VITE_ENVIRONMENT_LABEL ?? "AMBIENTE DE PRUEBAS";
 
+function isMiClubVercelPreview() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return host.endsWith(".vercel.app") && host.includes("mi-club-chile");
+}
+
 export function EnvironmentBanner() {
-  if (env !== "staging") return null;
+  if (env !== "staging" && !isMiClubVercelPreview()) return null;
   return (
     <div
       role="status"
