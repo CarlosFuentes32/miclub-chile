@@ -847,7 +847,16 @@ export class AdminService {
     return { ok: true };
   }
   async reactivateUser(id: string, actorId: string) {
-    const current = await this.prisma.user.findUniqueOrThrow({ where: { id } });
+    const current = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        deletedAt: true,
+        deletedByUserId: true,
+      },
+    });
+    if (!current) throw new NotFoundException("Usuario no encontrado.");
     if (
       current.status !== UserStatus.DELETED &&
       current.status !== UserStatus.SUSPENDED
@@ -875,6 +884,12 @@ export class AdminService {
           action: "user_reactivated",
           entityType: "user",
           entityId: id,
+          metadata: {
+            previous_status: current.status,
+            new_status: UserStatus.ACTIVE,
+            previous_deleted_at: current.deletedAt,
+            previous_deleted_by_user_id: current.deletedByUserId,
+          },
         },
         tx,
       );
