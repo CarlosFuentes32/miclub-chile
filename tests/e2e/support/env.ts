@@ -48,7 +48,8 @@ export function assertStagingEnvironment(config: E2EConfig) {
       host === "comercio.miclubchile.cl" ||
       host === "cajero.miclubchile.cl" ||
       host === "app.miclubchile.cl";
-    if (isProduction || !host.includes("staging")) {
+    const isMiClubPreview = host.endsWith(".vercel.app") && host.includes("mi-club-chile");
+    if (isProduction || (!host.includes("staging") && !isMiClubPreview)) {
       throw new Error(`E2E bloqueado: ${raw} no parece staging. Usa dominios staging o previews aislados.`);
     }
   }

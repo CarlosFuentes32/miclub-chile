@@ -92,7 +92,7 @@ Configurar como GitHub Secrets:
 
 - `E2E_ENV` no es `staging`.
 - Alguna URL apunta a dominios productivos de MiClub Chile.
-- Algún host no contiene `staging`.
+- Algún host no contiene `staging` y tampoco corresponde a un preview Vercel aislado de MiClub (`*.vercel.app` con `mi-club-chile`).
 
 ## Ejecución local
 
