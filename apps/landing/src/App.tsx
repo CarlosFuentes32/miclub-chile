@@ -1,5 +1,5 @@
-import { EnvironmentBanner } from '@miclub/ui';
 import { HashRouter, Route, Routes } from 'react-router-dom';
+import { EnvironmentBanner } from './components/EnvironmentBanner';
 import { CommercialDemoPage } from './pages/CommercialDemoPage';
 import { ContactPage } from './pages/ContactPage';
 import { LandingPage } from './pages/LandingPage';
