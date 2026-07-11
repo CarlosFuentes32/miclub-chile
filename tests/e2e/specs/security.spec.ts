@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { adminApi, loginApi, newApiContext } from "../support/api";
-import { createCashier, createCustomer, createQaBusiness, qaRunId } from "../support/qa-data";
+import { cleanupQaArtifacts, createCashier, createCustomer, createQaBusiness, qaRunId } from "../support/qa-data";
 import { e2e } from "../support/env";
 
 test.describe("Seguridad y autorización", () => {
+  test.afterEach(async () => {
+    await cleanupQaArtifacts();
+  });
+
   test("rutas protegidas sin token y roles cruzados", async () => {
     const qa = await createQaBusiness(qaRunId("security-roles"));
     const customer = await createCustomer(qa.run, qa.business.slug);

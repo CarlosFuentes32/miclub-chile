@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { loginApi, newApiContext } from "../support/api";
-import { createCashier, createCustomer, createProgram, createQaBusiness, qaRunId } from "../support/qa-data";
+import { activateProgram, cleanupQaArtifacts, createCashier, createCustomer, createProgram, createQaBusiness, qaRunId } from "../support/qa-data";
 import { e2e } from "../support/env";
 import { loginUi } from "../support/ui";
 
 test.describe("Comercio", () => {
+  test.afterEach(async () => {
+    await cleanupQaArtifacts();
+  });
+
   test("login comercio por UI", async ({ page }) => {
     const qa = await createQaBusiness(qaRunId("commerce-login"));
     await loginUi(page, e2e.commerceUrl, qa.ownerEmail, qa.ownerPassword);
@@ -24,6 +28,24 @@ test.describe("Comercio", () => {
     expect(points.status).toBe("ACTIVE");
     expect(stamps.status).toBe("ACTIVE");
     expect(cashback.status).toBe("ACTIVE");
+    await api.dispose();
+  });
+
+  test("activar explícitamente un programa y mantenerlo como disponible para recompensas", async () => {
+    const qa = await createQaBusiness(qaRunId("commerce-activate"));
+    const points = await createProgram(qa.ownerEmail, qa.business.id, "points", 5);
+    await createProgram(qa.ownerEmail, qa.business.id, "stamps", 3);
+
+    const activated = await activateProgram(qa.ownerEmail, qa.business.id, points.id);
+    expect(activated.id).toBe(points.id);
+    expect(activated.status).toBe("ACTIVE");
+
+    const owner = await loginApi(qa.ownerEmail, qa.ownerPassword);
+    const api = await newApiContext(owner.token);
+    const active = await (await api.get(`/business/loyalty-programs/active?business_id=${qa.business.id}`)).json();
+    expect(active.id).toBe(points.id);
+    const rewards = await api.get(`/business/rewards?business_id=${qa.business.id}&status=available`);
+    expect(rewards.ok(), await rewards.text()).toBeTruthy();
     await api.dispose();
   });
 

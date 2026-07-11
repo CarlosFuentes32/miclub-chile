@@ -2,6 +2,8 @@ import { APIRequestContext, expect } from "@playwright/test";
 import { adminApi, loginApi, newApiContext } from "./api";
 import { e2e } from "./env";
 
+const createdBusinessIds = new Set<string>();
+
 export function qaRunId(prefix = "qa") {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
@@ -33,6 +35,7 @@ export async function createQaBusiness(run = qaRunId("business")) {
   const response = await admin.post("/admin/businesses", { data: payload });
   expect(response.ok(), await response.text()).toBeTruthy();
   const created = await response.json();
+  if (created.business?.id) createdBusinessIds.add(created.business.id);
   await admin.dispose();
   return {
     run,
@@ -81,6 +84,18 @@ export async function createProgram(ownerEmail: string, businessId: string, type
   return program;
 }
 
+export async function activateProgram(ownerEmail: string, businessId: string, programId: string) {
+  const owner = await loginApi(ownerEmail, e2e.defaultPassword);
+  const api = await newApiContext(owner.token);
+  const response = await api.post(`/business/loyalty-programs/${programId}/activate`, {
+    data: { business_id: businessId },
+  });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const active = await response.json();
+  await api.dispose();
+  return active;
+}
+
 export async function createCashier(ownerEmail: string, businessId: string, run: string) {
   const owner = await loginApi(ownerEmail, e2e.defaultPassword);
   const api = await newApiContext(owner.token);
@@ -96,4 +111,19 @@ export async function createCashier(ownerEmail: string, businessId: string, run:
   const cashier = await response.json();
   await api.dispose();
   return cashier;
+}
+
+export async function cleanupQaArtifacts() {
+  if (createdBusinessIds.size === 0) return;
+  const ids = Array.from(createdBusinessIds);
+  createdBusinessIds.clear();
+  const admin = await adminApi();
+  for (const id of ids) {
+    try {
+      await admin.delete(`/admin/businesses/${id}`);
+    } catch {
+      // La limpieza no debe ocultar el resultado del test crítico.
+    }
+  }
+  await admin.dispose();
 }

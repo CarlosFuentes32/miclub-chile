@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { loginApi, newApiContext } from "../support/api";
-import { createCashier, createCustomer, createProgram, createQaBusiness, qaRunId } from "../support/qa-data";
+import { cleanupQaArtifacts, createCashier, createCustomer, createProgram, createQaBusiness, qaRunId } from "../support/qa-data";
 import { e2e } from "../support/env";
 
 async function setupCashierFlow(type: "stamps" | "points" | "cashback" = "stamps") {
@@ -15,6 +15,10 @@ async function setupCashierFlow(type: "stamps" | "points" | "cashback" = "stamps
 }
 
 test.describe("Cajero y Cliente", () => {
+  test.afterEach(async () => {
+    await cleanupQaArtifacts();
+  });
+
   test("login cajero, buscar cliente y cliente inexistente", async () => {
     const { qa, customer, api } = await setupCashierFlow();
     const found = await api.get(`/cashier/customers/search?business_id=${qa.business.id}&phone=${customer.phone}`);
@@ -40,6 +44,36 @@ test.describe("Cajero y Cliente", () => {
     expect(redeemed.ok(), await redeemed.text()).toBeTruthy();
     const double = await api.post("/cashier/rewards/redeem", { data: { business_id: qa.business.id, reward_id: unlocked.reward_id } });
     expect(double.status()).toBe(409);
+    await api.dispose();
+  });
+
+  test("generar puntos y recompensa por programa de puntos", async () => {
+    const { qa, customerSession, api } = await setupCashierFlow("points");
+    const first = await api.post("/cashier/transactions", {
+      data: { business_id: qa.business.id, customer_user_id: customerSession.user.id, value: 1 },
+    });
+    expect(first.ok(), await first.text()).toBeTruthy();
+    expect((await first.json()).reward_unlocked).toBeFalsy();
+
+    const second = await api.post("/cashier/transactions", {
+      data: { business_id: qa.business.id, customer_user_id: customerSession.user.id, value: 1 },
+    });
+    expect(second.ok(), await second.text()).toBeTruthy();
+    const body = await second.json();
+    expect(body.reward_unlocked).toBeTruthy();
+    expect(body.reward_id).toBeTruthy();
+    await api.dispose();
+  });
+
+  test("generar cashback usando monto de compra", async () => {
+    const { qa, customerSession, api } = await setupCashierFlow("cashback");
+    const response = await api.post("/cashier/transactions", {
+      data: { business_id: qa.business.id, customer_user_id: customerSession.user.id, amount: 1000 },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const body = await response.json();
+    expect(body.reward_unlocked).toBeTruthy();
+    expect(body.reward_id).toBeTruthy();
     await api.dispose();
   });
 

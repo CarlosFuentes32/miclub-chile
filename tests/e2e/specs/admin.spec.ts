@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { adminApi, expectStatus, loginApi } from "../support/api";
-import { createQaBusiness, qaRunId, validRut } from "../support/qa-data";
+import { cleanupQaArtifacts, createQaBusiness, qaRunId, validRut } from "../support/qa-data";
 import { e2e } from "../support/env";
 import { loginUi } from "../support/ui";
 
 test.describe("Administrador", () => {
+  test.afterEach(async () => {
+    await cleanupQaArtifacts();
+  });
+
   test("login válido e inválido", async ({ page }) => {
     await page.goto(e2e.adminUrl);
     await page.getByLabel(/correo/i).fill("no-existe@qa.miclubchile.cl");
