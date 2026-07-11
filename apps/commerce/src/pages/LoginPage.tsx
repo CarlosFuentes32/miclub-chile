@@ -40,9 +40,10 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
         <p className="mt-2 text-sm text-slate-500">
           Gestiona tu programa y tus clientes.
         </p>
-        <label className="field mt-7">
+        <label className="field mt-7" htmlFor="commerce-login-email">
           Correo
           <input
+            id="commerce-login-email"
             className="input"
             type="email"
             value={email}
@@ -50,9 +51,10 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
             required
           />
         </label>
-        <label className="field mt-4">
+        <label className="field mt-4" htmlFor="commerce-login-password">
           Contraseña
           <input
+            id="commerce-login-password"
             className="input"
             type="password"
             minLength={4}

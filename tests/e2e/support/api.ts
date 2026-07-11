@@ -7,13 +7,28 @@ export interface Session {
 }
 
 export async function newApiContext(token?: string) {
-  return request.newContext({
-    baseURL: e2e.apiUrl,
+  const context = await request.newContext({
+    baseURL: `${e2e.apiUrl.replace(/\/$/, "")}/`,
     extraHTTPHeaders: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
+  const normalizePath = (path: string) => path.replace(/^\//, "");
+  return new Proxy(context, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (["get", "post", "patch", "delete"].includes(String(prop))) {
+        return (path: string, options?: unknown) =>
+          (value as (path: string, options?: unknown) => Promise<unknown>).call(
+            target,
+            normalizePath(path),
+            options,
+          );
+      }
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  }) as APIRequestContext;
 }
 
 export async function loginApi(email: string, password: string): Promise<Session> {

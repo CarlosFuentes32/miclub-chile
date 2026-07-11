@@ -13,6 +13,10 @@ export function validRut(run: string) {
   return `${digits}-${run.length % 10}`;
 }
 
+function qaPersonName(label: string) {
+  return `QA ${label} Prueba`;
+}
+
 export async function createQaBusiness(run = qaRunId("business")) {
   const admin = await adminApi();
   const plans = await (await admin.get("/admin/plans")).json();
@@ -25,7 +29,7 @@ export async function createQaBusiness(run = qaRunId("business")) {
     phone: "+56912345678",
     email: `${run}.business@qa.miclubchile.cl`,
     planId: plans[0].id,
-    ownerName: `QA Owner ${run}`,
+    ownerName: qaPersonName("Owner"),
     ownerEmail: `${run}.owner@qa.miclubchile.cl`,
     ownerPhone: "+56912345679",
     ownerPassword: e2e.defaultPassword,
@@ -51,7 +55,7 @@ export async function createCustomer(run: string, businessSlug?: string) {
   const api = await newApiContext();
   const phone = `+569${String(Date.now()).slice(-8)}`;
   const payload = {
-    name: `QA Cliente ${run}`,
+    name: qaPersonName("Cliente"),
     email: `${run}.customer@qa.miclubchile.cl`,
     phone,
     password: e2e.defaultPassword,
@@ -101,7 +105,7 @@ export async function createCashier(ownerEmail: string, businessId: string, run:
   const api = await newApiContext(owner.token);
   const response = await api.post(`/business/collaborators?business_id=${businessId}`, {
     data: {
-      name: `QA Cajero ${run}`,
+      name: qaPersonName("Cajero"),
       email: `${run}.cashier@qa.miclubchile.cl`,
       role: "CASHIER",
       password: e2e.defaultPassword,
