@@ -1,4 +1,4 @@
-import { BackupStatus, BackupType, RestoreStatus, RollbackStatus } from "@prisma/client";
+import { BackupStatus, RestoreStatus, RollbackStatus } from "@prisma/client";
 import { BackupsService } from "../backend/api/src/backups/backups.service";
 
 type Env = Record<string, string | undefined>;
@@ -97,7 +97,7 @@ async function run() {
   const actor = { id: "admin-1", name: "QA Admin", email: "qa@miclubchile.cl" };
 
   const ok = service();
-  const backup = await ok.svc.createBackup({ type: BackupType.MANUAL, reason: "qa backup" }, actor);
+  const backup = await ok.svc.createBackup({ type: "MANUAL" as any, reason: "qa backup" }, actor);
   assert(backup.status === BackupStatus.VERIFIED, "Backup correcto debe quedar VERIFIED");
   assert(Boolean(backup.checksum), "Backup debe tener checksum");
   assert((backup.validation as any).ok === true, "Backup debe incluir validación OK");
@@ -137,7 +137,7 @@ async function run() {
   const failedPrisma = new FakePrisma();
   failedPrisma.failAfterIdentity = true;
   const failed = service({}, failedPrisma);
-  const failedBackup = await failed.svc.createBackup({ type: BackupType.SCHEDULED, reason: "fail" }, actor);
+  const failedBackup = await failed.svc.createBackup({ type: "SCHEDULED" as any, reason: "fail" }, actor);
   assert(failedBackup.status === BackupStatus.FAILED, "Backup fallido debe quedar FAILED");
 
   const emptyPrisma = new FakePrisma();

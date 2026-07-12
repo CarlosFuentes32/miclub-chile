@@ -15,6 +15,13 @@ function identifierFromBody(request: Request) {
   return (body?.email ?? body?.identifier ?? body?.phone ?? "unknown").toString().toLowerCase().trim();
 }
 
+function stagingAutomationTokenAllowed(config: ConfigService, request: Request) {
+  if (config.get<string>("NODE_ENV", "development") !== "staging") return false;
+  const expected = config.get<string>("MONITORING_TOKEN");
+  if (!expected || expected.length < 24) return false;
+  return request.header("x-monitoring-token") === expected;
+}
+
 function vercelPreviewAllowed(config: ConfigService, source: string) {
   if (config.get<string>("NODE_ENV", "development") !== "staging") return false;
   if (config.get<string>("ALLOW_VERCEL_PREVIEWS") !== "true") return false;
@@ -81,6 +88,7 @@ export class DistributedRateLimitMiddleware implements NestMiddleware {
   ) {}
 
   async use(request: Request, response: Response, next: NextFunction) {
+    if (stagingAutomationTokenAllowed(this.config, request)) return next();
     const path = request.originalUrl ?? request.url;
     const ip = clientIp(request);
     const rules = this.rulesFor(request.method, path, ip, identifierFromBody(request));

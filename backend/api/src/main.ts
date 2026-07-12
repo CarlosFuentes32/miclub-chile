@@ -73,6 +73,15 @@ async function bootstrap() {
   app.use(cookieParser());
   const rateLimit = new Map<string, { count: number; resetAt: number }>();
   app.use((request: any, response: any, next: () => void) => {
+    const monitoringToken = config.get<string>("MONITORING_TOKEN");
+    if (
+      isStaging
+      && monitoringToken
+      && monitoringToken.length >= 24
+      && request.header?.("x-monitoring-token") === monitoringToken
+    ) {
+      return next();
+    }
     const key = `${request.ip}:${request.path}`;
     const now = Date.now();
     const current = rateLimit.get(key);

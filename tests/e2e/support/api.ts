@@ -11,6 +11,7 @@ export async function newApiContext(token?: string) {
     baseURL: `${e2e.apiUrl.replace(/\/$/, "")}/`,
     extraHTTPHeaders: {
       "Content-Type": "application/json",
+      ...(process.env.MONITORING_TOKEN ? { "x-monitoring-token": process.env.MONITORING_TOKEN } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });

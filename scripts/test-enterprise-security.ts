@@ -4,7 +4,7 @@ import * as bcrypt from "bcrypt";
 import { UserStatus } from "@prisma/client";
 import { AuthService } from "../backend/api/src/auth/auth.service";
 import { DistributedRateLimitService } from "../backend/api/src/security/rate-limit.service";
-import { CsrfOriginMiddleware, SecurityHeadersMiddleware } from "../backend/api/src/security/security.middleware";
+import { CsrfOriginMiddleware, DistributedRateLimitMiddleware, SecurityHeadersMiddleware } from "../backend/api/src/security/security.middleware";
 
 class FakeConfig {
   constructor(private readonly values: Record<string, string> = {}) {}
@@ -40,6 +40,56 @@ async function testRateLimit() {
   const blocked = await limiter.consume({ scope: "login_ip", limit: 2, windowSeconds: 60, subject: "1.1.1.1", risk: "high" });
   assert.equal(blocked.allowed, false);
   assert.ok(auditEvents.some((event) => event.action === "rate_limit_triggered"));
+}
+
+async function testStagingAutomationRateLimitBypass() {
+  let consumeCalls = 0;
+  const limits = {
+    consume: async () => {
+      consumeCalls += 1;
+      return { allowed: false, limit: 1, count: 2, resetAt: new Date() };
+    },
+  };
+  const response: any = {
+    headers: {} as Record<string, string>,
+    setHeader(k: string, v: string) { this.headers[k] = v; },
+    getHeader(k: string) { return this.headers[k]; },
+    status(code: number) { return { json: (body: any) => ({ code, body }) }; },
+  };
+  const request = (token?: string) => ({
+    method: "POST",
+    originalUrl: "/api/auth/login",
+    url: "/api/auth/login",
+    ip: "127.0.0.1",
+    socket: {},
+    body: { email: "qa.admin@miclubchile.cl" },
+    header: (name: string) => name.toLowerCase() === "x-monitoring-token" ? token : undefined,
+  });
+
+  let nextCalled = false;
+  await new DistributedRateLimitMiddleware(
+    limits as any,
+    new FakeConfig({ NODE_ENV: "staging", MONITORING_TOKEN: "a".repeat(32) }) as any,
+  ).use(request("a".repeat(32)) as any, response, () => { nextCalled = true; });
+  assert.equal(nextCalled, true, "staging con token válido debe saltar rate limit de automatización");
+  assert.equal(consumeCalls, 0, "bypass staging no debe consumir bucket");
+
+  nextCalled = false;
+  const blockedStaging = await new DistributedRateLimitMiddleware(
+    limits as any,
+    new FakeConfig({ NODE_ENV: "staging", MONITORING_TOKEN: "a".repeat(32) }) as any,
+  ).use(request("bad-token") as any, response, () => { nextCalled = true; });
+  assert.equal(nextCalled, false, "staging con token inválido no debe saltar rate limit");
+  assert.equal((blockedStaging as any).code, 429, "token inválido debe recibir 429");
+  assert.equal(consumeCalls, 1, "token inválido debe consumir bucket");
+
+  nextCalled = false;
+  await new DistributedRateLimitMiddleware(
+    limits as any,
+    new FakeConfig({ NODE_ENV: "production", MONITORING_TOKEN: "a".repeat(32) }) as any,
+  ).use(request("a".repeat(32)) as any, response, () => { nextCalled = true; });
+  assert.equal(nextCalled, false, "production no debe aceptar bypass de automatización");
+  assert.equal(consumeCalls, 2, "production debe evaluar rate limit aunque el token coincida");
 }
 
 async function testCsrfAndHeaders() {
@@ -95,6 +145,7 @@ async function testWebhookSignature() {
 
 async function main() {
   await testRateLimit();
+  await testStagingAutomationRateLimitBypass();
   await testCsrfAndHeaders();
   await testRefreshReuse();
   await testWebhookSignature();
