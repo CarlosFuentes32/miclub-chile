@@ -82,8 +82,8 @@ jobs:
             echo "Playwright metadata publish attempt $attempt failed; retrying in 10s"
             sleep 10
           done
-          echo "Unable to publish Playwright metadata to staging health"
-          exit 1
+          echo "::warning::Unable to publish Playwright metadata to staging health. Check MONITORING_TOKEN in GitHub Secrets and staging."
+          exit 0
 
       - name: Upload Playwright HTML report
         if: always()
