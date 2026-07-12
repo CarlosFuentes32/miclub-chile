@@ -8,6 +8,7 @@ export type UserRole =
   | "BUSINESS_ADMIN"
   | "BUSINESS_OWNER"
   | "MICLUB_ADMIN"
+  | "SUPPORT"
   | "SUPER_ADMIN";
 export interface AdminDashboard {
   activeBusinesses: number;
@@ -116,15 +117,45 @@ export interface Reports {
   activeBusinesses: number;
   suspendedBusinesses: number;
 }
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketStatus =
+  | "NEW"
+  | "OPEN"
+  | "INVESTIGATING"
+  | "WAITING_CUSTOMER"
+  | "WAITING_INTERNAL"
+  | "RESOLVED"
+  | "CLOSED"
+  | "REOPENED";
 export interface SupportTicket {
   id: string;
-  business: string;
-  user: string;
-  subject: string;
+  title: string;
+  description: string;
+  category: string;
   status: TicketStatus;
-  priority: "low" | "medium" | "high";
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  businessId?: string;
+  userId?: string;
+  requestId?: string;
+  incidentId?: string;
+  slaFirstResponseDue?: string;
+  slaResolutionDue?: string;
   createdAt: string;
+  updatedAt: string;
+  timeline?: Array<{ id: string; type: string; message: string; createdAt: string }>;
+  notes?: Array<{ id: string; body: string; createdAt: string }>;
+}
+export interface SupportDashboard {
+  summary: Record<string, number | null>;
+  warnings: string[];
+}
+export interface SupportSearchResult {
+  users: SupportUser[];
+  businesses: Array<{ id: string; name: string; email: string | null; phone: string | null; rutBusiness?: string | null; status: string }>;
+  tickets: SupportTicket[];
+  errors: Array<{ id: string; status: string; type: string; message: string; requestId?: string; correlationId?: string; lastSeenAt: string }>;
+  incidents: Array<{ id: string; title: string; severity: string; status: string; service: string; createdAt: string }>;
+  transactions: Array<{ id: string; businessId: string; customerUserId: string; status: string; transactionType: string; createdAt: string }>;
+  rewards: Array<{ id: string; businessId: string; customerUserId: string; status: string; generatedAt: string }>;
 }
 export interface GlobalSettings {
   categories: string[];

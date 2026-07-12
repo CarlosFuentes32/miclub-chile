@@ -32,6 +32,7 @@
     "test:enterprise-backups": "tsx scripts/test-enterprise-backups.ts",
     "test:enterprise-logs": "tsx scripts/test-enterprise-logs.ts",
     "test:enterprise-security": "tsx scripts/test-enterprise-security.ts",
+    "test:enterprise-support": "tsx scripts/test-enterprise-support.ts",
     "billing:backfill": "tsx scripts/backfill-billing-subscriptions.ts",
     "audit:qa-prod": "tsx --env-file-if-exists=.env scripts/audit-production-qa-data.ts",
     "audit:qa-dry-run-cleanup": "tsx scripts/dry-run-qa-cleanup.ts",

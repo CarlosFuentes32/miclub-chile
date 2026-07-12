@@ -7,6 +7,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { JwtUser } from "../auth/auth.types";
 import { IncidentsService } from "./incidents.service";
 import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Controller("admin/incidents")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -54,6 +55,7 @@ export class MonitoringController {
   constructor(
     private readonly incidents: IncidentsService,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post("run")
@@ -61,5 +63,27 @@ export class MonitoringController {
     const expected = this.config.get<string>("MONITORING_TOKEN");
     if (!expected || token !== expected) throw new UnauthorizedException("Monitor no autorizado");
     return this.incidents.runMonitoring("scheduled-monitor");
+  }
+
+  @Post("e2e-result")
+  e2eResult(
+    @Headers("x-monitoring-token") token: string | undefined,
+    @Body() body: { status: "ok" | "error"; runId?: string; runUrl?: string; commit?: string; environment?: string; executedAt?: string },
+  ) {
+    const expected = this.config.get<string>("MONITORING_TOKEN");
+    if (!expected || token !== expected) throw new UnauthorizedException("Monitor no autorizado");
+    const value = {
+      status: body.status,
+      runId: body.runId ?? "unknown",
+      runUrl: body.runUrl ?? "",
+      commit: body.commit ?? "unknown",
+      environment: body.environment ?? this.config.get<string>("APP_ENV", "staging"),
+      executedAt: body.executedAt ?? new Date().toISOString(),
+    };
+    return this.prisma.systemSetting.upsert({
+      where: { key: "last_playwright_run" },
+      create: { key: "last_playwright_run", value },
+      update: { value },
+    });
   }
 }

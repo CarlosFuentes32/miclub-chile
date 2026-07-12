@@ -398,16 +398,20 @@ export class ObservabilityService {
   }
 
   private async playwrightCheck(): Promise<SystemCheck> {
-    const status = this.statusFromString(this.config.get<string>("LAST_PLAYWRIGHT_STATUS", "unknown"));
+    const stored = await this.prisma.systemSetting.findUnique({ where: { key: "last_playwright_run" } }).catch(() => null);
+    const metadata = stored?.value && typeof stored.value === "object" ? stored.value as Record<string, any> : {};
+    const status = this.statusFromString(metadata.status ?? this.config.get<string>("LAST_PLAYWRIGHT_STATUS", "unknown"));
     return {
       key: "playwright",
-      label: "Última ejecución Playwright",
+      label: "Ultima ejecucion Playwright",
       status: status === "unknown" ? "warning" : status,
-      message: status === "ok" ? "Última ejecución Playwright exitosa" : "Última ejecución Playwright no informada por variables",
+      message: status === "ok" ? "Ultima ejecucion Playwright exitosa" : "Ultima ejecucion Playwright no informada o fallida",
       metadata: {
-        runId: this.config.get<string>("LAST_PLAYWRIGHT_RUN_ID", "unknown"),
-        runUrl: this.config.get<string>("LAST_PLAYWRIGHT_RUN_URL", ""),
-        executedAt: this.config.get<string>("LAST_PLAYWRIGHT_RUN_AT", "unknown"),
+        runId: metadata.runId ?? this.config.get<string>("LAST_PLAYWRIGHT_RUN_ID", "unknown"),
+        runUrl: metadata.runUrl ?? this.config.get<string>("LAST_PLAYWRIGHT_RUN_URL", ""),
+        executedAt: metadata.executedAt ?? this.config.get<string>("LAST_PLAYWRIGHT_RUN_AT", "unknown"),
+        commit: metadata.commit ?? this.config.get<string>("LAST_PLAYWRIGHT_COMMIT", "unknown"),
+        environment: metadata.environment ?? this.environment(),
       },
     };
   }

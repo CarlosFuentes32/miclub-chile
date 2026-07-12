@@ -26,8 +26,11 @@ import {
   Paginated,
   SystemError,
   SecurityDashboard,
+  SupportDashboard,
+  SupportSearchResult,
+  SupportTicket,
 } from "../types/admin";
-import { settingsMock, ticketsMock } from "../data/admin.mock";
+import { settingsMock } from "../data/admin.mock";
 export const adminService = {
   getAdminDashboard: () => apiRequest<any>("/admin/dashboard"),
   getSuperDashboard: () => apiRequest<SuperDashboard>("/admin/super/dashboard"),
@@ -321,9 +324,44 @@ export const adminService = {
   getMaintenance: () => apiRequest<any>("/admin/maintenance"),
   exportData: (entity: string, reason = "Exportación operativa Super Admin") =>
     apiRequest<any[]>(`/admin/export/${entity}?reason=${encodeURIComponent(reason)}`),
-  async getSupportTickets() {
-    return structuredClone(ticketsMock);
-  },
+  getSupportDashboard: () => apiRequest<SupportDashboard>("/support/dashboard"),
+  supportSearch: (q: string, reason: string, ticketId = "") =>
+    apiRequest<SupportSearchResult>(
+      `/support/search?${new URLSearchParams({ q, reason, ...(ticketId ? { ticketId } : {}) }).toString()}`,
+    ),
+  getSupportBusiness: (id: string, reason: string, ticketId = "") =>
+    apiRequest<any>(`/support/businesses/${id}?${new URLSearchParams({ reason, ...(ticketId ? { ticketId } : {}) }).toString()}`),
+  getSupportUser360: (id: string, reason: string, ticketId = "") =>
+    apiRequest<any>(`/support/users/${id}?${new URLSearchParams({ reason, ...(ticketId ? { ticketId } : {}) }).toString()}`),
+  getSupportCashier360: (id: string, reason: string, ticketId = "") =>
+    apiRequest<any>(`/support/cashiers/${id}?${new URLSearchParams({ reason, ...(ticketId ? { ticketId } : {}) }).toString()}`),
+  getSupportTickets: (status = "all") =>
+    apiRequest<SupportTicket[]>(`/support/tickets?status=${encodeURIComponent(status)}`),
+  createSupportTicket: (input: {
+    title: string;
+    description: string;
+    category: string;
+    priority: string;
+    businessId?: string;
+    userId?: string;
+    requestId?: string;
+    incidentId?: string;
+  }) => apiRequest<SupportTicket>("/support/tickets", { method: "POST", body: JSON.stringify(input) }),
+  updateSupportTicket: (id: string, input: { status?: string; priority?: string; assignedAgentId?: string; reason: string }) =>
+    apiRequest<SupportTicket>(`/support/tickets/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+  addSupportTicketNote: (id: string, note: string) =>
+    apiRequest(`/support/tickets/${id}/notes`, { method: "POST", body: JSON.stringify({ note }) }),
+  supportSendPasswordReset: (id: string, reason: string, ticketId: string) =>
+    apiRequest(`/support/users/${id}/password-reset`, { method: "POST", body: JSON.stringify({ reason, ticketId }) }),
+  supportRevokeAllSessions: (id: string, reason: string, ticketId: string) =>
+    apiRequest(`/support/users/${id}/sessions/revoke-all`, { method: "POST", body: JSON.stringify({ reason, ticketId }) }),
+  supportUnlockUser: (id: string, reason: string, ticketId: string) =>
+    apiRequest(`/support/users/${id}/unlock`, { method: "POST", body: JSON.stringify({ reason, ticketId }) }),
+  requestSupportImpersonation: (reason: string, ticketId: string) =>
+    apiRequest<{ enabled: boolean; reason: string }>("/support/impersonation/request", { method: "POST", body: JSON.stringify({ reason, ticketId }) }),
+  getSupportMacros: () => apiRequest<any[]>("/support/macros"),
+  getSupportKnowledgeBase: (q = "") => apiRequest<any[]>(`/support/knowledge-base?q=${encodeURIComponent(q)}`),
+  getSupportSla: () => apiRequest<any[]>("/support/sla"),
   async getGlobalSettings() {
     return structuredClone(settingsMock);
   },

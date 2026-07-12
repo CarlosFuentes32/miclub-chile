@@ -6,6 +6,7 @@ export type UserRole =
   | "BUSINESS_ADMIN"
   | "BUSINESS_OWNER"
   | "MICLUB_ADMIN"
+  | "SUPPORT"
   | "SUPER_ADMIN";
 export interface AuthUser {
   id: string;
@@ -138,5 +139,6 @@ export const portalByRole: Record<UserRole, string> = {
   BUSINESS_OWNER: commerceUrl,
   CASHIER: cashierUrl,
   MICLUB_ADMIN: adminUrl,
+  SUPPORT: adminUrl,
   SUPER_ADMIN: adminUrl,
 };

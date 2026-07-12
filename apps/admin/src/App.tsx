@@ -32,7 +32,7 @@ import { adminService } from "./services/admin.service";
 import { AdminDashboard, GlobalSettings, Reports } from "./types/admin";
 function Protected({ user }: { user: AuthUser | null }) {
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "MICLUB_ADMIN" && user.role !== "SUPER_ADMIN")
+  if (user.role !== "MICLUB_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "SUPPORT")
     return (
       <main className="grid min-h-screen place-items-center">
         <div>
@@ -54,7 +54,7 @@ function AppRoutes() {
   useEffect(() => {
     restoreSession()
       .then(async (session) => {
-        if (session.role !== "MICLUB_ADMIN" && session.role !== "SUPER_ADMIN") {
+        if (session.role !== "MICLUB_ADMIN" && session.role !== "SUPER_ADMIN" && session.role !== "SUPPORT") {
           await logout();
           setUser(null);
           return;
@@ -65,7 +65,7 @@ function AppRoutes() {
       .finally(() => setReady(true));
   }, []);
   useEffect(() => {
-    if (user && !user.forcePasswordChange)
+    if (user && !user.forcePasswordChange && user.role !== "SUPPORT")
       Promise.all([
         adminService.getAdminDashboard(),
         adminService.getReports(),
@@ -98,7 +98,7 @@ function AppRoutes() {
       </Routes>
     );
   if (user.forcePasswordChange) return <ForcePasswordChange onComplete={out} />;
-  if (!dashboard || !reports || !settings)
+  if (user.role !== "SUPPORT" && (!dashboard || !reports || !settings))
     return (
       <main className="grid min-h-screen place-items-center">
         {error || "Cargando administración…"}
@@ -107,15 +107,19 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Protected user={user} />}>
-        {" "}
-        <Route element={<AdminLayout user={user} onLogout={out} />}>
           {" "}
-          <Route
-            path="/dashboard"
-            element={<DashboardPage data={dashboard} />}
-          />
-          <Route path="/businesses" element={<BusinessesPage />} />
-          <Route path="/users" element={<UsersPage />} />
+          <Route element={<AdminLayout user={user} onLogout={out} />}>
+          {" "}
+          {user.role !== "SUPPORT" && (
+            <>
+              <Route
+                path="/dashboard"
+                element={<DashboardPage data={dashboard!} />}
+              />
+              <Route path="/businesses" element={<BusinessesPage />} />
+              <Route path="/users" element={<UsersPage />} />
+            </>
+          )}
           {user.role === "SUPER_ADMIN" && (
             <>
               <Route path="/super" element={<SuperDashboardPage />} />
@@ -130,18 +134,18 @@ function AppRoutes() {
               <Route path="/backups" element={<BackupsPage />} />
             </>
           )}
-          <Route path="/plans" element={<PlansPage />} />
-          <Route path="/reports" element={<ReportsPage data={reports} />} />
+          {user.role !== "SUPPORT" && <Route path="/plans" element={<PlansPage />} />}
+          {user.role !== "SUPPORT" && <Route path="/reports" element={<ReportsPage data={reports!} />} />}
           <Route path="/support" element={<SupportPage />} />
           <Route
             path="/settings"
             element={
-              <SettingsPage settings={settings} onChange={setSettings} />
+              user.role === "SUPPORT" ? <Navigate to="/support" replace /> : <SettingsPage settings={settings!} onChange={setSettings} />
             }
           />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to={user.role === "SUPPORT" ? "/support" : "/dashboard"} replace />} />
     </Routes>
   );
 }

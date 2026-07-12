@@ -20,6 +20,7 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { BackupsModule } from './backups/backups.module';
 import { EnterpriseLoggingModule } from './enterprise-logging/enterprise-logging.module';
 import { SecurityModule } from './security/security.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SecurityModule } from './security/security.module';
     BackupsModule,
     EnterpriseLoggingModule,
     SecurityModule,
+    SupportModule,
   ],
   controllers: [AppController],
 })

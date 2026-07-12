@@ -15,7 +15,7 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
     setError("");
     try {
       const u = await login(email, password);
-      if (u.role !== "MICLUB_ADMIN" && u.role !== "SUPER_ADMIN") {
+      if (u.role !== "MICLUB_ADMIN" && u.role !== "SUPER_ADMIN" && u.role !== "SUPPORT") {
         setError("Esta cuenta no tiene acceso al panel administrador.");
         return;
       }

@@ -51,5 +51,8 @@ jobs:
       - name: Run enterprise security checks
         run: npm run test:enterprise-security
 
+      - name: Run enterprise support checks
+        run: npm run test:enterprise-support
+
       - name: Run documentation link check
         run: npm run test:doc-links

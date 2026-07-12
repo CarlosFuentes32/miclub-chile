@@ -13,7 +13,70 @@ enum UserRole {
   BUSINESS_ADMIN
   BUSINESS_OWNER
   MICLUB_ADMIN
+  SUPPORT
   SUPER_ADMIN
+}
+
+enum SupportTicketStatus {
+  NEW              @map("new")
+  OPEN             @map("open")
+  INVESTIGATING    @map("investigating")
+  WAITING_CUSTOMER @map("waiting_customer")
+  WAITING_INTERNAL @map("waiting_internal")
+  RESOLVED         @map("resolved")
+  CLOSED           @map("closed")
+  REOPENED         @map("reopened")
+}
+
+enum SupportTicketPriority {
+  LOW      @map("low")
+  MEDIUM   @map("medium")
+  HIGH     @map("high")
+  CRITICAL @map("critical")
+}
+
+enum SupportTicketCategory {
+  ACCESS        @map("acceso")
+  ACCOUNT       @map("cuenta")
+  BUSINESS      @map("comercio")
+  CASHIER       @map("cajero")
+  CUSTOMER      @map("cliente")
+  PROGRAM       @map("programa")
+  REWARD        @map("recompensa")
+  TRANSACTION   @map("transaccion")
+  REDEEM        @map("canje")
+  BILLING       @map("facturacion")
+  SECURITY      @map("seguridad")
+  INCIDENT      @map("incidente")
+  CONFIGURATION @map("configuracion")
+  OTHER         @map("otro")
+}
+
+enum SupportTimelineType {
+  CREATED          @map("created")
+  STATUS_CHANGED   @map("status_changed")
+  ASSIGNED         @map("assigned")
+  NOTE             @map("note")
+  EMAIL_SENT       @map("email_sent")
+  SESSION_REVOKED  @map("session_revoked")
+  RESET_SENT       @map("reset_sent")
+  IMPERSONATION    @map("impersonation")
+  AUDIT_LINKED     @map("audit_linked")
+  ERROR_LINKED     @map("error_linked")
+  INCIDENT_LINKED  @map("incident_linked")
+  RESOLVED         @map("resolved")
+}
+
+enum SupportMacroStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
+}
+
+enum KnowledgeArticleStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
 }
 
 enum UserStatus {
@@ -168,6 +231,120 @@ model RateLimitBucket {
 
   @@index([scope, resetAt])
   @@map("rate_limit_buckets")
+}
+
+model SupportTicket {
+  id                  String                @id @default(cuid())
+  title               String
+  description         String
+  category            SupportTicketCategory @default(OTHER)
+  priority            SupportTicketPriority @default(MEDIUM)
+  status              SupportTicketStatus   @default(NEW)
+  originChannel       String                @default("internal") @map("origin_channel")
+  businessId          String?               @map("business_id")
+  userId              String?               @map("user_id")
+  cashierUserId       String?               @map("cashier_user_id")
+  transactionId       String?               @map("transaction_id")
+  rewardId            String?               @map("reward_id")
+  incidentId          String?               @map("incident_id")
+  requestId           String?               @map("request_id")
+  correlationId       String?               @map("correlation_id")
+  assignedAgentId     String?               @map("assigned_agent_id")
+  createdById         String?               @map("created_by_id")
+  firstResponseAt     DateTime?             @map("first_response_at")
+  resolvedAt          DateTime?             @map("resolved_at")
+  closedAt            DateTime?             @map("closed_at")
+  slaFirstResponseDue DateTime?             @map("sla_first_response_due")
+  slaResolutionDue    DateTime?             @map("sla_resolution_due")
+  metadata            Json?
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  notes               SupportInternalNote[]
+  timeline            SupportTimelineEvent[]
+
+  @@index([status, priority, createdAt])
+  @@index([businessId, status])
+  @@index([userId, status])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([incidentId])
+  @@map("support_tickets")
+}
+
+model SupportInternalNote {
+  id        String   @id @default(cuid())
+  ticketId  String?  @map("ticket_id")
+  subjectType String @map("subject_type")
+  subjectId String   @map("subject_id")
+  authorId String?   @map("author_id")
+  body      String
+  editedAt  DateTime? @map("edited_at")
+  editReason String?  @map("edit_reason")
+  createdAt DateTime  @default(now()) @map("created_at")
+  ticket    SupportTicket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@index([subjectType, subjectId, createdAt])
+  @@index([ticketId, createdAt])
+  @@map("support_internal_notes")
+}
+
+model SupportTimelineEvent {
+  id          String              @id @default(cuid())
+  ticketId    String              @map("ticket_id")
+  type        SupportTimelineType
+  actorId     String?             @map("actor_id")
+  message     String
+  metadata    Json?
+  requestId   String?             @map("request_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  ticket      SupportTicket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([type, createdAt])
+  @@map("support_timeline_events")
+}
+
+model SupportSlaPolicy {
+  id                         String                @id @default(cuid())
+  priority                   SupportTicketPriority @unique
+  firstResponseMinutes       Int                   @map("first_response_minutes")
+  resolutionMinutes          Int                   @map("resolution_minutes")
+  active                     Boolean               @default(true)
+  createdAt                  DateTime              @default(now()) @map("created_at")
+  updatedAt                  DateTime              @updatedAt @map("updated_at")
+
+  @@map("support_sla_policies")
+}
+
+model SupportMacro {
+  id          String             @id @default(cuid())
+  title       String
+  category    SupportTicketCategory @default(OTHER)
+  body        String
+  status      SupportMacroStatus @default(DRAFT)
+  variables   Json?
+  createdById String?            @map("created_by_id")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([status, category])
+  @@map("support_macros")
+}
+
+model KnowledgeArticle {
+  id              String                 @id @default(cuid())
+  title           String
+  category        SupportTicketCategory  @default(OTHER)
+  keywords        String[]               @default([])
+  body            String
+  status          KnowledgeArticleStatus @default(DRAFT)
+  authorizedRoles UserRole[]             @default([SUPPORT, SUPER_ADMIN]) @map("authorized_roles")
+  authorId        String?                @map("author_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, category])
+  @@map("knowledge_articles")
 }
 
 enum BusinessStatus {
