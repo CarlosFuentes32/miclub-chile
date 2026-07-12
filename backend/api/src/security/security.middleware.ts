@@ -75,7 +75,10 @@ export class CsrfOriginMiddleware implements NestMiddleware {
 
 @Injectable()
 export class DistributedRateLimitMiddleware implements NestMiddleware {
-  constructor(private readonly limits: DistributedRateLimitService) {}
+  constructor(
+    private readonly limits: DistributedRateLimitService,
+    private readonly config: ConfigService,
+  ) {}
 
   async use(request: Request, response: Response, next: NextFunction) {
     const path = request.originalUrl ?? request.url;
@@ -100,22 +103,34 @@ export class DistributedRateLimitMiddleware implements NestMiddleware {
     const unsafe = !SAFE_METHODS.has(method);
     const rules = [];
     if (path.includes("/auth/login")) {
-      rules.push({ scope: "login_ip", limit: 20, windowSeconds: 900, subject: ip, risk: "high" as const });
-      rules.push({ scope: "login_account", limit: 8, windowSeconds: 900, subject: account, risk: "high" as const });
-      rules.push({ scope: "login_ip_account", limit: 6, windowSeconds: 900, subject: `${ip}:${account}`, risk: "high" as const });
+      rules.push({ scope: "login_ip", ...this.policy("RATE_LIMIT_LOGIN_IP", 20, 900), subject: ip, risk: "high" as const });
+      rules.push({ scope: "login_account", ...this.policy("RATE_LIMIT_LOGIN_ACCOUNT", 8, 900), subject: account, risk: "high" as const });
+      rules.push({ scope: "login_ip_account", ...this.policy("RATE_LIMIT_LOGIN_IP_ACCOUNT", 6, 900), subject: `${ip}:${account}`, risk: "high" as const });
     } else if (path.includes("/auth/password-reset/request")) {
-      rules.push({ scope: "password_reset", limit: 5, windowSeconds: 900, subject: `${ip}:${account}`, risk: "medium" as const });
+      rules.push({ scope: "password_reset", ...this.policy("RATE_LIMIT_PASSWORD_RESET", 5, 900), subject: `${ip}:${account}`, risk: "medium" as const });
     } else if (path.includes("/auth/register")) {
-      rules.push({ scope: "register", limit: 10, windowSeconds: 3600, subject: `${ip}:${account}`, risk: "medium" as const });
+      rules.push({ scope: "register", ...this.policy("RATE_LIMIT_REGISTER", 10, 3600), subject: `${ip}:${account}`, risk: "medium" as const });
     } else if (path.includes("/auth/refresh")) {
-      rules.push({ scope: "refresh", limit: 120, windowSeconds: 900, subject: ip, risk: "medium" as const });
+      rules.push({ scope: "refresh", ...this.policy("RATE_LIMIT_REFRESH", 120, 900), subject: ip, risk: "medium" as const });
     } else if (/search|customers|audit|errors/i.test(path) && method === "GET") {
-      rules.push({ scope: "sensitive_search", limit: 60, windowSeconds: 300, subject: `${ip}:${path.split("?")[0]}`, risk: "medium" as const });
+      rules.push({ scope: "sensitive_search", ...this.policy("RATE_LIMIT_SENSITIVE_SEARCH", 60, 300), subject: `${ip}:${path.split("?")[0]}`, risk: "medium" as const });
     } else if (/export/i.test(path)) {
-      rules.push({ scope: "export", limit: 10, windowSeconds: 3600, subject: `${ip}:${path}`, risk: "high" as const });
+      rules.push({ scope: "export", ...this.policy("RATE_LIMIT_EXPORT", 10, 3600), subject: `${ip}:${path}`, risk: "high" as const });
     } else if (unsafe && /backups|restore|rollback|impersonation|billing|reactivate|delete|webhooks|redeem/i.test(path)) {
-      rules.push({ scope: "critical_operation", limit: 30, windowSeconds: 900, subject: `${ip}:${path.split("?")[0]}`, risk: "high" as const });
+      rules.push({ scope: "critical_operation", ...this.policy("RATE_LIMIT_CRITICAL_OPERATION", 30, 900), subject: `${ip}:${path.split("?")[0]}`, risk: "high" as const });
     }
     return rules;
+  }
+
+  private policy(key: string, defaultLimit: number, defaultWindowSeconds: number) {
+    const raw = this.config.get<string>(key);
+    if (!raw) return { limit: defaultLimit, windowSeconds: defaultWindowSeconds };
+    const [limitRaw, windowRaw] = raw.split(":");
+    const limit = Number(limitRaw);
+    const windowSeconds = Number(windowRaw);
+    return {
+      limit: Number.isFinite(limit) && limit > 0 ? limit : defaultLimit,
+      windowSeconds: Number.isFinite(windowSeconds) && windowSeconds > 0 ? windowSeconds : defaultWindowSeconds,
+    };
   }
 }
