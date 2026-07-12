@@ -166,7 +166,7 @@ const config = {
   get: (_key: string, fallback?: any) => fallback,
   getOrThrow: (key: string) => `${key}_secret`,
 };
-const auth = new AuthService(prisma, { createCustomer: async () => null, findPublicById: async () => null } as any, jwt as any, config as any, email as any);
+const auth = new AuthService(prisma, { createCustomer: async () => null, findPublicById: async () => null } as any, jwt as any, config as any, email as any, audit as any);
 
 async function expectRejectsWith(errorType: any, action: () => Promise<unknown>) {
   let thrown: unknown;

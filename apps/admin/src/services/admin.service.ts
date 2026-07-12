@@ -23,6 +23,8 @@ import {
   RollbackPlan,
   UpdateBusinessInput,
   SystemStatus,
+  Paginated,
+  SystemError,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
@@ -285,9 +287,25 @@ export const adminService = {
     }),
   getReports: () => apiRequest<any>("/admin/reports"),
   getAuditLogs: (params: Record<string, string>) =>
-    apiRequest<AuditLog[]>(
+    apiRequest<Paginated<AuditLog>>(
       `/admin/audit?${new URLSearchParams(params).toString()}`,
     ),
+  getAuditDetail: (id: string) => apiRequest<AuditLog>(`/admin/audit/${id}`),
+  exportAudit: (params: Record<string, string>) =>
+    apiRequest<{ filename: string; rows: number; csv: string; filters: Record<string, unknown> }>(
+      `/admin/audit/export?${new URLSearchParams(params).toString()}`,
+    ),
+  auditRetentionDryRun: () => apiRequest<any>("/admin/audit/retention/dry-run"),
+  getSystemErrors: (params: Record<string, string>) =>
+    apiRequest<Paginated<SystemError>>(
+      `/admin/errors?${new URLSearchParams(params).toString()}`,
+    ),
+  getSystemErrorDetail: (id: string) => apiRequest<SystemError>(`/admin/errors/${id}`),
+  updateSystemErrorStatus: (id: string, status: SystemError["status"], note: string) =>
+    apiRequest<SystemError>(`/admin/errors/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, note }),
+    }),
   getSuperGlobalSettings: () => apiRequest<any>("/admin/global-settings"),
   updateSuperGlobalSettings: (value: any) =>
     apiRequest<any>("/admin/global-settings", {

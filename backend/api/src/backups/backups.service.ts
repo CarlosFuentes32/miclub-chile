@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { PrismaService } from "../prisma/prisma.service";
+import { AuditService } from "../audit/audit.service";
 
 interface Actor {
   id?: string;
@@ -58,6 +59,7 @@ export class BackupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   async overview() {
@@ -135,13 +137,14 @@ export class BackupsService {
         }),
       },
     });
+    await this.auditBackup(actor, "backup_started", backup.id, "success", "high", { type: backup.type, environment });
 
     try {
       const validation = await this.validateDatabaseIntegrity();
       const dump = await this.tryCreateLogicalDump(backup.id, validation);
       const finishedAt = new Date();
       const checksum = this.checksum({ backupId: backup.id, environment, version, commit, validation, dumpRef: dump.storageRef });
-      return this.prisma.backupRecord.update({
+      const updated = await this.prisma.backupRecord.update({
         where: { id: backup.id },
         data: {
           status: validation.ok ? BackupStatus.VERIFIED : BackupStatus.FAILED,
@@ -155,8 +158,10 @@ export class BackupsService {
           result: validation.ok ? "Backup validado correctamente" : "Backup rechazado por validación fallida",
         },
       });
+      await this.auditBackup(actor, validation.ok ? "backup_completed" : "backup_failed", updated.id, validation.ok ? "success" : "failure", validation.ok ? "medium" : "critical", { status: updated.status, checksum: updated.checksum ? "present" : "missing" });
+      return updated;
     } catch (error) {
-      return this.prisma.backupRecord.update({
+      const failed = await this.prisma.backupRecord.update({
         where: { id: backup.id },
         data: {
           status: BackupStatus.FAILED,
@@ -166,6 +171,8 @@ export class BackupsService {
           validation: this.sanitizeJson({ ok: false, error: this.safeError(error) }),
         },
       });
+      await this.auditBackup(actor, "backup_failed", failed.id, "failure", "critical", { status: failed.status });
+      return failed;
     }
   }
 
@@ -202,6 +209,7 @@ export class BackupsService {
           metadata: this.sanitizeJson({ reason: input.reason, blocked: true }),
         },
       });
+      await this.auditBackup(actor, "restore_drill_blocked", blocked.id, "denied", "critical", { targetEnvironment: target });
       return blocked;
     }
     if (!input.confirmedTemporaryRestore) {
@@ -228,7 +236,7 @@ export class BackupsService {
       },
     });
     const validation = await this.validateDatabaseIntegrity();
-    return this.prisma.restoreRecord.update({
+    const updated = await this.prisma.restoreRecord.update({
       where: { id: restore.id },
       data: {
         status: validation.ok ? RestoreStatus.VALIDATED : RestoreStatus.FAILED,
@@ -238,12 +246,14 @@ export class BackupsService {
         result: validation.ok ? "Restore drill validado en ambiente temporal/staging" : "Restore drill falló validación",
       },
     });
+    await this.auditBackup(actor, validation.ok ? "restore_drill_validated" : "restore_drill_failed", updated.id, validation.ok ? "success" : "failure", validation.ok ? "high" : "critical", { status: updated.status, targetEnvironment: target });
+    return updated;
   }
 
   async createRollbackPlan(input: RollbackRequest, actor: Actor) {
     if (!input.reason) throw new BadRequestException("Rollback requiere motivo");
     const validation = await this.validateRollback(input);
-    return this.prisma.rollbackPlan.create({
+    const rollback = await this.prisma.rollbackPlan.create({
       data: {
         environment: this.environment(),
         requestedById: actor.id,
@@ -267,6 +277,8 @@ export class BackupsService {
         result: validation.ok ? "Plan de rollback validado; ejecución manual requerida" : "Plan de rollback bloqueado",
       },
     });
+    await this.auditBackup(actor, "rollback_plan_validated", rollback.id, rollback.status === RollbackStatus.VALIDATED ? "success" : "failure", "high", { status: rollback.status });
+    return rollback;
   }
 
   async simulate(actor: Actor) {
@@ -350,6 +362,20 @@ export class BackupsService {
       results.push({ name: check.name, ok: count === 0, orphanCount: count });
     }
     return results;
+  }
+
+  private auditBackup(actor: Actor, action: string, entityId: string, result: "success" | "failure" | "denied", riskLevel: "medium" | "high" | "critical", metadata: Record<string, unknown>) {
+    return this.audit.create({
+      userId: actor.id,
+      action,
+      entityType: action.includes("restore") ? "restore_record" : action.includes("rollback") ? "rollback_plan" : "backup_record",
+      entityId,
+      category: "backups",
+      module: "backups",
+      result,
+      riskLevel,
+      metadata: metadata as any,
+    }).catch(() => undefined);
   }
 
   private async databaseIdentity() {

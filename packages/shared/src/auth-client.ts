@@ -22,6 +22,12 @@ export interface AuthUser {
 
 const API_URL = getApiUrl();
 let accessToken: string | null = null;
+let correlationId: string | null = null;
+
+function safeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 async function parseError(response: Response) {
   const data = await response.json().catch(() => ({}));
@@ -46,6 +52,8 @@ export async function apiRequest<T>(
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "X-Request-ID": safeId(),
+      "X-Correlation-ID": correlationId ?? (correlationId = safeId()),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...init.headers,
     },

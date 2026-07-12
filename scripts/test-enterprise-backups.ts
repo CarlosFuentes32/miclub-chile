@@ -75,6 +75,7 @@ function assert(condition: unknown, message: string) {
 }
 
 function service(env: Env = {}, prisma = new FakePrisma()) {
+  const audit = { create: async () => ({}) };
   return {
     prisma,
     svc: new BackupsService(
@@ -87,6 +88,7 @@ function service(env: Env = {}, prisma = new FakePrisma()) {
         RAILWAY_GIT_BRANCH: "fix/mvp-comercial-readiness",
         ...env,
       }) as any,
+      audit as any,
     ),
   };
 }

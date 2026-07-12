@@ -1334,41 +1334,25 @@ export class AdminService {
     return created;
   }
   auditLogs(q: Record<string, string>) {
-    const where: Prisma.AuditLogWhereInput = {
-      ...(q.action
-        ? { action: { contains: q.action, mode: "insensitive" } }
-        : {}),
-      ...(q.role ? { user: { role: q.role as UserRole } } : {}),
-      ...(q.user
-        ? {
-            user: {
-              OR: [
-                { name: { contains: q.user, mode: "insensitive" } },
-                { email: { contains: q.user, mode: "insensitive" } },
-              ],
-            },
-          }
-        : {}),
-      ...(q.businessId ? { businessId: q.businessId } : {}),
-      ...(q.entityType ? { entityType: q.entityType } : {}),
-      ...(q.from || q.to
-        ? {
-            createdAt: {
-              ...(q.from ? { gte: new Date(q.from) } : {}),
-              ...(q.to ? { lte: new Date(q.to) } : {}),
-            },
-          }
-        : {}),
-    };
-    return this.prisma.auditLog.findMany({
-      where,
-      take: 200,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: { select: { name: true, email: true, role: true } },
-        business: { select: { name: true } },
-      },
-    });
+    return this.audit.listAudit(q);
+  }
+  auditDetail(id: string) {
+    return this.audit.auditDetail(id);
+  }
+  exportAudit(q: Record<string, string>, actorId: string) {
+    return this.audit.exportAuditCsv(q, actorId);
+  }
+  auditRetentionDryRun() {
+    return this.audit.retentionDryRun();
+  }
+  systemErrors(q: Record<string, string>) {
+    return this.audit.listErrors(q);
+  }
+  systemErrorDetail(id: string) {
+    return this.audit.errorDetail(id);
+  }
+  updateSystemErrorStatus(id: string, status: "OPEN" | "INVESTIGATING" | "RESOLVED", note: string, actorId: string) {
+    return this.audit.updateErrorStatus(id, status as any, note, actorId);
   }
   async globalSettings() {
     const row = await this.prisma.systemSetting.findUnique({

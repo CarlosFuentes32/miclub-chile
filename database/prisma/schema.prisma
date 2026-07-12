@@ -289,6 +289,26 @@ enum IncidentAlertChannel {
   WHATSAPP @map("whatsapp")
 }
 
+enum AuditResult {
+  SUCCESS @map("success")
+  FAILURE @map("failure")
+  DENIED  @map("denied")
+  PARTIAL @map("partial")
+}
+
+enum AuditRiskLevel {
+  LOW      @map("low")
+  MEDIUM   @map("medium")
+  HIGH     @map("high")
+  CRITICAL @map("critical")
+}
+
+enum SystemErrorStatus {
+  OPEN          @map("open")
+  INVESTIGATING @map("investigating")
+  RESOLVED      @map("resolved")
+}
+
 model Plan {
   id                String     @id @default(cuid())
   name              String     @unique
@@ -589,6 +609,44 @@ model IncidentAlert {
   @@map("incident_alerts")
 }
 
+model SystemError {
+  id              String            @id @default(cuid())
+  fingerprint     String
+  environment     String
+  service         String            @default("api")
+  module          String?
+  type            String
+  message         String
+  sanitizedStack  String?           @map("sanitized_stack")
+  endpoint        String?
+  method          String?
+  statusCode      Int?              @map("status_code")
+  firstSeenAt     DateTime          @default(now()) @map("first_seen_at")
+  lastSeenAt      DateTime          @default(now()) @map("last_seen_at")
+  occurrenceCount Int               @default(1) @map("occurrence_count")
+  requestId       String?           @map("request_id")
+  correlationId   String?           @map("correlation_id")
+  actorUserId     String?           @map("actor_user_id")
+  role            String?
+  businessId      String?           @map("business_id")
+  version         String?
+  commit          String?
+  buildNumber     String?           @map("build_number")
+  status          SystemErrorStatus @default(OPEN)
+  incidentId      String?           @map("incident_id")
+  notes           Json?
+  metadata        Json?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@unique([fingerprint, environment])
+  @@index([environment, status, lastSeenAt])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([incidentId])
+  @@map("system_errors")
+}
+
 model BackupRecord {
   id              String       @id @default(cuid())
   environment     String
@@ -829,16 +887,40 @@ model Reward {
 
 model AuditLog {
   id         String    @id @default(cuid())
-  userId     String    @map("user_id")
+  userId     String?   @map("user_id")
   businessId String?   @map("business_id")
   action     String
   entityType String    @map("entity_type")
   entityId   String    @map("entity_id")
+  environment String   @default("development")
+  actorRole  String?   @map("actor_role")
+  category   String    @default("administration")
+  module     String    @default("admin")
+  result     AuditResult @default(SUCCESS)
+  riskLevel  AuditRiskLevel @default(LOW) @map("risk_level")
+  previousState Json?  @map("previous_state")
+  nextState  Json?     @map("next_state")
+  requestId  String?   @map("request_id")
+  correlationId String? @map("correlation_id")
+  endpoint   String?
+  method     String?
+  statusCode Int?      @map("status_code")
+  durationMs Int?      @map("duration_ms")
+  ipHash     String?   @map("ip_hash")
+  userAgent  String?   @map("user_agent")
+  version    String?
+  commit     String?
+  buildNumber String?  @map("build_number")
   metadata   Json?
   createdAt  DateTime  @default(now()) @map("created_at")
-  user       User      @relation(fields: [userId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
   business   Business? @relation(fields: [businessId], references: [id])
 
   @@index([businessId, createdAt])
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([environment, category, result, createdAt])
+  @@index([action, createdAt])
   @@map("audit_logs")
 }

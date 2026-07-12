@@ -4,11 +4,16 @@ import { ConfigService } from "@nestjs/config";
 import cookieParser = require("cookie-parser");
 import { AppModule } from "./app.module";
 import { ObservabilityService } from "./observability/observability.service";
+import { EnterpriseExceptionFilter } from "./enterprise-logging/enterprise-exception.filter";
+import { RequestContextMiddleware } from "./enterprise-logging/request-context.service";
+import { StructuredLoggerService } from "./enterprise-logging/structured-logger.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
   const observability = app.get(ObservabilityService);
+  const requestContext = app.get(RequestContextMiddleware);
+  const logger = app.get(StructuredLoggerService);
   const origins = config
     .get<string>("CORS_ORIGIN", "")
     .split(",")
@@ -44,6 +49,19 @@ async function bootstrap() {
     );
 
   app.setGlobalPrefix("api");
+  app.use((request: any, response: any, next: () => void) => requestContext.use(request, response, next));
+  app.use((request: any, response: any, next: () => void) => {
+    const startedAt = Date.now();
+    response.on("finish", () => {
+      logger.info("http", "request_completed", {
+        method: request.method,
+        endpoint: request.originalUrl ?? request.url,
+        statusCode: response.statusCode,
+        durationMs: Date.now() - startedAt,
+      });
+    });
+    next();
+  });
   app.use(cookieParser());
   const rateLimit = new Map<string, { count: number; resetAt: number }>();
   app.use((request: any, response: any, next: () => void) => {
@@ -80,6 +98,7 @@ async function bootstrap() {
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(app.get(EnterpriseExceptionFilter));
 
   await app.listen(config.get<number>("PORT", 3000));
 }

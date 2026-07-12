@@ -45,5 +45,8 @@ jobs:
       - name: Run backup/restore/rollback unit checks
         run: npm run test:enterprise-backups
 
+      - name: Run enterprise logs/audit/traceability checks
+        run: npm run test:enterprise-logs
+
       - name: Run documentation link check
         run: npm run test:doc-links

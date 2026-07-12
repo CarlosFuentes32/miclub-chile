@@ -190,10 +190,62 @@ export interface AuditLog {
   action: string;
   entityType: string;
   entityId: string;
+  environment: string;
+  actorRole?: string;
+  category: string;
+  module: string;
+  result: "SUCCESS" | "FAILURE" | "DENIED" | "PARTIAL";
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  previousState?: Record<string, unknown>;
+  nextState?: Record<string, unknown>;
+  requestId?: string;
+  correlationId?: string;
+  endpoint?: string;
+  method?: string;
+  statusCode?: number;
+  durationMs?: number;
+  version?: string;
+  commit?: string;
+  buildNumber?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
   user?: { name: string; email: string; role: UserRole };
   business?: { name: string };
+}
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SystemError {
+  id: string;
+  fingerprint: string;
+  environment: string;
+  service: string;
+  module?: string;
+  type: string;
+  message: string;
+  sanitizedStack?: string;
+  endpoint?: string;
+  method?: string;
+  statusCode?: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  occurrenceCount: number;
+  requestId?: string;
+  correlationId?: string;
+  role?: string;
+  businessId?: string;
+  version?: string;
+  commit?: string;
+  buildNumber?: string;
+  status: "OPEN" | "INVESTIGATING" | "RESOLVED";
+  incidentId?: string;
+  notes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export type SystemCheckStatus = "ok" | "warning" | "error" | "unknown";

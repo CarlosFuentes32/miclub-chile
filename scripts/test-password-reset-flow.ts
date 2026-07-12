@@ -24,8 +24,9 @@ class FakeConfig {
 }
 
 function authWithPrisma(prisma: any, email = new FakeEmail()) {
+  const audit = { create: async () => ({}) };
   return {
-    auth: new AuthService(prisma, {} as any, {} as any, new FakeConfig() as any, email as any),
+    auth: new AuthService(prisma, {} as any, {} as any, new FakeConfig() as any, email as any, audit as any),
     email,
   };
 }

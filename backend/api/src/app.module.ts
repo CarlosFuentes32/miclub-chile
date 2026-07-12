@@ -18,6 +18,7 @@ import { BillingModule } from './billing/billing.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { BackupsModule } from './backups/backups.module';
+import { EnterpriseLoggingModule } from './enterprise-logging/enterprise-logging.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { BackupsModule } from './backups/backups.module';
     ObservabilityModule,
     IncidentsModule,
     BackupsModule,
+    EnterpriseLoggingModule,
   ],
   controllers: [AppController],
 })

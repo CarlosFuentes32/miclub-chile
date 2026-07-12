@@ -265,6 +265,40 @@ export class AdminController {
   audit(@Query() q: Record<string, string>) {
     return this.admin.auditLogs(q);
   }
+  @Get("audit/export")
+  @Roles(UserRole.SUPER_ADMIN)
+  exportAudit(@Query() q: Record<string, string>, @CurrentUser() actor: JwtUser) {
+    return this.admin.exportAudit(q, actor.id);
+  }
+  @Get("audit/retention/dry-run")
+  @Roles(UserRole.SUPER_ADMIN)
+  retentionDryRun() {
+    return this.admin.auditRetentionDryRun();
+  }
+  @Get("audit/:id")
+  @Roles(UserRole.SUPER_ADMIN)
+  auditDetail(@Param("id") id: string) {
+    return this.admin.auditDetail(id);
+  }
+  @Get("errors")
+  @Roles(UserRole.SUPER_ADMIN)
+  errors(@Query() q: Record<string, string>) {
+    return this.admin.systemErrors(q);
+  }
+  @Get("errors/:id")
+  @Roles(UserRole.SUPER_ADMIN)
+  errorDetail(@Param("id") id: string) {
+    return this.admin.systemErrorDetail(id);
+  }
+  @Patch("errors/:id/status")
+  @Roles(UserRole.SUPER_ADMIN)
+  updateErrorStatus(
+    @Param("id") id: string,
+    @Body() body: { status: "OPEN" | "INVESTIGATING" | "RESOLVED"; note?: string },
+    @CurrentUser() actor: JwtUser,
+  ) {
+    return this.admin.updateSystemErrorStatus(id, body.status, body.note ?? "", actor.id);
+  }
   @Get("global-settings")
   @Roles(UserRole.SUPER_ADMIN)
   globalSettings() {

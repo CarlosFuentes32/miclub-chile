@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardList,
   Database,
+  Bug,
   Headphones,
   Layers3,
   LogOut,
@@ -32,6 +33,7 @@ const superNav = [
   ["/super-settings", "Config. global", Settings],
   ["/maintenance", "Mantenimiento", Database],
   ["/system-status", "Estado del Sistema", Database],
+  ["/system-errors", "Errores del sistema", Bug],
   ["/backups", "Backups", Database],
 ] as const;
 
