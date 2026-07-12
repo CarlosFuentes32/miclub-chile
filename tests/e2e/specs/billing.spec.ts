@@ -38,13 +38,19 @@ test.describe("Billing staging", () => {
     const first = await admin.post("/admin/billing/payments/manual", { data: manualPayload });
     expect(first.ok(), await first.text()).toBeTruthy();
     const firstBody = await first.json();
-    expect(firstBody.status).toBe("APPROVED");
+    expect(firstBody.status).toBe("PENDING");
     expect(firstBody.provider).toBe("MANUAL");
 
     const second = await admin.post("/admin/billing/payments/manual", { data: manualPayload });
     expect(second.ok(), await second.text()).toBeTruthy();
     const secondBody = await second.json();
     expect(secondBody.id).toBe(firstBody.id);
+
+    const approve = await admin.post(`/admin/billing/payments/${firstBody.id}/approve`, {
+      data: { reason: "QA aprobación manual con evidencia de transferencia" },
+    });
+    expect(approve.ok(), await approve.text()).toBeTruthy();
+    expect((await approve.json()).status).toBe("APPROVED");
 
     const refreshed = await (await admin.get("/admin/billing/subscriptions")).json();
     const active = refreshed.find((row: any) => row.businessId === qa.business.id);

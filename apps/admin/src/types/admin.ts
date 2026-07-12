@@ -75,14 +75,22 @@ export interface AdminUser {
 export interface Plan {
   id: string;
   name: string;
+  code?: string;
+  description?: string;
   monthlyPrice: number;
   currency?: string;
-  billingPeriod?: "MONTHLY" | "YEARLY";
+  billingPeriod?: "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "YEARLY";
   trialDays?: number;
+  graceDays?: number;
   customerLimit: number;
   collaboratorLimit: number;
+  limits?: Record<string, unknown>;
   features: string[];
   active: boolean;
+  sortOrder?: number;
+  version?: number;
+  publicVisible?: boolean;
+  allowNewSubscriptions?: boolean;
 }
 export interface BillingSubscription {
   id: string;
@@ -93,6 +101,13 @@ export interface BillingSubscription {
   trialEndsAt?: string;
   nextBillingAt?: string;
   currentPeriodEndsAt?: string;
+  graceEndsAt?: string;
+  suspendedAt?: string;
+  reactivatedAt?: string;
+  agreedPrice?: number;
+  discountPercent?: number;
+  discountAmount?: number;
+  paymentMethod?: string;
   lastPaymentStatus?: string;
 }
 export interface BillingPayment {
@@ -103,10 +118,44 @@ export interface BillingPayment {
   status: string;
   provider: string;
   paidAt?: string;
+  approvedAt?: string;
   periodStart?: string;
   periodEnd?: string;
   paymentMethod?: string;
   reference?: string;
+  rejectedReason?: string;
+  notes?: string;
+}
+export interface BillingOverview {
+  byStatus: Record<string, number>;
+  trialsEndingSoon: number;
+  nextDueSoon: number;
+  pendingPayments: number;
+  openRequests: number;
+  confirmedRevenue: number;
+  estimatedMrr: number;
+  estimatedArr: number;
+  churned: number;
+  averageTicket: number;
+}
+export interface BillingRequest {
+  id: string;
+  businessId: string;
+  requestedById: string;
+  requestedPlanId?: string;
+  type: string;
+  status: string;
+  reason: string;
+  createdAt: string;
+}
+export interface BillingFinancialEvent {
+  id: string;
+  businessId: string;
+  subscriptionId?: string;
+  paymentId?: string;
+  eventType: string;
+  reason?: string;
+  createdAt: string;
 }
 export interface Reports {
   newBusinesses: number;

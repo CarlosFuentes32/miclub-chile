@@ -136,7 +136,7 @@ export class SupportService {
       include: { owner: true, plan: true, subscription: true },
     });
     if (!business) throw new NotFoundException("Comercio no encontrado.");
-    const [admins, cashiers, customers, programs, rewards, transactions, errors, incidents, tickets, audit] = await Promise.all([
+    const [admins, cashiers, customers, programs, rewards, transactions, errors, incidents, tickets, audit, billingPayments, billingRequests, billingEvents] = await Promise.all([
       this.prisma.businessUser.findMany({ where: { businessId: id, role: { in: [UserRole.BUSINESS_OWNER, UserRole.BUSINESS_ADMIN] } }, include: { user: true }, take: 20 }),
       this.prisma.businessUser.findMany({ where: { businessId: id, role: UserRole.CASHIER }, include: { user: true }, take: 20 }),
       this.prisma.customerBusiness.count({ where: { businessId: id } }),
@@ -147,6 +147,9 @@ export class SupportService {
       this.prisma.incident.findMany({ where: { metadata: { path: ["businessId"], equals: id } as any }, take: 10, orderBy: { createdAt: "desc" } }),
       this.prisma.supportTicket.findMany({ where: { businessId: id, status: { in: OPEN_STATUSES } }, take: 20, orderBy: { updatedAt: "desc" } }),
       this.prisma.auditLog.findMany({ where: { businessId: id }, take: 20, orderBy: { createdAt: "desc" } }),
+      this.prisma.billingPayment.findMany({ where: { businessId: id }, take: 10, orderBy: { createdAt: "desc" } }),
+      this.prisma.billingRequest.findMany({ where: { businessId: id }, take: 10, orderBy: { createdAt: "desc" } }),
+      this.prisma.billingFinancialEvent.findMany({ where: { businessId: id }, take: 20, orderBy: { createdAt: "desc" } }),
     ]);
     await this.auditAccess(actor, "support_business_viewed", "business", id, dto.reason, dto.ticketId, AuditRiskLevel.MEDIUM);
     return {
@@ -161,8 +164,13 @@ export class SupportService {
       incidents,
       tickets,
       audit,
+      billing: {
+        payments: billingPayments.map((payment) => ({ ...payment, amount: Number(payment.amount) })),
+        requests: billingRequests,
+        events: billingEvents,
+      },
       allowedActions: ["add_note", "create_ticket", "send_help_email", "view_configuration", "revoke_user_sessions", "request_reactivation"],
-      blockedActions: ["delete_business", "change_plan", "register_payment", "export_database"],
+      blockedActions: ["delete_business", "change_plan", "register_payment", "approve_payment", "apply_discount", "export_database"],
     };
   }
 

@@ -27,6 +27,7 @@
     "test:email": "tsx scripts/test-email-service.ts",
     "test:password-reset": "tsx scripts/test-password-reset-flow.ts",
     "test:billing": "tsx scripts/test-billing-model.ts",
+    "test:enterprise-billing": "tsx scripts/test-billing-model.ts",
     "test:enterprise-health": "tsx scripts/test-enterprise-health.ts",
     "test:enterprise-monitoring": "tsx scripts/test-enterprise-monitoring.ts",
     "test:enterprise-backups": "tsx scripts/test-enterprise-backups.ts",

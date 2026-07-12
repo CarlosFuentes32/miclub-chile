@@ -23,11 +23,13 @@ import {
   CancelSubscriptionDto,
   CorrectRutDto,
   CreateBusinessDto,
+  DiscountDto,
   ManualAdjustmentDto,
   ManualPaymentDto,
   ManualRewardDto,
   PlanDto,
   ReasonDto,
+  ReviewPaymentDto,
   StatusDto,
   SupportNoteDto,
   TrialGrantDto,
@@ -242,20 +244,65 @@ export class AdminController {
   billingPayments(@Query("status") status?: string) {
     return this.admin.billingPayments(status);
   }
+  @Get("billing/overview")
+  @Roles(UserRole.SUPER_ADMIN)
+  billingOverview() {
+    return this.admin.billingOverview();
+  }
+  @Get("billing/events")
+  @Roles(UserRole.SUPER_ADMIN)
+  billingEvents(@Query("businessId") businessId?: string) {
+    return this.admin.billingEvents(businessId);
+  }
+  @Get("billing/requests")
+  @Roles(UserRole.SUPER_ADMIN)
+  billingRequests(@Query("status") status?: string) {
+    return this.admin.billingRequests(status);
+  }
   @Post("billing/payments/manual")
   @Roles(UserRole.SUPER_ADMIN)
   manualPayment(@Body() d: ManualPaymentDto, @CurrentUser() actor: JwtUser) {
     return this.admin.registerManualPayment(d, actor.id);
   }
+  @Post("billing/payments/:id/approve")
+  @Roles(UserRole.SUPER_ADMIN)
+  approvePayment(@Param("id") id: string, @Body() d: ReviewPaymentDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.approveManualPayment(id, d.reason, actor.id);
+  }
+  @Post("billing/payments/:id/reject")
+  @Roles(UserRole.SUPER_ADMIN)
+  rejectPayment(@Param("id") id: string, @Body() d: ReviewPaymentDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.rejectManualPayment(id, d.reason, d.rejectedReason, actor.id);
+  }
+  @Post("billing/payments/:id/reverse")
+  @Roles(UserRole.SUPER_ADMIN)
+  reversePayment(@Param("id") id: string, @Body() d: ReviewPaymentDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.reverseManualPayment(id, d.reason, actor.id);
+  }
   @Patch("billing/subscriptions/:businessId/plan")
   @Roles(UserRole.SUPER_ADMIN)
   changeSubscriptionPlan(@Param("businessId") businessId: string, @Body() d: ChangeSubscriptionPlanDto, @CurrentUser() actor: JwtUser) {
-    return this.admin.changeSubscriptionPlan(businessId, d.planId, d.reason, actor.id);
+    return this.admin.changeSubscriptionPlan(businessId, d.planId, d.reason, actor.id, { immediate: d.immediate, agreedPrice: d.agreedPrice });
+  }
+  @Post("billing/subscriptions/:businessId/discount")
+  @Roles(UserRole.SUPER_ADMIN)
+  applyDiscount(@Param("businessId") businessId: string, @Body() d: DiscountDto, @CurrentUser() actor: JwtUser) {
+    return this.admin.applyDiscount(businessId, d, actor.id);
   }
   @Post("billing/subscriptions/:businessId/trial")
   @Roles(UserRole.SUPER_ADMIN)
   grantTrial(@Param("businessId") businessId: string, @Body() d: TrialGrantDto, @CurrentUser() actor: JwtUser) {
     return this.admin.grantTrial(businessId, d.days, d.reason, actor.id);
+  }
+  @Post("billing/reminders/run")
+  @Roles(UserRole.SUPER_ADMIN)
+  runBillingReminders(@Body() d: { type?: string }, @CurrentUser() actor: JwtUser) {
+    return this.admin.runBillingReminders(d.type, actor.id);
+  }
+  @Get("billing/export")
+  @Roles(UserRole.SUPER_ADMIN)
+  exportBilling(@Query("entity") entity: string, @Query("reason") reason: string, @CurrentUser() actor: JwtUser) {
+    return this.admin.exportBilling(entity, reason, actor.id);
   }
   @Post("billing/subscriptions/:businessId/suspend")
   @Roles(UserRole.SUPER_ADMIN)

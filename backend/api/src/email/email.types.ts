@@ -8,6 +8,7 @@ export type EmailTemplate =
   | "account_suspended"
   | "account_reactivated"
   | "business_status_changed"
+  | "billing_notice"
   | "admin_notice";
 
 export interface EmailPayload {

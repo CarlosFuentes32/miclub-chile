@@ -13,6 +13,9 @@ import {
   AuditLog,
   BillingPayment,
   BillingSubscription,
+  BillingOverview,
+  BillingRequest,
+  BillingFinancialEvent,
   Incident,
   IncidentSeverity,
   IncidentStatus,
@@ -262,6 +265,11 @@ export const adminService = {
     apiRequest<BillingSubscription[]>(`/admin/billing/subscriptions?status=${status}`),
   getBillingPayments: (status = "all") =>
     apiRequest<BillingPayment[]>(`/admin/billing/payments?status=${status}`),
+  getBillingOverview: () => apiRequest<BillingOverview>("/admin/billing/overview"),
+  getBillingEvents: (businessId = "") =>
+    apiRequest<BillingFinancialEvent[]>(`/admin/billing/events?businessId=${encodeURIComponent(businessId)}`),
+  getBillingRequests: (status = "all") =>
+    apiRequest<BillingRequest[]>(`/admin/billing/requests?status=${encodeURIComponent(status)}`),
   registerManualPayment: (input: {
     businessId: string;
     planId: string;
@@ -274,6 +282,12 @@ export const adminService = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  approveManualPayment: (id: string, reason: string) =>
+    apiRequest<BillingPayment>(`/admin/billing/payments/${id}/approve`, { method: "POST", body: JSON.stringify({ reason }) }),
+  rejectManualPayment: (id: string, reason: string, rejectedReason?: string) =>
+    apiRequest<BillingPayment>(`/admin/billing/payments/${id}/reject`, { method: "POST", body: JSON.stringify({ reason, rejectedReason }) }),
+  reverseManualPayment: (id: string, reason: string) =>
+    apiRequest<BillingPayment>(`/admin/billing/payments/${id}/reverse`, { method: "POST", body: JSON.stringify({ reason }) }),
   changeSubscriptionPlan: (businessId: string, planId: string, reason: string) =>
     apiRequest(`/admin/billing/subscriptions/${businessId}/plan`, {
       method: "PATCH",
@@ -284,6 +298,12 @@ export const adminService = {
       method: "POST",
       body: JSON.stringify({ days, reason }),
     }),
+  applyDiscount: (businessId: string, input: { type: "PERCENTAGE" | "FIXED"; value: number; reason: string; code?: string }) =>
+    apiRequest(`/admin/billing/subscriptions/${businessId}/discount`, { method: "POST", body: JSON.stringify(input) }),
+  runBillingReminders: (type = "PAYMENT_UPCOMING") =>
+    apiRequest("/admin/billing/reminders/run", { method: "POST", body: JSON.stringify({ type }) }),
+  exportBilling: (entity: string, reason: string) =>
+    apiRequest<{ filename: string; rows: number; csv: string }>(`/admin/billing/export?${new URLSearchParams({ entity, reason }).toString()}`),
   suspendSubscription: (businessId: string, reason: string) =>
     apiRequest(`/admin/billing/subscriptions/${businessId}/suspend`, {
       method: "POST",
