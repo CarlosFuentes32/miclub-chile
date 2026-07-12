@@ -398,7 +398,7 @@ export class ObservabilityService {
   }
 
   private async playwrightCheck(): Promise<SystemCheck> {
-    const stored = await this.prisma.systemSetting.findUnique({ where: { key: "last_playwright_run" } }).catch(() => null);
+    const stored = await this.prisma.systemSetting?.findUnique({ where: { key: "last_playwright_run" } }).catch(() => null);
     const metadata = stored?.value && typeof stored.value === "object" ? stored.value as Record<string, any> : {};
     const status = this.statusFromString(metadata.status ?? this.config.get<string>("LAST_PLAYWRIGHT_STATUS", "unknown"));
     return {
@@ -421,16 +421,7 @@ export class ObservabilityService {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, {
-        method: "GET",
-        signal: controller.signal,
-        headers: this.config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET")
-          ? {
-              "x-vercel-protection-bypass": this.config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET") as string,
-              "x-vercel-set-bypass-cookie": "true",
-            }
-          : undefined,
-      });
+      const response = await this.fetchWithVercelBypass(url, controller.signal);
       return {
         status: response.status >= 500 ? "error" : response.status >= 400 ? "warning" : "ok",
         message: response.status >= 500
@@ -450,6 +441,38 @@ export class ObservabilityService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async fetchWithVercelBypass(url: string, signal: AbortSignal) {
+    const bypassSecret = this.config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET");
+    if (!bypassSecret) {
+      return fetch(url, { method: "GET", signal });
+    }
+
+    const headers = {
+      "x-vercel-protection-bypass": bypassSecret,
+      "x-vercel-set-bypass-cookie": "true",
+    };
+    const first = await fetch(url, {
+      method: "GET",
+      signal,
+      redirect: "manual",
+      headers,
+    });
+
+    const setCookie = first.headers.get("set-cookie");
+    if (!setCookie || (first.status !== 307 && first.status !== 308)) return first;
+
+    const bypassCookie = setCookie.split(";")[0];
+    return fetch(url, {
+      method: "GET",
+      signal,
+      redirect: "manual",
+      headers: {
+        "x-vercel-protection-bypass": bypassSecret,
+        cookie: bypassCookie,
+      },
+    });
   }
 
   private versionInfo(): VersionInfo {
