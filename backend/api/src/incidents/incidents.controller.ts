@@ -94,3 +94,32 @@ export class MonitoringController {
     return Boolean(vercelBypass && vercelBypass.length >= 24 && automationToken === vercelBypass);
   }
 }
+
+@Controller("admin/monitoring")
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.SUPER_ADMIN)
+export class AdminMonitoringController {
+  constructor(private readonly config: ConfigService, private readonly prisma: PrismaService) {}
+
+  @Post("e2e-result")
+  e2eResult(
+    @Body() body: { status: "ok" | "error"; runId?: string; runUrl?: string; commit?: string; environment?: string; executedAt?: string },
+  ) {
+    if (this.config.get<string>("NODE_ENV", "development") !== "staging") {
+      throw new UnauthorizedException("Disponible solo en staging");
+    }
+    const value = {
+      status: body.status,
+      runId: body.runId ?? "unknown",
+      runUrl: body.runUrl ?? "",
+      commit: body.commit ?? "unknown",
+      environment: body.environment ?? this.config.get<string>("APP_ENV", "staging"),
+      executedAt: body.executedAt ?? new Date().toISOString(),
+    };
+    return this.prisma.systemSetting.upsert({
+      where: { key: "last_playwright_run" },
+      create: { key: "last_playwright_run", value },
+      update: { value },
+    });
+  }
+}

@@ -8,7 +8,7 @@ export interface E2EConfig {
   adminEmail: string;
   adminPassword: string;
   defaultPassword: string;
-  billingWebhookSecret: string;
+  billingWebhookSecret?: string;
   vercelBypassSecret?: string;
 }
 
@@ -29,7 +29,7 @@ export function getE2EConfig(): E2EConfig {
     adminEmail: required("E2E_ADMIN_EMAIL"),
     adminPassword: required("E2E_ADMIN_PASSWORD"),
     defaultPassword: required("E2E_DEFAULT_PASSWORD"),
-    billingWebhookSecret: required("E2E_BILLING_WEBHOOK_SECRET"),
+    billingWebhookSecret: process.env.E2E_BILLING_WEBHOOK_SECRET,
     vercelBypassSecret: process.env.E2E_VERCEL_BYPASS_SECRET,
   };
 }

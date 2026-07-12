@@ -1,9 +1,12 @@
-import { Body, Controller, Headers, Param, Post } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Headers, Param, Post, ServiceUnavailableException, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { PaymentProvider, WebhookEventStatus } from "@prisma/client";
+import { PaymentProvider, UserRole, WebhookEventStatus } from "@prisma/client";
 import { createHmac, timingSafeEqual } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 
 @Controller("billing/webhooks")
 export class BillingWebhookController {
@@ -69,5 +72,24 @@ export class BillingWebhookController {
     const a = Buffer.from(expected);
     const b = Buffer.from(signature);
     return a.length === b.length && timingSafeEqual(a, b);
+  }
+}
+
+@Controller("admin/billing/webhooks")
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.SUPER_ADMIN)
+export class AdminBillingWebhookTestController {
+  constructor(private readonly config: ConfigService) {}
+
+  @Post("test-signature")
+  signForStagingTest(@Body() body: { payload: unknown; timestamp?: string }) {
+    if (this.config.get<string>("NODE_ENV", "development") !== "staging") {
+      throw new ForbiddenException("Endpoint disponible solo en staging");
+    }
+    const secret = this.config.get<string>("BILLING_WEBHOOK_SECRET");
+    if (!secret) throw new ServiceUnavailableException("Secreto de webhook no configurado");
+    const timestamp = body.timestamp ?? Math.floor(Date.now() / 1000).toString();
+    const signature = createHmac("sha256", secret).update(`${timestamp}.${JSON.stringify(body.payload)}`).digest("hex");
+    return { timestamp, signature };
   }
 }

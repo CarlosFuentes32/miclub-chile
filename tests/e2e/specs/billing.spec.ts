@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { createHmac } from "crypto";
 import { adminApi } from "../support/api";
 import { cleanupQaArtifacts, createQaBusiness, qaRunId } from "../support/qa-data";
-import { e2e } from "../support/env";
 
 test.describe("Billing staging", () => {
   test.afterEach(async () => {
@@ -69,7 +67,11 @@ test.describe("Billing staging", () => {
       source: "playwright-staging",
     };
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const signature = createHmac("sha256", e2e.billingWebhookSecret).update(`${timestamp}.${JSON.stringify(payload)}`).digest("hex");
+    const signed = await admin.post("/admin/billing/webhooks/test-signature", {
+      data: { payload, timestamp },
+    });
+    expect(signed.ok(), await signed.text()).toBeTruthy();
+    const { signature } = await signed.json();
 
     const first = await admin.post("/billing/webhooks/flow", {
       data: payload,

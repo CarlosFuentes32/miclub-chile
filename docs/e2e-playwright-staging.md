@@ -82,10 +82,9 @@ Configurar como GitHub Secrets:
 - `E2E_ADMIN_EMAIL`
 - `E2E_ADMIN_PASSWORD`
 - `E2E_DEFAULT_PASSWORD`
-- `E2E_BILLING_WEBHOOK_SECRET`
 - `E2E_VERCEL_BYPASS_SECRET` (solo si los previews de Vercel tienen Deployment Protection activo)
 
-`E2E_BILLING_WEBHOOK_SECRET` debe coincidir con `BILLING_WEBHOOK_SECRET` del backend de staging.
+La prueba de webhook firmado obtiene una firma temporal desde un endpoint protegido de Super Admin disponible solo en staging. No se debe copiar `BILLING_WEBHOOK_SECRET` a GitHub.
 `E2E_VERCEL_BYPASS_SECRET` debe configurarse en Vercel como Protection Bypass for Automation y en GitHub Secrets; nunca debe subirse al repositorio.
 
 ## Bloqueo contra producción
@@ -112,7 +111,6 @@ $env:E2E_CUSTOMER_URL="https://app-staging..."
 $env:E2E_ADMIN_EMAIL="..."
 $env:E2E_ADMIN_PASSWORD="..."
 $env:E2E_DEFAULT_PASSWORD="..."
-$env:E2E_BILLING_WEBHOOK_SECRET="..."
 $env:E2E_VERCEL_BYPASS_SECRET="..." # si aplica
 npm.cmd run test:e2e:staging
 ```

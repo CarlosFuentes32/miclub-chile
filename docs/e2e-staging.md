@@ -14,7 +14,6 @@ Configurar como GitHub Secrets:
 - `E2E_ADMIN_EMAIL`
 - `E2E_ADMIN_PASSWORD`
 - `E2E_DEFAULT_PASSWORD`
-- `E2E_BILLING_WEBHOOK_SECRET`
 - `E2E_VERCEL_BYPASS_SECRET` (solo para previews protegidos por Vercel)
 
 Todas las URLs deben apuntar a dominios staging o previews aislados de Vercel de MiClub (`*.vercel.app` con `mi-club-chile`). No usar dominios productivos `miclubchile.cl`.
@@ -32,7 +31,6 @@ $env:E2E_CUSTOMER_URL="https://staging-app.miclubchile.cl"
 $env:E2E_ADMIN_EMAIL="qa.admin@miclubchile.cl"
 $env:E2E_ADMIN_PASSWORD="***"
 $env:E2E_DEFAULT_PASSWORD="***"
-$env:E2E_BILLING_WEBHOOK_SECRET="***"
 $env:E2E_VERCEL_BYPASS_SECRET="***" # si aplica
 npm ci
 npx playwright install chromium
@@ -61,3 +59,4 @@ En GitHub Actions se suben como artefactos `playwright-html-report` y `playwrigh
 - No se usan datos reales.
 - No se guardan contraseñas ni secrets en el repositorio.
 - Si la suite detecta producción, falla antes de ejecutar pruebas.
+- La prueba de webhook obtiene una firma temporal desde un endpoint Super Admin de staging; no requiere copiar el secreto real del proveedor a GitHub.
