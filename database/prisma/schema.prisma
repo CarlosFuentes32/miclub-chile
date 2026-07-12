@@ -338,7 +338,7 @@ model KnowledgeArticle {
   keywords        String[]               @default([])
   body            String
   status          KnowledgeArticleStatus @default(DRAFT)
-  authorizedRoles UserRole[]             @default([SUPPORT, SUPER_ADMIN]) @map("authorized_roles")
+  authorizedRoles UserRole[]             @default([]) @map("authorized_roles")
   authorId        String?                @map("author_id")
   createdAt       DateTime               @default(now()) @map("created_at")
   updatedAt       DateTime               @updatedAt @map("updated_at")
