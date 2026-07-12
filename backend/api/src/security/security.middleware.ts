@@ -15,6 +15,16 @@ function identifierFromBody(request: Request) {
   return (body?.email ?? body?.identifier ?? body?.phone ?? "unknown").toString().toLowerCase().trim();
 }
 
+function vercelPreviewAllowed(config: ConfigService, source: string) {
+  if (config.get<string>("NODE_ENV", "development") !== "staging") return false;
+  if (config.get<string>("ALLOW_VERCEL_PREVIEWS") !== "true") return false;
+  try {
+    return new URL(source).hostname.toLowerCase().endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
 @Injectable()
 export class SecurityHeadersMiddleware implements NestMiddleware {
   constructor(private readonly config: ConfigService) {}
@@ -46,6 +56,7 @@ export class CsrfOriginMiddleware implements NestMiddleware {
     try {
       const normalized = new URL(source as string).origin;
       if (allowed.has(normalized)) return next();
+      if (vercelPreviewAllowed(this.config, normalized)) return next();
     } catch {
       return response.status(403).json({ message: "Origen no autorizado.", requestId: response.getHeader("X-Request-ID") });
     }
@@ -108,4 +119,3 @@ export class DistributedRateLimitMiddleware implements NestMiddleware {
     return rules;
   }
 }
-

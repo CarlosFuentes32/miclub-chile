@@ -62,11 +62,12 @@ test.describe("Billing staging", () => {
       status: "approved",
       source: "playwright-staging",
     };
-    const signature = createHmac("sha256", e2e.billingWebhookSecret).update(JSON.stringify(payload)).digest("hex");
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHmac("sha256", e2e.billingWebhookSecret).update(`${timestamp}.${JSON.stringify(payload)}`).digest("hex");
 
     const first = await admin.post("/billing/webhooks/flow", {
       data: payload,
-      headers: { "x-miclub-signature": signature },
+      headers: { "x-miclub-signature": signature, "x-miclub-timestamp": timestamp },
     });
     expect(first.ok(), await first.text()).toBeTruthy();
     const firstBody = await first.json();
@@ -75,7 +76,7 @@ test.describe("Billing staging", () => {
 
     const second = await admin.post("/billing/webhooks/flow", {
       data: payload,
-      headers: { "x-miclub-signature": signature },
+      headers: { "x-miclub-signature": signature, "x-miclub-timestamp": timestamp },
     });
     expect(second.ok(), await second.text()).toBeTruthy();
     const secondBody = await second.json();
