@@ -105,8 +105,8 @@ async function run() {
       ok: false,
     }) as Response) as typeof fetch;
   const frontendFailure = await service(baseEnv()).getEnterpriseHealth();
-  assert(frontendFailure.checks.landing.status === "error", "Frontend con 503 debe marcar error");
-  assert(frontendFailure.status === "degraded", "Falla frontend debe degradar health");
+  assert(frontendFailure.checks.landing.status === "warning", "Frontend opcional con 503 debe marcar warning");
+  assert(frontendFailure.status === "degraded", "Falla frontend opcional debe degradar health sin bloquear readiness");
 
   globalThis.fetch = originalFetch;
   console.log("OK: health enterprise, variables, versionado, commit, ambiente, tiempos y fallos verificados");

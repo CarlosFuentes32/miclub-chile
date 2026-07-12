@@ -25,6 +25,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { EmailService } from "../email/email.service";
 import { publicUserSelect } from "../users/users.service";
+import { DistributedRateLimitService } from "../security/rate-limit.service";
 import {
   CreateBusinessDto,
   ManualPaymentDto,
@@ -40,6 +41,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly email: EmailService,
+    private readonly rateLimit: DistributedRateLimitService,
   ) {}
   async dashboard() {
     const start = new Date();
@@ -1447,7 +1449,99 @@ export class AdminService {
       ],
     };
   }
-  async exportData(entity: string) {
+  async securityDashboard(q: Record<string, string>) {
+    const since = q.from ? new Date(q.from) : new Date(Date.now() - 7 * 86_400_000);
+    const [
+      failedLogins,
+      denied,
+      lockedUsers,
+      activeSessions,
+      revokedSessions,
+      impersonations,
+      exports,
+      passwordChanges,
+      rateLimits,
+      riskEvents,
+      recentSessions,
+    ] = await Promise.all([
+      this.prisma.auditLog.count({ where: { action: { contains: "login_failed" }, createdAt: { gte: since } } }),
+      this.prisma.auditLog.count({ where: { result: "DENIED", createdAt: { gte: since } } }),
+      this.prisma.user.count({ where: { lockedAt: { not: null } } }),
+      this.prisma.authSession.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } }),
+      this.prisma.authSession.count({ where: { revokedAt: { not: null }, createdAt: { gte: since } } }),
+      this.prisma.impersonationSession.count({ where: { startedAt: { gte: since } } }),
+      this.prisma.auditLog.count({ where: { action: { contains: "export" }, createdAt: { gte: since } } }),
+      this.prisma.auditLog.count({ where: { action: { contains: "password" }, createdAt: { gte: since } } }),
+      this.prisma.auditLog.count({ where: { action: "rate_limit_triggered", createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({
+        where: { createdAt: { gte: since }, OR: [{ riskLevel: { in: ["HIGH", "CRITICAL"] } }, { result: { in: ["DENIED", "FAILURE"] } }] },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+        include: { user: { select: { name: true, email: true, role: true } }, business: { select: { name: true } } },
+      }),
+      this.prisma.authSession.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { user: { select: { id: true, name: true, email: true, role: true, status: true } } },
+      }),
+    ]);
+    return {
+      since,
+      summary: { failedLogins, denied, lockedUsers, activeSessions, revokedSessions, impersonations, exports, passwordChanges, rateLimits },
+      rateLimitPolicy: await this.rateLimit.dryRunPolicy(),
+      securityConfiguration: {
+        csrfOriginProtection: true,
+        distributedRateLimit: true,
+        refreshReuseDetection: true,
+        securityHeaders: true,
+        auditEnabled: true,
+      },
+      riskEvents,
+      recentSessions: recentSessions.map((session) => ({
+        id: session.id,
+        user: session.user,
+        createdAt: session.createdAt,
+        lastUsedAt: session.lastUsedAt,
+        expiresAt: session.expiresAt,
+        revokedAt: session.revokedAt,
+        revokedReason: session.revokedReason,
+        deviceLabel: session.deviceLabel,
+        ipHash: session.ipHash,
+        reuseDetectedAt: session.reuseDetectedAt,
+      })),
+    };
+  }
+
+  async revokeSession(sessionId: string, actorId: string) {
+    const session = await this.prisma.authSession.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date(), revokedReason: "super_admin_revoked" },
+    });
+    await this.audit.create({ userId: actorId, action: "admin_session_revoked", entityType: "auth_session", entityId: sessionId, category: "security", module: "security", riskLevel: "high", metadata: { targetUserId: session.userId } });
+    return { revoked: 1 };
+  }
+
+  async revokeUserSessions(userId: string, actorId: string) {
+    const result = await this.prisma.authSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date(), revokedReason: "super_admin_revoked_all" },
+    });
+    await this.audit.create({ userId: actorId, action: "admin_all_sessions_revoked", entityType: "user", entityId: userId, category: "security", module: "security", riskLevel: "high", metadata: { count: result.count } });
+    return { revoked: result.count };
+  }
+
+  async exportData(entity: string, actorId: string, reason?: string) {
+    if (!reason?.trim()) throw new ConflictException("La exportación requiere motivo.");
+    await this.audit.create({
+      userId: actorId,
+      action: "admin_export_requested",
+      entityType: "export",
+      entityId: entity,
+      category: "security",
+      module: "exports",
+      riskLevel: "high",
+      metadata: { entity, reason },
+    });
     if (entity === "businesses")
       return this.prisma.business.findMany({
         include: { plan: true, owner: { select: publicUserSelect } },

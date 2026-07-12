@@ -449,3 +449,33 @@ export interface BackupOverview {
   restores: RestoreRecord[];
   rollbacks: RollbackPlan[];
 }
+
+export interface SecurityDashboard {
+  since: string;
+  summary: {
+    failedLogins: number;
+    denied: number;
+    lockedUsers: number;
+    activeSessions: number;
+    revokedSessions: number;
+    impersonations: number;
+    exports: number;
+    passwordChanges: number;
+    rateLimits: number;
+  };
+  rateLimitPolicy: Record<string, unknown>;
+  securityConfiguration: Record<string, boolean>;
+  riskEvents: AuditLog[];
+  recentSessions: Array<{
+    id: string;
+    user: { id: string; name: string; email: string; role: UserRole; status: string };
+    createdAt: string;
+    lastUsedAt?: string;
+    expiresAt: string;
+    revokedAt?: string;
+    revokedReason?: string;
+    deviceLabel?: string;
+    ipHash?: string;
+    reuseDetectedAt?: string;
+  }>;
+}

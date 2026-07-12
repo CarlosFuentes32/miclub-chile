@@ -118,11 +118,11 @@ export class ObservabilityService {
       this.variablesCheck(),
       this.railwayCheck(),
       this.vercelCheck(),
-      this.urlCheck("landing", "Landing", this.config.get<string>("FRONTEND_URL")),
-      this.urlCheck("customer", "Cliente", this.config.get<string>("CUSTOMER_APP_URL") ?? this.config.get<string>("APP_URL")),
-      this.urlCheck("commerce", "Comercio", this.config.get<string>("COMMERCE_APP_URL")),
-      this.urlCheck("cashier", "Cajero", this.config.get<string>("CASHIER_APP_URL")),
-      this.urlCheck("admin", "Administrador", this.config.get<string>("ADMIN_APP_URL")),
+      this.urlCheck("landing", "Landing", this.config.get<string>("FRONTEND_URL"), false),
+      this.urlCheck("customer", "Cliente", this.config.get<string>("CUSTOMER_APP_URL") ?? this.config.get<string>("APP_URL"), false),
+      this.urlCheck("commerce", "Comercio", this.config.get<string>("COMMERCE_APP_URL"), false),
+      this.urlCheck("cashier", "Cajero", this.config.get<string>("CASHIER_APP_URL"), false),
+      this.urlCheck("admin", "Administrador", this.config.get<string>("ADMIN_APP_URL"), false),
       this.emailCheck(),
       this.sslCheck(),
       this.lastDeployCheck(),
@@ -293,18 +293,21 @@ export class ObservabilityService {
     };
   }
 
-  private async urlCheck(key: string, label: string, url?: string): Promise<SystemCheck> {
+  private async urlCheck(key: string, label: string, url?: string, required = true): Promise<SystemCheck> {
     if (!url) {
       return { key, label, status: "warning", message: "URL no configurada" };
     }
     const result = await this.pingUrl(url, 3_000);
+    const status = !required && result.status === "error" ? "warning" : result.status;
     return {
       key,
       label,
-      status: result.status,
-      message: result.message,
+      status,
+      message: status === "warning" && result.status === "error"
+        ? `${result.message}. Dependencia frontend opcional/no bloqueante para readiness API`
+        : result.message,
       responseTimeMs: result.responseTimeMs,
-      metadata: { url, httpStatus: result.httpStatus },
+      metadata: { url, httpStatus: result.httpStatus, required },
     };
   }
 
@@ -399,7 +402,7 @@ export class ObservabilityService {
     return {
       key: "playwright",
       label: "Última ejecución Playwright",
-      status,
+      status: status === "unknown" ? "warning" : status,
       message: status === "ok" ? "Última ejecución Playwright exitosa" : "Última ejecución Playwright no informada por variables",
       metadata: {
         runId: this.config.get<string>("LAST_PLAYWRIGHT_RUN_ID", "unknown"),

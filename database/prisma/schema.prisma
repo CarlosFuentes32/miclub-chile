@@ -137,14 +137,37 @@ model UserChange {
 model AuthSession {
   id               String    @id @default(cuid())
   refreshTokenHash String    @map("refresh_token_hash")
+  familyId         String    @default(cuid()) @map("family_id")
   expiresAt        DateTime  @map("expires_at")
   revokedAt        DateTime? @map("revoked_at")
+  revokedReason    String?   @map("revoked_reason")
+  lastUsedAt       DateTime? @map("last_used_at")
+  userAgent        String?   @map("user_agent")
+  ipHash           String?   @map("ip_hash")
+  deviceLabel      String?   @map("device_label")
+  reuseDetectedAt  DateTime? @map("reuse_detected_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   userId           String    @map("user_id")
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
+  @@index([userId, revokedAt, expiresAt])
   @@map("auth_sessions")
+}
+
+model RateLimitBucket {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  scope     String
+  subject   String
+  count     Int      @default(0)
+  resetAt   DateTime @map("reset_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([scope, resetAt])
+  @@map("rate_limit_buckets")
 }
 
 enum BusinessStatus {

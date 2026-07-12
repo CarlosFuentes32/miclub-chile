@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { JwtUser } from '../auth/auth.types';import { CurrentUser } from '../auth/decorators/current-user.decorator';import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';import { LoyaltyEngineService } from '../loyalty/loyalty-engine.service';import { CashierService } from './cashier.service';import { RegisterTransactionDto } from './dto/register-transaction.dto';import { ScanCustomerDto } from './dto/scan-customer.dto';
-@Controller('cashier') @UseGuards(JwtAuthGuard)
+import { UserRole } from '@prisma/client';
+import { JwtUser } from '../auth/auth.types';import { CurrentUser } from '../auth/decorators/current-user.decorator';import { Roles } from '../auth/decorators/roles.decorator';import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';import { RolesGuard } from '../auth/guards/roles.guard';import { LoyaltyEngineService } from '../loyalty/loyalty-engine.service';import { CashierService } from './cashier.service';import { RegisterTransactionDto } from './dto/register-transaction.dto';import { ScanCustomerDto } from './dto/scan-customer.dto';
+@Controller('cashier') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.CASHIER, UserRole.BUSINESS_ADMIN, UserRole.BUSINESS_OWNER)
 export class CashierController {
   constructor(private readonly cashier:CashierService,private readonly engine:LoyaltyEngineService){}
   @Post('scan-customer') scan(@CurrentUser() user:JwtUser,@Body() dto:ScanCustomerDto){return this.cashier.scan(user.id,dto.business_id,dto.qr_token)}

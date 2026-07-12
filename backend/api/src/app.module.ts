@@ -19,6 +19,7 @@ import { ObservabilityModule } from './observability/observability.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { BackupsModule } from './backups/backups.module';
 import { EnterpriseLoggingModule } from './enterprise-logging/enterprise-logging.module';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { EnterpriseLoggingModule } from './enterprise-logging/enterprise-logging
     IncidentsModule,
     BackupsModule,
     EnterpriseLoggingModule,
+    SecurityModule,
   ],
   controllers: [AppController],
 })

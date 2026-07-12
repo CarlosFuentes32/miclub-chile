@@ -58,6 +58,21 @@ export class AdminController {
   systemStatus() {
     return this.observability.getEnterpriseHealth();
   }
+  @Get("security")
+  @Roles(UserRole.SUPER_ADMIN)
+  security(@Query() q: Record<string, string>) {
+    return this.admin.securityDashboard(q);
+  }
+  @Post("security/sessions/:id/revoke")
+  @Roles(UserRole.SUPER_ADMIN)
+  revokeSession(@Param("id") id: string, @CurrentUser() actor: JwtUser) {
+    return this.admin.revokeSession(id, actor.id);
+  }
+  @Post("security/users/:id/revoke-sessions")
+  @Roles(UserRole.SUPER_ADMIN)
+  revokeUserSessions(@Param("id") id: string, @CurrentUser() actor: JwtUser) {
+    return this.admin.revokeUserSessions(id, actor.id);
+  }
   @Post("businesses") createBusiness(
     @Body() d: CreateBusinessDto,
     @CurrentUser() actor: JwtUser,
@@ -325,7 +340,7 @@ export class AdminController {
   }
   @Get("export/:entity")
   @Roles(UserRole.SUPER_ADMIN)
-  export(@Param("entity") entity: string) {
-    return this.admin.exportData(entity);
+  export(@Param("entity") entity: string, @Query("reason") reason: string, @CurrentUser() actor: JwtUser) {
+    return this.admin.exportData(entity, actor.id, reason);
   }
 }

@@ -48,5 +48,8 @@ jobs:
       - name: Run enterprise logs/audit/traceability checks
         run: npm run test:enterprise-logs
 
+      - name: Run enterprise security checks
+        run: npm run test:enterprise-security
+
       - name: Run documentation link check
         run: npm run test:doc-links

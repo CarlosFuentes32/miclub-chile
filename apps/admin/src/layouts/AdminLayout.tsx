@@ -30,6 +30,7 @@ const superNav = [
   ["/customers", "Clientes globales", Users],
   ["/cashiers", "Cajeros", UserCog],
   ["/audit", "Auditoría", ClipboardList],
+  ["/security", "Seguridad", ShieldCheck],
   ["/super-settings", "Config. global", Settings],
   ["/maintenance", "Mantenimiento", Database],
   ["/system-status", "Estado del Sistema", Database],

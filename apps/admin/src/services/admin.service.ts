@@ -25,12 +25,18 @@ import {
   SystemStatus,
   Paginated,
   SystemError,
+  SecurityDashboard,
 } from "../types/admin";
 import { settingsMock, ticketsMock } from "../data/admin.mock";
 export const adminService = {
   getAdminDashboard: () => apiRequest<any>("/admin/dashboard"),
   getSuperDashboard: () => apiRequest<SuperDashboard>("/admin/super/dashboard"),
   getSystemStatus: () => apiRequest<SystemStatus>("/admin/system-status"),
+  getSecurityDashboard: () => apiRequest<SecurityDashboard>("/admin/security"),
+  revokeSecuritySession: (id: string) =>
+    apiRequest<{ revoked: number }>(`/admin/security/sessions/${id}/revoke`, { method: "POST" }),
+  revokeUserSessions: (id: string) =>
+    apiRequest<{ revoked: number }>(`/admin/security/users/${id}/revoke-sessions`, { method: "POST" }),
   getIncidents: (params: Record<string, string> = {}) =>
     apiRequest<Incident[]>(
       `/admin/incidents?${new URLSearchParams(params).toString()}`,
@@ -313,7 +319,8 @@ export const adminService = {
       body: JSON.stringify(value),
     }),
   getMaintenance: () => apiRequest<any>("/admin/maintenance"),
-  exportData: (entity: string) => apiRequest<any[]>(`/admin/export/${entity}`),
+  exportData: (entity: string, reason = "Exportación operativa Super Admin") =>
+    apiRequest<any[]>(`/admin/export/${entity}?reason=${encodeURIComponent(reason)}`),
   async getSupportTickets() {
     return structuredClone(ticketsMock);
   },

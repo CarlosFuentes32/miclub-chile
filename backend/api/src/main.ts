@@ -7,6 +7,7 @@ import { ObservabilityService } from "./observability/observability.service";
 import { EnterpriseExceptionFilter } from "./enterprise-logging/enterprise-exception.filter";
 import { RequestContextMiddleware } from "./enterprise-logging/request-context.service";
 import { StructuredLoggerService } from "./enterprise-logging/structured-logger.service";
+import { CsrfOriginMiddleware, DistributedRateLimitMiddleware, SecurityHeadersMiddleware } from "./security/security.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,12 +15,16 @@ async function bootstrap() {
   const observability = app.get(ObservabilityService);
   const requestContext = app.get(RequestContextMiddleware);
   const logger = app.get(StructuredLoggerService);
+  const securityHeaders = app.get(SecurityHeadersMiddleware);
+  const csrfOrigin = app.get(CsrfOriginMiddleware);
+  const distributedRateLimit = app.get(DistributedRateLimitMiddleware);
   const origins = config
     .get<string>("CORS_ORIGIN", "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
   const isStaging = config.get<string>("NODE_ENV", "development") === "staging";
+  const allowVercelPreviews = config.get<string>("ALLOW_VERCEL_PREVIEWS") === "true";
 
   app
     .getHttpAdapter()
@@ -50,6 +55,9 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
   app.use((request: any, response: any, next: () => void) => requestContext.use(request, response, next));
+  app.use((request: any, response: any, next: () => void) => securityHeaders.use(request, response, next));
+  app.use((request: any, response: any, next: () => void) => csrfOrigin.use(request, response, next));
+  app.use((request: any, response: any, next: () => void) => void distributedRateLimit.use(request, response, next));
   app.use((request: any, response: any, next: () => void) => {
     const startedAt = Date.now();
     response.on("finish", () => {
@@ -84,7 +92,7 @@ async function bootstrap() {
     origin: origins.length
       ? (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
           if (!origin || origins.includes(origin)) return callback(null, true);
-          if (isStaging) {
+          if (isStaging && allowVercelPreviews) {
             try {
               const host = new URL(origin).hostname.toLowerCase();
               if (host.endsWith(".vercel.app")) return callback(null, true);

@@ -1,13 +1,17 @@
 import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { UserRole } from "@prisma/client";
 import { JwtUser } from "../auth/auth.types";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { CreateBusinessRewardDto, UpdateBusinessRewardDto } from "./dto/manage-reward.dto";
 import { RedeemRewardDto } from "./dto/redeem-reward.dto";
 import { RewardsService } from "./rewards.service";
 
 @Controller("cashier/rewards")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.CASHIER, UserRole.BUSINESS_ADMIN, UserRole.BUSINESS_OWNER)
 export class RewardsController {
   constructor(private readonly rewards: RewardsService) {}
 
@@ -18,7 +22,8 @@ export class RewardsController {
 }
 
 @Controller("business/rewards")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.BUSINESS_ADMIN, UserRole.BUSINESS_OWNER)
 export class BusinessRewardsController {
   constructor(private readonly rewards: RewardsService) {}
 

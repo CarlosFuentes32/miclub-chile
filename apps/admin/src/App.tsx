@@ -26,6 +26,7 @@ import { SuperSettingsPage } from "./pages/SuperSettingsPage";
 import { SupportPage } from "./pages/SupportPage";
 import { SystemStatusPage } from "./pages/SystemStatusPage";
 import { SystemErrorsPage } from "./pages/SystemErrorsPage";
+import { SecurityPage } from "./pages/SecurityPage";
 import { UsersPage } from "./pages/UsersPage";
 import { adminService } from "./services/admin.service";
 import { AdminDashboard, GlobalSettings, Reports } from "./types/admin";
@@ -125,6 +126,7 @@ function AppRoutes() {
               <Route path="/maintenance" element={<SuperMaintenancePage />} />
               <Route path="/system-status" element={<SystemStatusPage />} />
               <Route path="/system-errors" element={<SystemErrorsPage />} />
+              <Route path="/security" element={<SecurityPage />} />
               <Route path="/backups" element={<BackupsPage />} />
             </>
           )}

@@ -134,6 +134,9 @@ const tx: any = {
       return include?.user ? { ...row, user: findUser(row.userId) } : { ...row };
     },
   },
+  businessUser: {
+    findFirst: () => null,
+  },
   userChange: {
     create: ({ data }: any) => {
       changes.push({ id: `change-${changes.length + 1}`, createdAt: new Date(), ...data });
@@ -156,7 +159,7 @@ const email = {
     return { sent: true };
   },
 };
-const admin = new AdminService(prisma, audit as any, email as any);
+const admin = new AdminService(prisma, audit as any, email as any, { dryRunPolicy: async () => ({}) } as any);
 
 const jwt = {
   signAsync: async (payload: any) => `token:${payload.type}:${payload.sub}:${payload.sid ?? "access"}`,

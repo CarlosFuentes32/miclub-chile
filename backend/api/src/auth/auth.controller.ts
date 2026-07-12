@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { RegisterUserDto } from '../users/dto/register-user.dto';
@@ -17,18 +17,18 @@ export class AuthController {
   constructor(private readonly auth: AuthService, private readonly users: UsersService, private readonly config: ConfigService) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterUserDto, @Res({ passthrough: true }) response: Response) {
-    return this.respondWithSession(await this.auth.register(dto), response);
+  async register(@Body() dto: RegisterUserDto, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    return this.respondWithSession(await this.auth.register(dto, request), response);
   }
 
   @Post('login') @HttpCode(200)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    return this.respondWithSession(await this.auth.login(dto), response);
+  async login(@Body() dto: LoginDto, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    return this.respondWithSession(await this.auth.login(dto, request), response);
   }
 
   @Post('refresh') @HttpCode(200)
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
-    return this.respondWithSession(await this.auth.refresh(request.cookies?.[REFRESH_COOKIE]), response);
+    return this.respondWithSession(await this.auth.refresh(request.cookies?.[REFRESH_COOKIE], request), response);
   }
 
   @Post('logout') @HttpCode(204)
@@ -47,6 +47,21 @@ export class AuthController {
 
   @Get('me') @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: JwtUser) { return this.users.findPublicById(user.id); }
+
+  @Get('sessions') @UseGuards(JwtAuthGuard)
+  sessions(@CurrentUser() user: JwtUser, @Req() request: Request) {
+    return this.auth.listSessions(user.id, request.cookies?.[REFRESH_COOKIE]);
+  }
+
+  @Post('sessions/:id/revoke') @HttpCode(200) @UseGuards(JwtAuthGuard)
+  revokeSession(@CurrentUser() user: JwtUser, @Param("id") id: string) {
+    return this.auth.revokeSession(user.id, id);
+  }
+
+  @Post('sessions/revoke-all') @HttpCode(200) @UseGuards(JwtAuthGuard)
+  revokeAllSessions(@CurrentUser() user: JwtUser) {
+    return this.auth.revokeAllSessions(user.id);
+  }
 
   private respondWithSession(session: Awaited<ReturnType<AuthService['login']>>, response: Response) {
     const { refreshToken, refreshExpiresAt, ...body } = session;
