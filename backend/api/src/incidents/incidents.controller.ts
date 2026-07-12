@@ -60,18 +60,17 @@ export class MonitoringController {
 
   @Post("run")
   run(@Headers("x-monitoring-token") token?: string) {
-    const expected = this.config.get<string>("MONITORING_TOKEN");
-    if (!expected || token !== expected) throw new UnauthorizedException("Monitor no autorizado");
+    if (!this.authorizedMonitoringToken(token)) throw new UnauthorizedException("Monitor no autorizado");
     return this.incidents.runMonitoring("scheduled-monitor");
   }
 
   @Post("e2e-result")
   e2eResult(
     @Headers("x-monitoring-token") token: string | undefined,
+    @Headers("x-vercel-protection-bypass") automationToken: string | undefined,
     @Body() body: { status: "ok" | "error"; runId?: string; runUrl?: string; commit?: string; environment?: string; executedAt?: string },
   ) {
-    const expected = this.config.get<string>("MONITORING_TOKEN");
-    if (!expected || token !== expected) throw new UnauthorizedException("Monitor no autorizado");
+    if (!this.authorizedMonitoringToken(token, automationToken)) throw new UnauthorizedException("Monitor no autorizado");
     const value = {
       status: body.status,
       runId: body.runId ?? "unknown",
@@ -85,5 +84,13 @@ export class MonitoringController {
       create: { key: "last_playwright_run", value },
       update: { value },
     });
+  }
+
+  private authorizedMonitoringToken(token?: string, automationToken?: string) {
+    const monitoring = this.config.get<string>("MONITORING_TOKEN");
+    if (monitoring && monitoring.length >= 24 && token === monitoring) return true;
+    if (this.config.get<string>("NODE_ENV", "development") !== "staging") return false;
+    const vercelBypass = this.config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET");
+    return Boolean(vercelBypass && vercelBypass.length >= 24 && automationToken === vercelBypass);
   }
 }

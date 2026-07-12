@@ -73,12 +73,17 @@ async function bootstrap() {
   app.use(cookieParser());
   const rateLimit = new Map<string, { count: number; resetAt: number }>();
   app.use((request: any, response: any, next: () => void) => {
-    const monitoringToken = config.get<string>("MONITORING_TOKEN");
+    const automationTokens = [
+      { header: "x-monitoring-token", value: config.get<string>("MONITORING_TOKEN") },
+      { header: "x-vercel-protection-bypass", value: config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET") },
+    ];
     if (
       isStaging
-      && monitoringToken
-      && monitoringToken.length >= 24
-      && request.header?.("x-monitoring-token") === monitoringToken
+      && automationTokens.some((candidate) =>
+        candidate.value
+        && candidate.value.length >= 24
+        && request.header?.(candidate.header) === candidate.value
+      )
     ) {
       return next();
     }

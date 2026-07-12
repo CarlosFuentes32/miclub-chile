@@ -75,6 +75,7 @@ jobs:
               -X POST "$E2E_API_URL/monitoring/e2e-result" \
               -H "content-type: application/json" \
               -H "x-monitoring-token: $MONITORING_TOKEN" \
+              -H "x-vercel-protection-bypass: $E2E_VERCEL_BYPASS_SECRET" \
               -d "$PAYLOAD"; then
               echo "Playwright metadata published on attempt $attempt"
               exit 0

@@ -56,14 +56,19 @@ async function testStagingAutomationRateLimitBypass() {
     getHeader(k: string) { return this.headers[k]; },
     status(code: number) { return { json: (body: any) => ({ code, body }) }; },
   };
-  const request = (token?: string) => ({
+  const request = (token?: string, vercelToken?: string) => ({
     method: "POST",
     originalUrl: "/api/auth/login",
     url: "/api/auth/login",
     ip: "127.0.0.1",
     socket: {},
     body: { email: "qa.admin@miclubchile.cl" },
-    header: (name: string) => name.toLowerCase() === "x-monitoring-token" ? token : undefined,
+    header: (name: string) => {
+      const normalized = name.toLowerCase();
+      if (normalized === "x-monitoring-token") return token;
+      if (normalized === "x-vercel-protection-bypass") return vercelToken;
+      return undefined;
+    },
   });
 
   let nextCalled = false;
@@ -73,6 +78,14 @@ async function testStagingAutomationRateLimitBypass() {
   ).use(request("a".repeat(32)) as any, response, () => { nextCalled = true; });
   assert.equal(nextCalled, true, "staging con token válido debe saltar rate limit de automatización");
   assert.equal(consumeCalls, 0, "bypass staging no debe consumir bucket");
+
+  nextCalled = false;
+  await new DistributedRateLimitMiddleware(
+    limits as any,
+    new FakeConfig({ NODE_ENV: "staging", VERCEL_AUTOMATION_BYPASS_SECRET: "v".repeat(32) }) as any,
+  ).use(request(undefined, "v".repeat(32)) as any, response, () => { nextCalled = true; });
+  assert.equal(nextCalled, true, "staging con Vercel bypass válido debe saltar rate limit de automatización");
+  assert.equal(consumeCalls, 0, "Vercel bypass staging no debe consumir bucket");
 
   nextCalled = false;
   const blockedStaging = await new DistributedRateLimitMiddleware(
@@ -86,8 +99,8 @@ async function testStagingAutomationRateLimitBypass() {
   nextCalled = false;
   await new DistributedRateLimitMiddleware(
     limits as any,
-    new FakeConfig({ NODE_ENV: "production", MONITORING_TOKEN: "a".repeat(32) }) as any,
-  ).use(request("a".repeat(32)) as any, response, () => { nextCalled = true; });
+    new FakeConfig({ NODE_ENV: "production", MONITORING_TOKEN: "a".repeat(32), VERCEL_AUTOMATION_BYPASS_SECRET: "v".repeat(32) }) as any,
+  ).use(request("a".repeat(32), "v".repeat(32)) as any, response, () => { nextCalled = true; });
   assert.equal(nextCalled, false, "production no debe aceptar bypass de automatización");
   assert.equal(consumeCalls, 2, "production debe evaluar rate limit aunque el token coincida");
 }

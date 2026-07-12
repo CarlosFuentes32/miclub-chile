@@ -17,9 +17,14 @@ function identifierFromBody(request: Request) {
 
 function stagingAutomationTokenAllowed(config: ConfigService, request: Request) {
   if (config.get<string>("NODE_ENV", "development") !== "staging") return false;
-  const expected = config.get<string>("MONITORING_TOKEN");
-  if (!expected || expected.length < 24) return false;
-  return request.header("x-monitoring-token") === expected;
+  const candidates = [
+    { header: "x-monitoring-token", value: config.get<string>("MONITORING_TOKEN") },
+    { header: "x-vercel-protection-bypass", value: config.get<string>("VERCEL_AUTOMATION_BYPASS_SECRET") },
+  ];
+  return candidates.some((candidate) => {
+    const expected = candidate.value;
+    return Boolean(expected && expected.length >= 24 && request.header(candidate.header) === expected);
+  });
 }
 
 function vercelPreviewAllowed(config: ConfigService, source: string) {

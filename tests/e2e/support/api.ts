@@ -12,6 +12,7 @@ export async function newApiContext(token?: string) {
     extraHTTPHeaders: {
       "Content-Type": "application/json",
       ...(process.env.MONITORING_TOKEN ? { "x-monitoring-token": process.env.MONITORING_TOKEN } : {}),
+      ...(e2e.vercelBypassSecret ? { "x-vercel-protection-bypass": e2e.vercelBypassSecret } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
