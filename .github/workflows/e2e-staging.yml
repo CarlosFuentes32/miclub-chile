@@ -61,18 +61,29 @@ jobs:
         run: npm run build --workspaces --if-present
 
       - name: Run E2E suite against staging
+        id: playwright
         run: npm run test:e2e:staging
 
       - name: Publish Playwright metadata to staging health
         if: always()
         run: |
-          STATUS="${{ job.status }}"
+          STATUS="${{ steps.playwright.outcome }}"
           if [ "$STATUS" = "success" ]; then RESULT="ok"; else RESULT="error"; fi
-          curl --fail --silent --show-error --max-time 15 \
-            -X POST "$E2E_API_URL/monitoring/e2e-result" \
-            -H "content-type: application/json" \
-            -H "x-monitoring-token: $MONITORING_TOKEN" \
-            -d "{\"status\":\"$RESULT\",\"runId\":\"${{ github.run_id }}\",\"runUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"commit\":\"${{ github.sha }}\",\"environment\":\"staging\",\"executedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+          PAYLOAD="{\"status\":\"$RESULT\",\"runId\":\"${{ github.run_id }}\",\"runUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"commit\":\"${{ github.sha }}\",\"environment\":\"staging\",\"executedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error --max-time 15 \
+              -X POST "$E2E_API_URL/monitoring/e2e-result" \
+              -H "content-type: application/json" \
+              -H "x-monitoring-token: $MONITORING_TOKEN" \
+              -d "$PAYLOAD"; then
+              echo "Playwright metadata published on attempt $attempt"
+              exit 0
+            fi
+            echo "Playwright metadata publish attempt $attempt failed; retrying in 10s"
+            sleep 10
+          done
+          echo "Unable to publish Playwright metadata to staging health"
+          exit 1
 
       - name: Upload Playwright HTML report
         if: always()
