@@ -56,7 +56,7 @@ async function testStagingAutomationRateLimitBypass() {
     getHeader(k: string) { return this.headers[k]; },
     status(code: number) { return { json: (body: any) => ({ code, body }) }; },
   };
-  const request = (token?: string, vercelToken?: string) => ({
+  const request = (token?: string, vercelToken?: string, stagingE2E?: string) => ({
     method: "POST",
     originalUrl: "/api/auth/login",
     url: "/api/auth/login",
@@ -67,6 +67,7 @@ async function testStagingAutomationRateLimitBypass() {
       const normalized = name.toLowerCase();
       if (normalized === "x-monitoring-token") return token;
       if (normalized === "x-vercel-protection-bypass") return vercelToken;
+      if (normalized === "x-miclub-staging-e2e") return stagingE2E;
       return undefined;
     },
   });
@@ -88,6 +89,14 @@ async function testStagingAutomationRateLimitBypass() {
   assert.equal(consumeCalls, 0, "Vercel bypass staging no debe consumir bucket");
 
   nextCalled = false;
+  await new DistributedRateLimitMiddleware(
+    limits as any,
+    new FakeConfig({ NODE_ENV: "staging" }) as any,
+  ).use(request(undefined, undefined, "true") as any, response, () => { nextCalled = true; });
+  assert.equal(nextCalled, true, "staging con marcador E2E debe saltar rate limit de automatizaciÃ³n");
+  assert.equal(consumeCalls, 0, "marcador E2E staging no debe consumir bucket");
+
+  nextCalled = false;
   const blockedStaging = await new DistributedRateLimitMiddleware(
     limits as any,
     new FakeConfig({ NODE_ENV: "staging", MONITORING_TOKEN: "a".repeat(32) }) as any,
@@ -100,7 +109,7 @@ async function testStagingAutomationRateLimitBypass() {
   await new DistributedRateLimitMiddleware(
     limits as any,
     new FakeConfig({ NODE_ENV: "production", MONITORING_TOKEN: "a".repeat(32), VERCEL_AUTOMATION_BYPASS_SECRET: "v".repeat(32) }) as any,
-  ).use(request("a".repeat(32), "v".repeat(32)) as any, response, () => { nextCalled = true; });
+  ).use(request("a".repeat(32), "v".repeat(32), "true") as any, response, () => { nextCalled = true; });
   assert.equal(nextCalled, false, "production no debe aceptar bypass de automatización");
   assert.equal(consumeCalls, 2, "production debe evaluar rate limit aunque el token coincida");
 }

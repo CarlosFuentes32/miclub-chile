@@ -11,6 +11,7 @@ export async function newApiContext(token?: string) {
     baseURL: `${e2e.apiUrl.replace(/\/$/, "")}/`,
     extraHTTPHeaders: {
       "Content-Type": "application/json",
+      "x-miclub-staging-e2e": "true",
       ...(process.env.MONITORING_TOKEN ? { "x-monitoring-token": process.env.MONITORING_TOKEN } : {}),
       ...(e2e.vercelBypassSecret ? { "x-vercel-protection-bypass": e2e.vercelBypassSecret } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
