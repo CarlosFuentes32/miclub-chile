@@ -34,7 +34,15 @@ export async function newApiContext(token?: string) {
 export async function loginApi(email: string, password: string): Promise<Session> {
   const api = await newApiContext();
   const response = await api.post("/auth/login", { data: { email, password } });
-  expect(response.ok(), `login API para ${email}`).toBeTruthy();
+  if (!response.ok()) {
+    const text = await response.text().catch(() => "");
+    const safeBody = text
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+      .replace(/"accessToken"\s*:\s*"[^"]+"/gi, '"accessToken":"[redacted]"')
+      .replace(/"refreshToken"\s*:\s*"[^"]+"/gi, '"refreshToken":"[redacted]"')
+      .slice(0, 600);
+    throw new Error(`login API falló: status=${response.status()} body=${safeBody}`);
+  }
   const body = await response.json();
   await api.dispose();
   return { token: body.accessToken, user: body.user };
