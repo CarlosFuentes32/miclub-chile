@@ -95,6 +95,9 @@ enum BackupType {
   PRE_RESTORE        @map("pre_restore")
   PRE_DATA_CLEANUP   @map("pre_data_cleanup")
   SIMULATION         @map("simulation")
+  PROVIDER_MANAGED   @map("provider_managed")
+  EXTERNAL_LOGICAL   @map("external_logical")
+  RESTORE_DRILL      @map("restore_drill")
 }
 
 enum BackupStatus {

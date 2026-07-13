@@ -9,3 +9,8 @@ coverage/
 playwright-report/
 test-results/
 audit-output/
+/backup-output/
+/backups/
+*.dump
+*.dump.enc
+*.dump.enc.crypto.json

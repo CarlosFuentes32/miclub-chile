@@ -34,6 +34,11 @@
     "test:enterprise-logs": "tsx scripts/test-enterprise-logs.ts",
     "test:enterprise-security": "tsx scripts/test-enterprise-security.ts",
     "test:enterprise-support": "tsx scripts/test-enterprise-support.ts",
+    "test:external-backups": "tsx scripts/test-external-backups.ts",
+    "backup:external:create": "tsx scripts/backups/create-backup.ts",
+    "backup:external:verify": "tsx scripts/backups/verify-backup.ts",
+    "backup:external:restore": "tsx scripts/backups/restore-backup.ts",
+    "backup:external:retention": "tsx scripts/backups/retention.ts",
     "billing:backfill": "tsx scripts/backfill-billing-subscriptions.ts",
     "audit:qa-prod": "tsx --env-file-if-exists=.env scripts/audit-production-qa-data.ts",
     "audit:qa-dry-run-cleanup": "tsx scripts/dry-run-qa-cleanup.ts",
@@ -46,6 +51,7 @@
     "test:e2e:staging": "cross-env E2E_ENV=staging playwright test"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1085.0",
     "@playwright/test": "^1.61.1",
     "cross-env": "^10.1.0",
     "prisma": "^6.19.0"
