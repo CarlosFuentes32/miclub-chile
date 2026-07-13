@@ -20,6 +20,7 @@ export async function restoreExternalBackup(metadataKey = process.env.BACKUP_MET
   const config = loadBackupConfig();
   if (!config.allowTemporaryRestore) throw new Error("Restore temporal bloqueado: define ALLOW_TEMPORARY_RESTORE=true");
   if (/prod|production/i.test(targetDatabaseUrl)) throw new Error("Restore rechazado: target parece producción");
+  if (targetDatabaseUrl === config.databaseUrl) throw new Error("Restore rechazado: target temporal coincide con la base origen");
   const started = Date.now();
   const client = buildR2Client(config);
   const tempDir = await secureTempDir("miclub-restore-");

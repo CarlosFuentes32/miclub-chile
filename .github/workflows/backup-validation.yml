@@ -79,6 +79,8 @@ jobs:
       BACKUP_RECORD_HISTORY: "false"
       BACKUP_RETENTION_DRY_RUN: "true"
       ALLOW_PRODUCTION_BACKUP: "false"
+      ALLOW_TEMPORARY_RESTORE: "true"
+      TEMPORARY_RESTORE_DATABASE_URL: ${{ secrets.TEMPORARY_RESTORE_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -131,6 +133,14 @@ jobs:
 
       - name: Verify encrypted backup from R2
         run: npm run backup:external:verify
+
+      - name: Restore backup into temporary PostgreSQL
+        run: |
+          if [ -z "$TEMPORARY_RESTORE_DATABASE_URL" ]; then
+            echo "::error::TEMPORARY_RESTORE_DATABASE_URL secret is required."
+            exit 1
+          fi
+          npm run backup:external:restore
 
       - name: Retention dry-run
         run: npm run backup:external:retention
