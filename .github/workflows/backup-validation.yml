@@ -56,3 +56,73 @@ jobs:
 
       - name: Run documentation link check
         run: npm run test:doc-links
+
+  external-backup-rc-b1:
+    name: RC-B1 external encrypted backup drill
+    if: github.ref_name == 'fix/mvp-comercial-readiness'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BACKUP_ENVIRONMENT: staging
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL_STAGING }}
+      STAGING_DATABASE_CONFIRM: railway-staging
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_REGION: ${{ secrets.R2_REGION }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      APP_VERSION: "1.1.0"
+      GIT_COMMIT_SHA: ${{ github.sha }}
+      GIT_BRANCH: ${{ github.ref_name }}
+      BACKUP_RECORD_HISTORY: "false"
+      BACKUP_RETENTION_DRY_RUN: "true"
+      ALLOW_PRODUCTION_BACKUP: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pg_dump --version
+          pg_restore --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Verify PostgreSQL client compatibility
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::BACKUP_DATABASE_URL_STAGING secret is required."
+            exit 1
+          fi
+          SERVER_VERSION_NUM="$(psql "$DATABASE_URL" -At -c "show server_version_num")"
+          SERVER_MAJOR="$((SERVER_VERSION_NUM / 10000))"
+          CLIENT_MAJOR="$(pg_dump --version | sed -E 's/.* ([0-9]+)(\.[0-9]+)?.*/\1/')"
+          echo "PostgreSQL server major: $SERVER_MAJOR"
+          echo "pg_dump client major: $CLIENT_MAJOR"
+          if [ "$CLIENT_MAJOR" -lt "$SERVER_MAJOR" ]; then
+            echo "::error::pg_dump client is older than PostgreSQL server. Backup blocked."
+            exit 1
+          fi
+
+      - name: Create encrypted external backup
+        run: |
+          npm run backup:external:create | tee backup-result.json
+          node -e "const fs=require('fs'); const raw=fs.readFileSync('backup-result.json','utf8'); const parsed=JSON.parse(raw.slice(raw.indexOf('{'))); if(!parsed?.summary?.metadataKey) throw new Error('metadataKey missing'); fs.appendFileSync(process.env.GITHUB_ENV, 'BACKUP_METADATA_KEY=' + parsed.summary.metadataKey + '\n');"
+
+      - name: Verify encrypted backup from R2
+        run: npm run backup:external:verify
+
+      - name: Retention dry-run
+        run: npm run backup:external:retention
