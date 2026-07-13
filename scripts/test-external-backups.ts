@@ -7,6 +7,7 @@ import {
   computeRetentionPlan,
   decryptFile,
   encryptFile,
+  assertTemporaryRestoreTarget,
   loadBackupConfig,
   parseEncryptionKey,
   sanitizeError,
@@ -38,6 +39,19 @@ async function testEnvGuards() {
   assert.throws(() => parseEncryptionKey(Buffer.from("short").toString("base64")), /32 bytes/);
   const prod = loadBackupConfig({ ...validEnv, BACKUP_ENVIRONMENT: "production", ALLOW_PRODUCTION_BACKUP: "true", DATABASE_URL: "postgresql://user:pass@prod-host:5432/miclub" } as any);
   assert.equal(prod.environment, "production");
+  assert.throws(
+    () => assertTemporaryRestoreTarget("postgresql://user:pass@prod-host:5432/miclub", "postgresql://user:pass@temp-host:5432/miclub_restore", undefined),
+    /TEMPORARY_RESTORE_CONFIRM/,
+  );
+  assert.throws(
+    () => assertTemporaryRestoreTarget("postgresql://user:pass@prod-host:5432/miclub", "postgresql://user:pass@prod-host:5432/miclub", "TEMPORARY_DATABASE_ONLY"),
+    /coincide/,
+  );
+  assert.doesNotThrow(() => assertTemporaryRestoreTarget(
+    "postgresql://user:pass@prod-host:5432/miclub",
+    "postgresql://user:pass@temp-host:5432/miclub_production_restore_drill_temp",
+    "TEMPORARY_DATABASE_ONLY",
+  ));
 }
 
 async function testEncryptionChecksumAndTamperDetection() {

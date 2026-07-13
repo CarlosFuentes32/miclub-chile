@@ -27,6 +27,7 @@ export interface BackupConfig {
   tempRoot?: string;
   allowProductionBackup: boolean;
   allowTemporaryRestore: boolean;
+  temporaryRestoreConfirm?: string;
 }
 
 export interface BackupMetadata {
@@ -123,7 +124,20 @@ export function loadBackupConfig(source = process.env): BackupConfig {
     tempRoot: source.BACKUP_TEMP_DIR,
     allowProductionBackup: source.ALLOW_PRODUCTION_BACKUP === "true",
     allowTemporaryRestore: source.ALLOW_TEMPORARY_RESTORE === "true",
+    temporaryRestoreConfirm: source.TEMPORARY_RESTORE_CONFIRM,
   };
+}
+
+export function assertTemporaryRestoreTarget(sourceDatabaseUrl: string, targetDatabaseUrl: string, confirm?: string) {
+  if (!targetDatabaseUrl.startsWith("postgresql://") && !targetDatabaseUrl.startsWith("postgres://")) {
+    throw new Error("TEMPORARY_RESTORE_DATABASE_URL debe ser PostgreSQL");
+  }
+  if (targetDatabaseUrl === sourceDatabaseUrl) {
+    throw new Error("Restore rechazado: target temporal coincide con la base origen");
+  }
+  if (confirm !== "TEMPORARY_DATABASE_ONLY") {
+    throw new Error("Restore temporal rechazado: TEMPORARY_RESTORE_CONFIRM debe ser TEMPORARY_DATABASE_ONLY");
+  }
 }
 
 export function assertDatabaseAllowed(databaseUrl: string, environment: BackupEnvironment, stagingConfirm?: string) {
