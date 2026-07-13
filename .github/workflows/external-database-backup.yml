@@ -80,8 +80,25 @@ jobs:
             exit 1
           fi
 
+      - name: Verify PostgreSQL client compatibility
+        run: |
+          SERVER_VERSION_NUM="$(psql "$DATABASE_URL" -At -c "show server_version_num")"
+          SERVER_MAJOR="$((SERVER_VERSION_NUM / 10000))"
+          CLIENT_MAJOR="$(pg_dump --version | sed -E 's/.* ([0-9]+)(\.[0-9]+)?.*/\1/')"
+          echo "PostgreSQL server major: $SERVER_MAJOR"
+          echo "pg_dump client major: $CLIENT_MAJOR"
+          if [ "$CLIENT_MAJOR" -lt "$SERVER_MAJOR" ]; then
+            echo "::error::pg_dump client is older than PostgreSQL server. Backup blocked."
+            exit 1
+          fi
+
       - name: Create encrypted external backup
-        run: npm run backup:external:create
+        run: |
+          npm run backup:external:create | tee backup-result.json
+          node -e "const fs=require('fs'); const raw=fs.readFileSync('backup-result.json','utf8'); const parsed=JSON.parse(raw.slice(raw.indexOf('{'))); if(!parsed?.summary?.metadataKey) throw new Error('metadataKey missing'); fs.appendFileSync(process.env.GITHUB_ENV, 'BACKUP_METADATA_KEY=' + parsed.summary.metadataKey + '\n');"
+
+      - name: Verify encrypted backup from R2
+        run: npm run backup:external:verify
 
       - name: Retention dry-run
         if: ${{ github.event.inputs.run_retention != 'false' }}
