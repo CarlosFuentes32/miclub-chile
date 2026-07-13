@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, staging, develop]
   push:
-    branches: [main, staging, develop]
+    branches: [main, staging, develop, fix/mvp-comercial-readiness]
   workflow_dispatch:
   workflow_call:
 
