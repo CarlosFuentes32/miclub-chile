@@ -16,6 +16,25 @@ const riskStyle: Record<string, string> = {
   CRITICAL: "bg-red-100 text-red-700",
 };
 
+function pillClass(map: Record<string, string>, value?: string | null) {
+  return map[(value ?? "").toUpperCase()] ?? "bg-slate-100 text-slate-600";
+}
+
+function compactId(value?: string | null) {
+  if (!value) return "—";
+  if (value.length <= 14) return value;
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
+function DetailLine({ label, value, mono = false }: { label: string; value: unknown; mono?: boolean }) {
+  return (
+    <p className="min-w-0 text-sm">
+      <span className="block text-xs font-black uppercase tracking-wide text-slate-400">{label}</span>
+      <span className={`break-words font-semibold text-slate-700 ${mono ? "font-mono text-xs" : ""}`}>{value ? String(value) : "—"}</span>
+    </p>
+  );
+}
+
 export function SuperAuditPage() {
   const [items, setItems] = useState<AuditLog[]>([]);
   const [selected, setSelected] = useState<AuditLog | null>(null);
@@ -102,30 +121,64 @@ export function SuperAuditPage() {
         {message && <span className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700">{message}</span>}
       </div>
       {retention && (
-        <pre className="mt-4 overflow-auto rounded-3xl bg-slate-950 p-5 text-xs text-cyan-100">
+        <pre className="mt-4 max-w-full overflow-auto rounded-3xl bg-slate-950 p-5 text-xs text-cyan-100">
           {JSON.stringify(retention, null, 2)}
         </pre>
       )}
-      <div className="mt-5 overflow-x-auto rounded-3xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[1250px] text-left text-sm">
+
+      <div className="mt-5 grid gap-4 lg:hidden">
+        {items.map((log) => (
+          <article key={log.id} className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">{new Date(log.createdAt).toLocaleString("es-CL")}</p>
+                <h3 className="mt-1 break-words text-lg font-black text-slate-950">{log.action}</h3>
+                <p className="mt-1 break-words text-sm text-slate-500">{log.user?.name ?? "Sistema"} · {log.actorRole ?? log.user?.role ?? "Sin rol"}</p>
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-black ${pillClass(riskStyle, log.riskLevel)}`}>{log.riskLevel}</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DetailLine label="Resultado" value={log.result} />
+              <DetailLine label="Comercio" value={log.business?.name} />
+              <DetailLine label="Request ID" value={compactId(log.requestId)} mono />
+              <DetailLine label="Ambiente" value={log.environment} />
+            </div>
+            <button className="secondary mt-4 w-full" onClick={() => setSelected(log)}>Ver detalle</button>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-5 hidden overflow-hidden rounded-3xl border border-slate-200 bg-white lg:block">
+        <table className="w-full table-fixed text-left text-[clamp(.72rem,.8vw,.875rem)]">
           <thead className="bg-slate-50 text-xs uppercase text-slate-400">
-            <tr>{["Fecha", "Actor", "Rol", "Comercio", "Acción", "Módulo", "Resultado", "Riesgo", "Request ID", "Ambiente", "Versión", ""].map((h) => <th key={h} className="px-5 py-4">{h}</th>)}</tr>
+            <tr>
+              <th className="w-[10%] px-3 py-4">Fecha</th>
+              <th className="w-[14%] px-3 py-4">Actor</th>
+              <th className="w-[8%] px-3 py-4">Rol</th>
+              <th className="w-[10%] px-3 py-4">Comercio</th>
+              <th className="w-[15%] px-3 py-4">Acción</th>
+              <th className="w-[10%] px-3 py-4">Módulo</th>
+              <th className="w-[8%] px-3 py-4">Resultado</th>
+              <th className="w-[7%] px-3 py-4">Riesgo</th>
+              <th className="w-[8%] px-3 py-4">Request ID</th>
+              <th className="w-[5%] px-3 py-4">Amb.</th>
+              <th className="w-[5%] px-3 py-4">Detalle</th>
+            </tr>
           </thead>
           <tbody>
             {items.map((log) => (
               <tr key={log.id} className="border-t border-slate-100 align-top">
-                <td className="px-5 py-4">{new Date(log.createdAt).toLocaleString("es-CL")}</td>
-                <td className="px-5 py-4">{log.user?.name ?? "Sistema"}<small className="block text-slate-400">{log.user?.email}</small></td>
-                <td className="px-5 py-4">{log.actorRole ?? log.user?.role}</td>
-                <td className="px-5 py-4">{log.business?.name ?? "—"}</td>
-                <td className="px-5 py-4 font-black text-slate-900">{log.action}</td>
-                <td className="px-5 py-4">{log.module}<small className="block text-slate-400">{log.category}</small></td>
-                <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${resultStyle[log.result] ?? "bg-slate-100"}`}>{log.result}</span></td>
-                <td className="px-5 py-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${riskStyle[log.riskLevel] ?? "bg-slate-100"}`}>{log.riskLevel}</span></td>
-                <td className="max-w-[180px] truncate px-5 py-4 font-mono text-xs">{log.requestId ?? "—"}</td>
-                <td className="px-5 py-4">{log.environment}</td>
-                <td className="max-w-[150px] truncate px-5 py-4 font-mono text-xs">{log.commit ?? log.version ?? "—"}</td>
-                <td className="px-5 py-4"><button className="secondary" onClick={() => setSelected(log)}>Detalle</button></td>
+                <td className="break-words px-3 py-4">{new Date(log.createdAt).toLocaleString("es-CL")}</td>
+                <td className="break-words px-3 py-4">{log.user?.name ?? "Sistema"}<small className="block break-all text-slate-400">{log.user?.email}</small></td>
+                <td className="break-words px-3 py-4">{log.actorRole ?? log.user?.role}</td>
+                <td className="break-words px-3 py-4">{log.business?.name ?? "—"}</td>
+                <td className="break-words px-3 py-4 font-black text-slate-900">{log.action}</td>
+                <td className="break-words px-3 py-4">{log.module}<small className="block text-slate-400">{log.category}</small></td>
+                <td className="px-3 py-4"><span className={`inline-block rounded-full px-2 py-1 text-[.68rem] font-black ${pillClass(resultStyle, log.result)}`}>{log.result}</span></td>
+                <td className="px-3 py-4"><span className={`inline-block rounded-full px-2 py-1 text-[.68rem] font-black ${pillClass(riskStyle, log.riskLevel)}`}>{log.riskLevel}</span></td>
+                <td className="break-all px-3 py-4 font-mono text-xs" title={log.requestId ?? undefined}>{compactId(log.requestId)}</td>
+                <td className="break-words px-3 py-4">{log.environment}</td>
+                <td className="px-3 py-4"><button className="secondary px-3" onClick={() => setSelected(log)}>Ver</button></td>
               </tr>
             ))}
           </tbody>
@@ -137,12 +190,12 @@ export function SuperAuditPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="eyebrow">Detalle de evento</p>
-                <h2 className="text-2xl font-black">{selected.action}</h2>
-                <p className="mt-1 text-sm text-slate-500">Request ID: {selected.requestId ?? "—"}</p>
+                <h2 className="break-words text-2xl font-black">{selected.action}</h2>
+                <p className="mt-1 break-all text-sm text-slate-500">Request ID: {selected.requestId ?? "—"}</p>
               </div>
               <button className="secondary" onClick={() => setSelected(null)}>Cerrar</button>
             </div>
-            <pre className="mt-5 overflow-auto rounded-2xl bg-slate-950 p-5 text-xs text-cyan-100">
+            <pre className="mt-5 max-w-full overflow-auto rounded-2xl bg-slate-950 p-5 text-xs text-cyan-100">
               {JSON.stringify(selected, null, 2)}
             </pre>
           </div>
@@ -151,4 +204,3 @@ export function SuperAuditPage() {
     </main>
   );
 }
-
