@@ -60,5 +60,8 @@ export interface EnterpriseHealth {
     runUrl: string;
     executedAt: string;
   };
+  lastProductionSmoke?: Record<string, unknown>;
+  lastProductionBackup?: Record<string, unknown>;
+  lastRestoreDrill?: Record<string, unknown>;
   timestamp: string;
 }

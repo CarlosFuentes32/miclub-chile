@@ -10,7 +10,13 @@ class FakeConfig {
 }
 
 class FakePrisma {
-  constructor(private readonly fail = false) {}
+  constructor(private readonly fail = false, private readonly settings: Record<string, unknown> = {}) {}
+  systemSetting = {
+    findUnique: async ({ where }: any) => {
+      const value = this.settings[where.key];
+      return value ? { value } : null;
+    },
+  };
   async $queryRaw() {
     if (this.fail) throw new Error("database down");
     return [{ ok: 1 }];
@@ -58,9 +64,9 @@ function baseEnv(overrides: Env = {}): Env {
   };
 }
 
-function service(env: Env, failDb = false) {
+function service(env: Env, failDb = false, settings: Record<string, unknown> = {}) {
   return new ObservabilityService(
-    new FakePrisma(failDb) as any,
+    new FakePrisma(failDb, settings) as any,
     new FakeConfig(env) as any,
   );
 }
@@ -84,6 +90,16 @@ async function run() {
   assert(healthy.runtime.responseTimeMs >= 0, "Debe medir tiempo de respuesta");
   assert(healthy.runtime.memory.rssMb > 0, "Debe reportar memoria");
   assert(healthy.checks.playwright.status === "ok", "Playwright debe quedar ok cuando LAST_PLAYWRIGHT_STATUS=success");
+
+  const productionWithSmoke = await service(baseEnv({ APP_ENV: "production", NODE_ENV: "production", LAST_PLAYWRIGHT_STATUS: "unknown" }), false, {
+    last_production_smoke: { status: "success", type: "production-smoke", runId: "rc23-local", executedAt: "2026-07-14T12:00:00.000Z", commit: "abcdef1234567890", environment: "production" },
+    last_production_backup: { status: "success", objectKey: "production/2026/07/14/example.dump.enc" },
+    last_restore_drill: { status: "success", differences: {} },
+  }).getEnterpriseHealth();
+  assert(productionWithSmoke.checks.playwright.status === "ok", "Producción no debe degradar por no ejecutar E2E destructivo si hay smoke seguro");
+  assert(productionWithSmoke.checks.productionSmoke.status === "ok", "Debe exponer smoke productivo separado");
+  assert(productionWithSmoke.checks.lastBackup.status === "ok", "Debe exponer backup productivo separado");
+  assert(productionWithSmoke.checks.lastRestore.status === "ok", "Debe exponer restore drill separado");
 
   const dbDown = await service(baseEnv(), true).getEnterpriseHealth();
   assert(dbDown.status === "degraded", "DB desconectada debe degradar health");

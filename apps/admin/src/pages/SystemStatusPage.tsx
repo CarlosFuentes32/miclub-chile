@@ -49,6 +49,9 @@ const iconByKey: Record<string, any> = {
   version: GitBranch,
   buildDate: Clock3,
   playwright: CheckCircle2,
+  productionSmoke: CheckCircle2,
+  lastBackup: HardDrive,
+  lastRestore: Database,
 };
 
 const statusStyles: Record<SystemCheckStatus, string> = {
@@ -278,6 +281,9 @@ export function SystemStatusPage() {
       "version",
       "buildDate",
       "playwright",
+      "productionSmoke",
+      "lastBackup",
+      "lastRestore",
       "variables",
     ];
     return checks.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));

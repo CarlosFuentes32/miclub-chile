@@ -54,6 +54,9 @@ export class ObservabilityService {
         runUrl: this.config.get<string>("LAST_PLAYWRIGHT_RUN_URL", ""),
         executedAt: this.config.get<string>("LAST_PLAYWRIGHT_RUN_AT", "unknown"),
       },
+      lastProductionSmoke: await this.settingValue("last_production_smoke"),
+      lastProductionBackup: await this.settingValue("last_production_backup"),
+      lastRestoreDrill: await this.settingValue("last_restore_drill"),
       timestamp: new Date().toISOString(),
     };
   }
@@ -110,6 +113,9 @@ export class ObservabilityService {
       version,
       buildDate,
       playwright,
+      productionSmoke,
+      lastBackup,
+      lastRestore,
     ] = await Promise.all([
       this.apiCheck(),
       this.databaseCheck(),
@@ -131,6 +137,9 @@ export class ObservabilityService {
       this.versionCheck(),
       this.buildDateCheck(),
       this.playwrightCheck(),
+      this.productionSmokeCheck(),
+      this.lastBackupCheck(),
+      this.lastRestoreCheck(),
     ]);
 
     return {
@@ -154,6 +163,9 @@ export class ObservabilityService {
       version,
       buildDate,
       playwright,
+      productionSmoke,
+      lastBackup,
+      lastRestore,
     };
   }
 
@@ -398,14 +410,30 @@ export class ObservabilityService {
   }
 
   private async playwrightCheck(): Promise<SystemCheck> {
-    const stored = await this.prisma.systemSetting?.findUnique({ where: { key: "last_playwright_run" } }).catch(() => null);
+    const stored = await this.settingRow("last_playwright_run");
     const metadata = stored?.value && typeof stored.value === "object" ? stored.value as Record<string, any> : {};
     const status = this.statusFromString(metadata.status ?? this.config.get<string>("LAST_PLAYWRIGHT_STATUS", "unknown"));
+    const productionSmoke = await this.settingValue("last_production_smoke");
+    if (this.environment() === "production" && status === "unknown" && this.statusFromString(String(productionSmoke?.status ?? "")) === "ok") {
+      return {
+        key: "playwright",
+        label: "Último E2E staging",
+        status: "ok",
+        message: "E2E completo no se ejecuta contra producción; cubierto por smoke productivo no destructivo",
+        metadata: {
+          applicability: "staging_only",
+          replacement: "production-smoke",
+          productionSmokeRunId: productionSmoke?.runId ?? "unknown",
+          productionSmokeExecutedAt: productionSmoke?.executedAt ?? "unknown",
+          environment: this.environment(),
+        },
+      };
+    }
     return {
       key: "playwright",
-      label: "Ultima ejecucion Playwright",
+      label: "Último E2E staging",
       status: status === "unknown" ? "warning" : status,
-      message: status === "ok" ? "Ultima ejecucion Playwright exitosa" : "Ultima ejecucion Playwright no informada o fallida",
+      message: status === "ok" ? "Última ejecución Playwright exitosa" : "Última ejecución Playwright no informada o fallida",
       metadata: {
         runId: metadata.runId ?? this.config.get<string>("LAST_PLAYWRIGHT_RUN_ID", "unknown"),
         runUrl: metadata.runUrl ?? this.config.get<string>("LAST_PLAYWRIGHT_RUN_URL", ""),
@@ -414,6 +442,86 @@ export class ObservabilityService {
         environment: metadata.environment ?? this.environment(),
       },
     };
+  }
+
+  private async productionSmokeCheck(): Promise<SystemCheck> {
+    if (this.environment() !== "production") {
+      return {
+        key: "productionSmoke",
+        label: "Último smoke productivo",
+        status: "ok",
+        message: "No aplicable fuera de producción",
+        metadata: { applicability: "production_only", environment: this.environment() },
+      };
+    }
+    const metadata = await this.settingValue("last_production_smoke");
+    const status = this.statusFromString(String(metadata?.status ?? "unknown"));
+    return {
+      key: "productionSmoke",
+      label: "Último smoke productivo",
+      status: status === "unknown" ? "warning" : status,
+      message: status === "ok" ? "Smoke productivo no destructivo aprobado" : "Smoke productivo no informado o fallido",
+      metadata: {
+        type: metadata?.type ?? "production-smoke",
+        runId: metadata?.runId ?? "unknown",
+        runUrl: metadata?.runUrl ?? "",
+        executedAt: metadata?.executedAt ?? "unknown",
+        commit: metadata?.commit ?? this.commit(),
+        environment: metadata?.environment ?? this.environment(),
+        durationMs: metadata?.durationMs ?? null,
+      },
+    };
+  }
+
+  private async lastBackupCheck(): Promise<SystemCheck> {
+    if (this.environment() !== "production") {
+      return {
+        key: "lastBackup",
+        label: "Último backup productivo",
+        status: "ok",
+        message: "No aplicable fuera de producción",
+        metadata: { applicability: "production_only", environment: this.environment() },
+      };
+    }
+    const metadata = await this.settingValue("last_production_backup");
+    const status = this.statusFromString(String(metadata?.status ?? "unknown"));
+    return {
+      key: "lastBackup",
+      label: "Último backup productivo",
+      status: status === "unknown" ? "warning" : status,
+      message: status === "ok" ? "Backup productivo externo verificado" : "Backup productivo no informado o fallido",
+      metadata,
+    };
+  }
+
+  private async lastRestoreCheck(): Promise<SystemCheck> {
+    if (this.environment() !== "production") {
+      return {
+        key: "lastRestore",
+        label: "Último restore drill",
+        status: "ok",
+        message: "No aplicable fuera de producción",
+        metadata: { applicability: "production_only", environment: this.environment() },
+      };
+    }
+    const metadata = await this.settingValue("last_restore_drill");
+    const status = this.statusFromString(String(metadata?.status ?? "unknown"));
+    return {
+      key: "lastRestore",
+      label: "Último restore drill",
+      status: status === "unknown" ? "warning" : status,
+      message: status === "ok" ? "Restore drill validado en base temporal" : "Restore drill no informado o fallido",
+      metadata,
+    };
+  }
+
+  private async settingValue(key: string): Promise<Record<string, any> | undefined> {
+    const row = await this.settingRow(key);
+    return row?.value && typeof row.value === "object" ? row.value as Record<string, any> : undefined;
+  }
+
+  private async settingRow(key: string): Promise<{ value: unknown } | null> {
+    return this.prisma.systemSetting?.findUnique({ where: { key } }).catch(() => null) ?? null;
   }
 
   private async pingUrl(url: string, timeoutMs: number): Promise<{ status: SystemCheckStatus; message: string; responseTimeMs: number; httpStatus?: number }> {
