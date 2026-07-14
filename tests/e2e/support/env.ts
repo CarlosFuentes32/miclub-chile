@@ -12,20 +12,20 @@ export interface E2EConfig {
   vercelBypassSecret?: string;
 }
 
-function required(name: string) {
+function required(name: string, options: { trimTrailingSlash?: boolean } = {}) {
   const value = process.env[name];
   if (!value) throw new Error(`Falta variable requerida para E2E staging: ${name}`);
-  return value.replace(/\/$/, "");
+  return options.trimTrailingSlash ? value.replace(/\/$/, "") : value;
 }
 
 export function getE2EConfig(): E2EConfig {
   return {
     env: process.env.E2E_ENV ?? "",
-    apiUrl: required("E2E_API_URL"),
-    adminUrl: required("E2E_ADMIN_URL"),
-    commerceUrl: required("E2E_COMMERCE_URL"),
-    cashierUrl: required("E2E_CASHIER_URL"),
-    customerUrl: required("E2E_CUSTOMER_URL"),
+    apiUrl: required("E2E_API_URL", { trimTrailingSlash: true }),
+    adminUrl: required("E2E_ADMIN_URL", { trimTrailingSlash: true }),
+    commerceUrl: required("E2E_COMMERCE_URL", { trimTrailingSlash: true }),
+    cashierUrl: required("E2E_CASHIER_URL", { trimTrailingSlash: true }),
+    customerUrl: required("E2E_CUSTOMER_URL", { trimTrailingSlash: true }),
     adminEmail: required("E2E_ADMIN_EMAIL"),
     adminPassword: required("E2E_ADMIN_PASSWORD"),
     defaultPassword: required("E2E_DEFAULT_PASSWORD"),
