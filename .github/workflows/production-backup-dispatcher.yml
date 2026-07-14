@@ -1,0 +1,250 @@
+name: Production External Backup Preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_environment:
+        description: "Must be exactly: production"
+        required: true
+        type: string
+      confirm_backup:
+        description: "Must be exactly: CREATE_PRODUCTION_BACKUP"
+        required: true
+        type: string
+      confirm_restore_target:
+        description: "Must be exactly: TEMPORARY_DATABASE_ONLY"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-external-backup-preflight
+  cancel-in-progress: false
+
+jobs:
+  production-backup-preflight:
+    name: Backup production and restore into temporary PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production-backup-preflight
+    env:
+      FIXED_BACKUP_SHA: 951d9c3c6f8c63f3f8a07a72dd20bf5354b82475
+      BACKUP_ENVIRONMENT: production
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL_PRODUCTION }}
+      TEMPORARY_RESTORE_DATABASE_URL: ${{ secrets.TEMPORARY_RESTORE_DATABASE_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_REGION: ${{ secrets.R2_REGION }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      APP_VERSION: "1.1.0"
+      GIT_COMMIT_SHA: 951d9c3c6f8c63f3f8a07a72dd20bf5354b82475
+      GIT_BRANCH: fix/mvp-comercial-readiness
+      BACKUP_RECORD_HISTORY: "false"
+      BACKUP_RETENTION_DRY_RUN: "true"
+      ALLOW_PRODUCTION_BACKUP: "true"
+      ALLOW_TEMPORARY_RESTORE: "true"
+      TEMPORARY_RESTORE_CONFIRM: ${{ github.event.inputs.confirm_restore_target }}
+    steps:
+      - name: Validate manual production confirmations
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.confirm_environment }}" != "production" ]; then
+            echo "::error::confirm_environment must be exactly production"
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.confirm_backup }}" != "CREATE_PRODUCTION_BACKUP" ]; then
+            echo "::error::confirm_backup must be exactly CREATE_PRODUCTION_BACKUP"
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.confirm_restore_target }}" != "TEMPORARY_DATABASE_ONLY" ]; then
+            echo "::error::confirm_restore_target must be exactly TEMPORARY_DATABASE_ONLY"
+            exit 1
+          fi
+          if [ "${BACKUP_ENVIRONMENT}" != "production" ]; then
+            echo "::error::BACKUP_ENVIRONMENT must be production"
+            exit 1
+          fi
+          if [ "${ALLOW_PRODUCTION_BACKUP}" != "true" ]; then
+            echo "::error::ALLOW_PRODUCTION_BACKUP must be true"
+            exit 1
+          fi
+          if [ "${ALLOW_TEMPORARY_RESTORE}" != "true" ]; then
+            echo "::error::ALLOW_TEMPORARY_RESTORE must be true"
+            exit 1
+          fi
+          if [ -n "${ALLOW_PRODUCTION_RESTORE:-}" ]; then
+            echo "::error::ALLOW_PRODUCTION_RESTORE must not exist"
+            exit 1
+          fi
+
+      - name: Validate required secrets without printing values
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in DATABASE_URL TEMPORARY_RESTORE_DATABASE_URL R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET_NAME R2_ENDPOINT R2_REGION BACKUP_ENCRYPTION_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is required"
+              missing=1
+            else
+              echo "$name=present"
+            fi
+          done
+          if [ "${R2_BUCKET_NAME}" != "miclub-chile-backups" ]; then
+            echo "::error::R2_BUCKET_NAME must be miclub-chile-backups"
+            missing=1
+          fi
+          if [ "${R2_REGION}" != "auto" ]; then
+            echo "::error::R2_REGION must be auto"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Checkout fixed audited backup implementation
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FIXED_BACKUP_SHA }}
+          persist-credentials: false
+
+      - name: Verify fixed checkout
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          echo "Checked out fixed SHA: $actual"
+          if [ "$actual" != "$FIXED_BACKUP_SHA" ]; then
+            echo "::error::Unexpected checkout SHA"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --silent --show-error -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          pg_dump --version
+          pg_restore --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Verify production PostgreSQL client compatibility
+        run: |
+          set -euo pipefail
+          SERVER_VERSION_NUM="$(psql "$DATABASE_URL" -At -c "show server_version_num")"
+          SERVER_MAJOR="$((SERVER_VERSION_NUM / 10000))"
+          CLIENT_MAJOR="$(pg_dump --version | sed -E 's/.* ([0-9]+)(\.[0-9]+)?.*/\1/')"
+          echo "PostgreSQL server major: $SERVER_MAJOR"
+          echo "pg_dump client major: $CLIENT_MAJOR"
+          if [ "$CLIENT_MAJOR" -lt "$SERVER_MAJOR" ]; then
+            echo "::error::pg_dump client is older than PostgreSQL server. Backup blocked."
+            exit 1
+          fi
+
+      - name: Confirm temporary restore database is empty and isolated
+        run: |
+          set -euo pipefail
+          if [ "$TEMPORARY_RESTORE_DATABASE_URL" = "$DATABASE_URL" ]; then
+            echo "::error::Temporary restore database matches production database"
+            exit 1
+          fi
+          TABLE_COUNT="$(psql "$TEMPORARY_RESTORE_DATABASE_URL" -At -c "select count(*) from information_schema.tables where table_schema = 'public'")"
+          echo "Temporary restore public table count: $TABLE_COUNT"
+          if [ "$TABLE_COUNT" != "0" ]; then
+            echo "::error::Temporary restore database is not empty"
+            exit 1
+          fi
+
+      - name: Create encrypted external production backup
+        run: |
+          set -euo pipefail
+          npm run backup:external:create | tee backup-result.raw
+          node -e "const fs=require('fs'); const raw=fs.readFileSync('backup-result.raw','utf8'); const parsed=JSON.parse(raw.slice(raw.indexOf('{'))); if(!parsed?.summary?.metadataKey) throw new Error('metadataKey missing'); fs.writeFileSync('backup-result.json', JSON.stringify(parsed, null, 2)); fs.appendFileSync(process.env.GITHUB_ENV, 'BACKUP_METADATA_KEY=' + parsed.summary.metadataKey + '\n');"
+
+      - name: Verify encrypted backup from R2
+        run: npm run backup:external:verify | tee verify-result.raw
+
+      - name: Restore backup into temporary PostgreSQL
+        run: |
+          set -euo pipefail
+          npm run backup:external:restore | tee restore-result.raw
+          node -e "const fs=require('fs'); const raw=fs.readFileSync('restore-result.raw','utf8'); const parsed=JSON.parse(raw.slice(raw.indexOf('{'))); fs.writeFileSync('restore-result.json', JSON.stringify(parsed, null, 2));"
+
+      - name: Check Prisma migration status on restored temporary database
+        run: |
+          set +e
+          DATABASE_URL="$TEMPORARY_RESTORE_DATABASE_URL" npx prisma migrate status --schema=database/prisma/schema.prisma > migrate-status.txt 2>&1
+          code=$?
+          set -e
+          echo "Prisma migrate status exit code: $code"
+          sed -E 's#postgres(ql)?://[^[:space:]]+#postgresql://[redacted]#g' migrate-status.txt
+          echo "$code" > migrate-status-code.txt
+
+      - name: Retention dry-run
+        run: npm run backup:external:retention | tee retention-result.raw
+
+      - name: Build sanitized preflight report
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const readJson = (path) => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : null;
+          const backup = readJson('backup-result.json');
+          const restore = readJson('restore-result.json');
+          const migrateStatus = fs.existsSync('migrate-status.txt')
+            ? fs.readFileSync('migrate-status.txt', 'utf8').replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgresql://[redacted]')
+            : null;
+          const migrateStatusCode = fs.existsSync('migrate-status-code.txt') ? fs.readFileSync('migrate-status-code.txt', 'utf8').trim() : null;
+          const report = {
+            ok: Boolean(backup?.ok && restore?.ok),
+            generatedAt: new Date().toISOString(),
+            workflow: 'Production External Backup Preflight',
+            dispatcherCommit: process.env.GITHUB_SHA,
+            fixedBackupSha: process.env.FIXED_BACKUP_SHA,
+            environment: process.env.BACKUP_ENVIRONMENT,
+            backup: backup?.summary ?? null,
+            restore: restore ? {
+              ok: restore.ok,
+              backupId: restore.backupId,
+              durationMs: restore.durationMs,
+              differences: restore.differences,
+              restoredCounts: restore.restoredCounts,
+              pgRestoreVersion: restore.pgRestoreVersion,
+            } : null,
+            migrateStatusCode,
+            migrateStatus,
+            secrets: 'redacted',
+            databaseUrl: 'redacted',
+            temporaryRestoreDatabaseUrl: 'redacted',
+          };
+          fs.mkdirSync('preflight-report', { recursive: true });
+          fs.writeFileSync('preflight-report/production-backup-preflight-report.json', JSON.stringify(report, null, 2));
+          NODE
+
+      - name: Upload sanitized preflight report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-backup-preflight-report
+          path: preflight-report/
+          if-no-files-found: error
+          retention-days: 14
