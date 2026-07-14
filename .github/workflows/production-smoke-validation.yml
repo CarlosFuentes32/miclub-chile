@@ -1,0 +1,32 @@
+name: Production Smoke Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke-validation
+  cancel-in-progress: false
+
+jobs:
+  production-smoke:
+    name: Run non-destructive production smoke checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ALLOW_PRODUCTION_SMOKE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production smoke validation
+        run: npm run smoke:production
