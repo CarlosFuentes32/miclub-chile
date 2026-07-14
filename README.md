@@ -108,11 +108,13 @@ npm.cmd run prisma:generate
 npm.cmd run prisma:migrate:deploy
 ```
 
-4. Cree los usuarios demo:
+4. Cree los usuarios demo solo en ambiente local o staging:
 
 ```powershell
 npm.cmd run prisma:seed
 ```
+
+El seed demo está bloqueado por defecto cuando `NODE_ENV=production`; producción debe crear usuarios y comercios desde el Panel Administrador o mediante un bootstrap auditado y autorizado.
 
 Ejemplo con `psql` instalado:
 

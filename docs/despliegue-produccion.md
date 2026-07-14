@@ -25,10 +25,10 @@ El repositorio debe mantenerse como monorepo. Cada interfaz continúa siendo una
 
 1. Conecte el repositorio `CarlosFuentes32/miclub-chile` a Render.
 2. Cree un Blueprint usando `render.yaml`.
-3. Cuando Render lo solicite, defina `SEED_PASSWORD` con una contraseña temporal robusta.
-4. Complete las variables `PILOT_*` con los datos reales del minimarket.
-5. Espere que el pre-deploy ejecute migraciones y el seed.
-6. Compruebe `https://URL-RENDER/api/health`.
+3. Configure secretos reales de producción y CORS.
+4. Espere que el pre-deploy ejecute solo migraciones Prisma.
+5. Compruebe `https://URL-RENDER/api/health` y valide `checks.database: "ok"`.
+6. Cree usuarios/comercios productivos desde el Panel Administrador o mediante un bootstrap auditado y autorizado.
 7. Agregue `api.miclubchile.cl` como dominio personalizado del servicio.
 
 Variables obligatorias del backend:
@@ -45,10 +45,9 @@ CUSTOMER_APP_URL=https://app.miclubchile.cl
 FRONTEND_URL=https://miclubchile.cl
 APP_URL=https://app.miclubchile.cl
 API_URL=https://api.miclubchile.cl/api
-SEED_PASSWORD=contraseña-temporal-del-piloto
 ```
 
-Copie además las variables `PILOT_*` desde `.env.production.example`.
+No configure `SEED_PASSWORD` ni variables `PILOT_*` en producción salvo para una operación excepcional de bootstrap, con respaldo previo y autorización explícita. El seed demo está bloqueado por defecto cuando `NODE_ENV=production`.
 
 ## Alternativa Railway
 
@@ -60,10 +59,10 @@ Copie además las variables `PILOT_*` desde `.env.production.example`.
 
 ```bash
 npm run prisma:migrate:deploy
-npm run prisma:seed
 ```
 
-6. Configure `api.miclubchile.cl` como dominio personalizado.
+6. Verifique `/api/health` y confirme `checks.database: "ok"`.
+7. Configure `api.miclubchile.cl` como dominio personalizado.
 
 ## Frontends en Vercel
 
@@ -112,7 +111,6 @@ No cambie los nameservers sin verificar antes dónde se administrará definitiva
 npm.cmd install
 npm.cmd run prisma:generate
 npm.cmd run prisma:migrate:deploy
-npm.cmd run prisma:seed
 npm.cmd run build
 powershell -ExecutionPolicy Bypass -File scripts/test-mvp.ps1
 ```

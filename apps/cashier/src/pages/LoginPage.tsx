@@ -40,9 +40,10 @@ export function LoginPage({ onLogin }: { onLogin: (user: AuthUser) => void }) {
         <p className="mt-2 text-sm text-slate-500">
           Registra compras y canjes en segundos.
         </p>
-        <label className="mt-7 block text-sm font-bold">
+        <label className="mt-7 block text-sm font-bold" htmlFor="cashier-login-email">
           Correo
           <input
+            id="cashier-login-email"
             className="input"
             type="email"
             value={email}
@@ -50,9 +51,10 @@ export function LoginPage({ onLogin }: { onLogin: (user: AuthUser) => void }) {
             required
           />
         </label>
-        <label className="mt-4 block text-sm font-bold">
+        <label className="mt-4 block text-sm font-bold" htmlFor="cashier-login-password">
           Contraseña
           <input
+            id="cashier-login-password"
             className="input"
             type="password"
             minLength={4}

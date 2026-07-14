@@ -15,6 +15,12 @@ import { AdminModule } from './admin/admin.module';
 import { ManualCustomersModule } from './manual-customers/manual-customers.module';
 import { LeadsModule } from './leads/leads.module';
 import { BillingModule } from './billing/billing.module';
+import { ObservabilityModule } from './observability/observability.module';
+import { IncidentsModule } from './incidents/incidents.module';
+import { BackupsModule } from './backups/backups.module';
+import { EnterpriseLoggingModule } from './enterprise-logging/enterprise-logging.module';
+import { SecurityModule } from './security/security.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -33,6 +39,12 @@ import { BillingModule } from './billing/billing.module';
     ManualCustomersModule,
     LeadsModule,
     BillingModule,
+    ObservabilityModule,
+    IncidentsModule,
+    BackupsModule,
+    EnterpriseLoggingModule,
+    SecurityModule,
+    SupportModule,
   ],
   controllers: [AppController],
 })

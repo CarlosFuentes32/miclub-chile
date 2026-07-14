@@ -122,7 +122,14 @@ function AppRoutes() {
     );
   if (user?.forcePasswordChange) return <ForcePasswordChange onComplete={out} />;
   return (
-    <Routes>
+    <>
+      {user && (
+        <PwaInstallPrompt
+          appName="MiClub Cajero"
+          message="Instala MiClub Cajero en tu celular para registrar visitas y canjes más rápido."
+        />
+      )}
+      <Routes>
       <Route
         path="/login"
         element={
@@ -153,16 +160,17 @@ function AppRoutes() {
         />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 export function App() {
   return (
     <div>
       <EnvironmentBanner />
-    <><PwaInstallPrompt appName="MiClub Cajero" message="Instala MiClub Cajero en tu celular para registrar visitas y canjes más rápido."/><HashRouter>
-      <AppRoutes />
-    </HashRouter></>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
     </div>
   );
 }

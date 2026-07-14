@@ -15,7 +15,7 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
     setError("");
     try {
       const u = await login(email, password);
-      if (u.role !== "MICLUB_ADMIN" && u.role !== "SUPER_ADMIN") {
+      if (u.role !== "MICLUB_ADMIN" && u.role !== "SUPER_ADMIN" && u.role !== "SUPPORT") {
         setError("Esta cuenta no tiene acceso al panel administrador.");
         return;
       }
@@ -41,9 +41,10 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
         <p className="mt-2 text-sm text-slate-500">
           Acceso exclusivo al equipo MiClub.
         </p>
-        <label className="field mt-7">
+        <label className="field mt-7" htmlFor="admin-login-email">
           Correo
           <input
+            id="admin-login-email"
             className="input"
             type="email"
             value={email}
@@ -51,9 +52,10 @@ export function LoginPage({ onLogin }: { onLogin: (u: AuthUser) => void }) {
             required
           />
         </label>
-        <label className="field mt-4">
+        <label className="field mt-4" htmlFor="admin-login-password">
           Contraseña
           <input
+            id="admin-login-password"
             className="input"
             type="password"
             minLength={4}

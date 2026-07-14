@@ -4,6 +4,7 @@ import {
   formatearTelefonoChile,
   soloNombre,
   telefonoLocal,
+  getApiUrl,
   validarEmail,
   validarNombre,
   validarTelefonoChile,
@@ -12,11 +13,7 @@ import {
 export const whatsappUrl =
   "https://wa.me/56995026368?text=Hola%2C%20quiero%20cotizar%20MiClub%20Chile%20para%20mi%20comercio";
 
-const API_URL =
-  import.meta.env.VITE_API_URL ??
-  (import.meta.env.PROD
-    ? "https://api.miclubchile.cl/api"
-    : "http://localhost:3000/api");
+const API_URL = getApiUrl();
 
 export function AccessForm() {
   const [data, setData] = useState({

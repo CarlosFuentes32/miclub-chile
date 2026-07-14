@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, staging, develop]
   push:
-    branches: [main, staging, develop]
+    branches: [main, staging, develop, fix/mvp-comercial-readiness]
   workflow_dispatch:
   workflow_call:
 
@@ -31,6 +31,8 @@ jobs:
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_DEFAULT_PASSWORD: ${{ secrets.E2E_DEFAULT_PASSWORD }}
       E2E_BILLING_WEBHOOK_SECRET: ${{ secrets.E2E_BILLING_WEBHOOK_SECRET }}
+      E2E_VERCEL_BYPASS_SECRET: ${{ secrets.E2E_VERCEL_BYPASS_SECRET }}
+      MONITORING_TOKEN: ${{ secrets.MONITORING_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,11 +47,57 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+        env:
+          DATABASE_URL: postgresql://example:example@localhost:5432/miclub_staging_validation
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema=database/prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://example:example@localhost:5432/miclub_staging_validation
+
       - name: Build packages
         run: npm run build --workspaces --if-present
 
       - name: Run E2E suite against staging
+        id: playwright
         run: npm run test:e2e:staging
+
+      - name: Publish Playwright metadata to staging health
+        if: always()
+        run: |
+          STATUS="${{ steps.playwright.outcome }}"
+          if [ "$STATUS" = "success" ]; then RESULT="ok"; else RESULT="error"; fi
+          PAYLOAD="{\"status\":\"$RESULT\",\"runId\":\"${{ github.run_id }}\",\"runUrl\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"commit\":\"${{ github.sha }}\",\"environment\":\"staging\",\"executedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+          LOGIN_PAYLOAD="{\"email\":\"$E2E_ADMIN_EMAIL\",\"password\":\"$E2E_ADMIN_PASSWORD\"}"
+          for attempt in $(seq 1 30); do
+            LOGIN_RESPONSE="$(curl --fail --silent --show-error --max-time 15 \
+              -X POST "$E2E_API_URL/auth/login" \
+              -H "content-type: application/json" \
+              -H "x-monitoring-token: $MONITORING_TOKEN" \
+              -H "x-vercel-protection-bypass: $E2E_VERCEL_BYPASS_SECRET" \
+              -d "$LOGIN_PAYLOAD" || true)"
+            ACCESS_TOKEN="$(printf '%s' "$LOGIN_RESPONSE" | node -e 'const fs=require("fs"); const data=fs.readFileSync(0,"utf8"); try { const parsed=JSON.parse(data); process.stdout.write(parsed.accessToken || ""); } catch {}')"
+            if [ -z "$ACCESS_TOKEN" ]; then
+              echo "Playwright metadata login attempt $attempt failed; retrying in 10s"
+              sleep 10
+              continue
+            fi
+            if curl --fail --silent --show-error --max-time 15 \
+              -X POST "$E2E_API_URL/admin/monitoring/e2e-result" \
+              -H "content-type: application/json" \
+              -H "authorization: Bearer $ACCESS_TOKEN" \
+              -H "x-vercel-protection-bypass: $E2E_VERCEL_BYPASS_SECRET" \
+              -d "$PAYLOAD"; then
+              echo "Playwright metadata published on attempt $attempt"
+              exit 0
+            fi
+            echo "Playwright metadata publish attempt $attempt failed; retrying in 10s"
+            sleep 10
+          done
+          echo "::warning::Unable to publish Playwright metadata to staging health. Check MONITORING_TOKEN in GitHub Secrets and staging."
+          exit 0
 
       - name: Upload Playwright HTML report
         if: always()

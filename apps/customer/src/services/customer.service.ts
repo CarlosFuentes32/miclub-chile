@@ -1,14 +1,10 @@
-import { apiRequest, AuthUser } from "@miclub/shared";
+import { apiRequest, AuthUser, getApiUrl } from "@miclub/shared";
 import {
   CustomerDashboard,
   CustomerProfile,
   CustomerRegistration,
 } from "../types/customer";
-const API_URL =
-  import.meta.env.VITE_API_URL ??
-  (import.meta.env.PROD
-    ? "https://api.miclubchile.cl/api"
-    : "http://localhost:3000/api");
+const API_URL = getApiUrl();
 function profileFromUser(user: AuthUser): CustomerProfile {
   return {
     id: user.id,

@@ -1,6 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Plan } from "../types/admin";
 
+type Period = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "YEARLY";
+
 export function PlanForm({
   initial,
   onSave,
@@ -11,27 +13,37 @@ export function PlanForm({
   onClose: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [price, setPrice] = useState(initial?.monthlyPrice ?? 19990);
   const [currency, setCurrency] = useState(initial?.currency ?? "CLP");
-  const [billingPeriod, setBillingPeriod] = useState<"MONTHLY" | "YEARLY">(initial?.billingPeriod ?? "MONTHLY");
+  const [billingPeriod, setBillingPeriod] = useState<Period>(initial?.billingPeriod ?? "MONTHLY");
   const [trialDays, setTrialDays] = useState(initial?.trialDays ?? 0);
+  const [graceDays, setGraceDays] = useState(initial?.graceDays ?? 0);
   const [customers, setCustomers] = useState(initial?.customerLimit ?? 500);
   const [collaborators, setCollaborators] = useState(initial?.collaboratorLimit ?? 3);
   const [features, setFeatures] = useState(initial?.features.join("\n") ?? "Programa de fidelización\nPanel cajero");
   const [active, setActive] = useState(initial?.active ?? true);
+  const [publicVisible, setPublicVisible] = useState(initial?.publicVisible ?? false);
+  const [allowNewSubscriptions, setAllowNewSubscriptions] = useState(initial?.allowNewSubscriptions ?? true);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     const base = {
       name,
+      code: code || undefined,
+      description,
       monthlyPrice: price,
       currency,
       billingPeriod,
       trialDays,
+      graceDays,
       customerLimit: customers,
       collaboratorLimit: collaborators,
       features: features.split("\n").map((item) => item.trim()).filter(Boolean),
       active,
+      publicVisible,
+      allowNewSubscriptions,
     };
     await onSave(initial ? { ...base, id: initial.id } : base);
   }
@@ -41,20 +53,25 @@ export function PlanForm({
       <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6">
         <h2 className="text-2xl font-black">{initial ? "Editar plan" : "Crear plan"}</h2>
         <label className="field mt-5">Nombre<input className="input" value={name} onChange={(e) => setName(e.target.value)} required /></label>
+        <label className="field mt-4">Código interno<input className="input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""))} placeholder="PILOTO_QA" /></label>
+        <label className="field mt-4">Descripción<textarea className="input min-h-20" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Uso interno/comercial del plan" /></label>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="field">Precio<input className="input" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} /></label>
           <label className="field">Moneda<input className="input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} /></label>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <label className="field">Periodicidad<select className="input" value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value as "MONTHLY" | "YEARLY")}><option value="MONTHLY">Mensual</option><option value="YEARLY">Anual</option></select></label>
+          <label className="field">Periodicidad<select className="input" value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value as Period)}><option value="MONTHLY">Mensual</option><option value="QUARTERLY">Trimestral</option><option value="SEMIANNUAL">Semestral</option><option value="YEARLY">Anual</option></select></label>
           <label className="field">Días de prueba<input className="input" type="number" min={0} value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))} /></label>
         </div>
+        <label className="field mt-4">Días de gracia<input className="input" type="number" min={0} value={graceDays} onChange={(e) => setGraceDays(Number(e.target.value))} /></label>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="field">Límite clientes<input className="input" type="number" value={customers} onChange={(e) => setCustomers(Number(e.target.value))} /></label>
           <label className="field">Límite colaboradores<input className="input" type="number" value={collaborators} onChange={(e) => setCollaborators(Number(e.target.value))} /></label>
         </div>
         <label className="field mt-4">Características <span>(una por línea)</span><textarea className="input min-h-28" value={features} onChange={(e) => setFeatures(e.target.value)} /></label>
         <label className="mt-4 flex items-center gap-3 font-bold"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Plan activo</label>
+        <label className="mt-3 flex items-center gap-3 font-bold"><input type="checkbox" checked={publicVisible} onChange={(e) => setPublicVisible(e.target.checked)} /> Visible comercialmente</label>
+        <label className="mt-3 flex items-center gap-3 font-bold"><input type="checkbox" checked={allowNewSubscriptions} onChange={(e) => setAllowNewSubscriptions(e.target.checked)} /> Permite nuevas contrataciones</label>
         <button className="primary mt-5 w-full">Guardar plan</button>
       </form>
     </div>

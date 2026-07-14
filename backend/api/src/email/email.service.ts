@@ -186,6 +186,29 @@ export class EmailService {
     });
   }
 
+  billingNotice(
+    to: string,
+    name: string,
+    title: string,
+    intro: string,
+    details: Array<{ label: string; value: string }>,
+    dedupeKey: string,
+  ) {
+    return this.send({
+      to,
+      name,
+      template: "billing_notice",
+      subject: title,
+      title,
+      intro,
+      details,
+      actionLabel: "Ver plan y pagos",
+      actionUrl: this.commerceUrl(),
+      securityNote: "Este correo informa cambios de facturación. No contiene contraseñas ni datos bancarios sensibles.",
+      dedupeKey,
+    });
+  }
+
   adminNotice(to: string, name: string, title: string, intro: string, details?: Array<{ label: string; value: string }>) {
     return this.send({
       to,

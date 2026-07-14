@@ -21,6 +21,13 @@ const slugify = (text: string) =>
     .replace(/^-|-$/g, "");
 
 async function main() {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PRODUCTION_SEED !== "true") {
+    throw new Error(
+      "Seed bloqueado en produccion. Use migraciones para produccion y ejecute seeds solo en local/staging. " +
+        "Si realmente necesita un bootstrap productivo, defina ALLOW_PRODUCTION_SEED=true tras respaldo y autorizacion explicita.",
+    );
+  }
+
   const password = process.env.SEED_PASSWORD;
   if (!password || password.length < 12)
     throw new Error("Define SEED_PASSWORD con al menos 12 caracteres antes de ejecutar el seed.");

@@ -14,8 +14,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: AccessTokenPayload): Promise<JwtUser> {
     if (payload.type !== 'access') throw new UnauthorizedException();
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, email: true, role: true, status: true, forcePasswordChange:true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        forcePasswordChange: true,
+        businessMemberships: { where: { status: "ACTIVE" }, take: 1, select: { businessId: true } },
+      },
+    });
     if (!user || user.status !== UserStatus.ACTIVE) throw new UnauthorizedException('Usuario inactivo o inexistente');
-    return { id: user.id, email: user.email, role: user.role, forcePasswordChange:user.forcePasswordChange };
+    return { id: user.id, email: user.email, role: user.role, forcePasswordChange:user.forcePasswordChange, businessId: user.businessMemberships[0]?.businessId ?? payload.businessId };
   }
 }

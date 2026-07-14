@@ -1,0 +1,130 @@
+name: External Database Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Backup environment. production remains blocked unless explicitly enabled with secrets."
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      run_retention:
+        description: "Run retention dry-run after backup"
+        required: true
+        default: true
+        type: boolean
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-database-backup-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Create encrypted PostgreSQL backup in Cloudflare R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BACKUP_ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL_STAGING }}
+      STAGING_DATABASE_CONFIRM: miclub-staging
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_REGION: ${{ secrets.R2_REGION }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      APP_VERSION: "1.1.0"
+      GIT_COMMIT_SHA: ${{ github.sha }}
+      GIT_BRANCH: ${{ github.ref_name }}
+      BACKUP_RECORD_HISTORY: "false"
+      BACKUP_RETENTION_DRY_RUN: "true"
+      ALLOW_PRODUCTION_BACKUP: "false"
+      ALLOW_TEMPORARY_RESTORE: "true"
+      TEMPORARY_RESTORE_CONFIRM: "TEMPORARY_DATABASE_ONLY"
+      TEMPORARY_RESTORE_DATABASE_URL: ${{ secrets.TEMPORARY_RESTORE_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --silent --show-error -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          pg_dump --version
+          pg_restore --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Safety check
+        run: |
+          if [ "$BACKUP_ENVIRONMENT" = "production" ]; then
+            echo "::error::Production backups are intentionally disabled in RC-B1 workflow until manually authorized."
+            exit 1
+          fi
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::BACKUP_DATABASE_URL_STAGING secret is required."
+            exit 1
+          fi
+
+      - name: Verify PostgreSQL client compatibility
+        run: |
+          SERVER_VERSION_NUM="$(psql "$DATABASE_URL" -At -c "show server_version_num")"
+          SERVER_MAJOR="$((SERVER_VERSION_NUM / 10000))"
+          CLIENT_MAJOR="$(pg_dump --version | sed -E 's/.* ([0-9]+)(\.[0-9]+)?.*/\1/')"
+          echo "PostgreSQL server major: $SERVER_MAJOR"
+          echo "pg_dump client major: $CLIENT_MAJOR"
+          if [ "$CLIENT_MAJOR" -lt "$SERVER_MAJOR" ]; then
+            echo "::error::pg_dump client is older than PostgreSQL server. Backup blocked."
+            exit 1
+          fi
+
+      - name: Create encrypted external backup
+        run: |
+          npm run backup:external:create | tee backup-result.json
+          node -e "const fs=require('fs'); const raw=fs.readFileSync('backup-result.json','utf8'); const parsed=JSON.parse(raw.slice(raw.indexOf('{'))); if(!parsed?.summary?.metadataKey) throw new Error('metadataKey missing'); fs.appendFileSync(process.env.GITHUB_ENV, 'BACKUP_METADATA_KEY=' + parsed.summary.metadataKey + '\n');"
+
+      - name: Verify encrypted backup from R2
+        run: npm run backup:external:verify
+
+      - name: Restore backup into temporary PostgreSQL
+        run: |
+          if [ -z "$TEMPORARY_RESTORE_DATABASE_URL" ]; then
+            echo "::error::TEMPORARY_RESTORE_DATABASE_URL secret is required."
+            exit 1
+          fi
+          npm run backup:external:restore
+
+      - name: Retention dry-run
+        if: ${{ github.event.inputs.run_retention != 'false' }}
+        run: npm run backup:external:retention
+
+      - name: Safe summary
+        if: always()
+        run: |
+          echo "External backup workflow completed for $BACKUP_ENVIRONMENT."
+          echo "No backup artifact is uploaded to GitHub."

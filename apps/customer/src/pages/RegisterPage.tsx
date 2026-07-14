@@ -54,9 +54,10 @@ export function RegisterPage() {
             : "Empieza a reunir tus beneficios en un solo lugar."}
         </p>
         <form onSubmit={submit} className="mt-8 space-y-4">
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-name">
             Nombre completo
             <input
+              id="customer-register-name"
               className="input"
               value={data.name}
               onChange={(e) =>
@@ -69,11 +70,12 @@ export function RegisterPage() {
               required
             />
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-phone">
             Teléfono
             <span className="flex items-center rounded-xl border border-slate-200 bg-white px-4 focus-within:ring-2 focus-within:ring-violet-500">
               <span className="font-bold text-slate-500">+569</span>
               <input
+                id="customer-register-phone"
                 className="min-h-12 w-full border-0 px-1 outline-none"
                 type="tel"
                 inputMode="numeric"
@@ -88,9 +90,10 @@ export function RegisterPage() {
               />
             </span>
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-email">
             Correo electrónico
             <input
+              id="customer-register-email"
               className="input"
               type="email"
               value={data.email}
@@ -98,29 +101,32 @@ export function RegisterPage() {
               required
             />
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-birth-date">
             Fecha de nacimiento{" "}
             <span className="font-normal text-slate-400">(opcional)</span>
             <input
+              id="customer-register-birth-date"
               className="input"
               type="date"
               value={data.birthDate}
               onChange={(e) => set("birthDate", e.target.value)}
             />
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-rut">
             RUT <span className="font-normal text-slate-400">(opcional)</span>
             <input
+              id="customer-register-rut"
               className="input"
               value={data.rut}
               onChange={(e) => set("rut", e.target.value)}
               placeholder="12.345.678-9"
             />
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-register-password">
             Contraseña
             <span className="relative block">
               <input
+                id="customer-register-password"
                 className="input pr-12"
                 type={showPassword ? "text" : "password"}
                 minLength={4}

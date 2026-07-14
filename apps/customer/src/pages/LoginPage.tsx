@@ -57,11 +57,12 @@ export function LoginPage({
           Tus beneficios te están esperando.
         </p>
         <form onSubmit={submit} className="mt-8 space-y-4">
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-login-phone">
             Teléfono
             <span className="phone-field">
               <b>+569</b>
               <input
+                id="customer-login-phone"
                 className="input"
                 inputMode="numeric"
                 pattern="[0-9]{8}"
@@ -74,10 +75,11 @@ export function LoginPage({
               />
             </span>
           </label>
-          <label className="block text-sm font-semibold">
+          <label className="block text-sm font-semibold" htmlFor="customer-login-password">
             Contraseña
             <span className="relative block">
               <input
+                id="customer-login-password"
                 className="input pr-12"
                 type={showPassword ? "text" : "password"}
                 value={password}

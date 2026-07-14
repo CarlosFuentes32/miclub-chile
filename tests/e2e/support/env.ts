@@ -8,7 +8,8 @@ export interface E2EConfig {
   adminEmail: string;
   adminPassword: string;
   defaultPassword: string;
-  billingWebhookSecret: string;
+  billingWebhookSecret?: string;
+  vercelBypassSecret?: string;
 }
 
 function required(name: string) {
@@ -28,7 +29,8 @@ export function getE2EConfig(): E2EConfig {
     adminEmail: required("E2E_ADMIN_EMAIL"),
     adminPassword: required("E2E_ADMIN_PASSWORD"),
     defaultPassword: required("E2E_DEFAULT_PASSWORD"),
-    billingWebhookSecret: required("E2E_BILLING_WEBHOOK_SECRET"),
+    billingWebhookSecret: process.env.E2E_BILLING_WEBHOOK_SECRET,
+    vercelBypassSecret: process.env.E2E_VERCEL_BYPASS_SECRET,
   };
 }
 
@@ -48,7 +50,8 @@ export function assertStagingEnvironment(config: E2EConfig) {
       host === "comercio.miclubchile.cl" ||
       host === "cajero.miclubchile.cl" ||
       host === "app.miclubchile.cl";
-    if (isProduction || !host.includes("staging")) {
+    const isMiClubPreview = host.endsWith(".vercel.app") && host.includes("mi-club-chile");
+    if (isProduction || (!host.includes("staging") && !isMiClubPreview)) {
       throw new Error(`E2E bloqueado: ${raw} no parece staging. Usa dominios staging o previews aislados.`);
     }
   }

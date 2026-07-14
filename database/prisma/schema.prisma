@@ -13,7 +13,70 @@ enum UserRole {
   BUSINESS_ADMIN
   BUSINESS_OWNER
   MICLUB_ADMIN
+  SUPPORT
   SUPER_ADMIN
+}
+
+enum SupportTicketStatus {
+  NEW              @map("new")
+  OPEN             @map("open")
+  INVESTIGATING    @map("investigating")
+  WAITING_CUSTOMER @map("waiting_customer")
+  WAITING_INTERNAL @map("waiting_internal")
+  RESOLVED         @map("resolved")
+  CLOSED           @map("closed")
+  REOPENED         @map("reopened")
+}
+
+enum SupportTicketPriority {
+  LOW      @map("low")
+  MEDIUM   @map("medium")
+  HIGH     @map("high")
+  CRITICAL @map("critical")
+}
+
+enum SupportTicketCategory {
+  ACCESS        @map("acceso")
+  ACCOUNT       @map("cuenta")
+  BUSINESS      @map("comercio")
+  CASHIER       @map("cajero")
+  CUSTOMER      @map("cliente")
+  PROGRAM       @map("programa")
+  REWARD        @map("recompensa")
+  TRANSACTION   @map("transaccion")
+  REDEEM        @map("canje")
+  BILLING       @map("facturacion")
+  SECURITY      @map("seguridad")
+  INCIDENT      @map("incidente")
+  CONFIGURATION @map("configuracion")
+  OTHER         @map("otro")
+}
+
+enum SupportTimelineType {
+  CREATED          @map("created")
+  STATUS_CHANGED   @map("status_changed")
+  ASSIGNED         @map("assigned")
+  NOTE             @map("note")
+  EMAIL_SENT       @map("email_sent")
+  SESSION_REVOKED  @map("session_revoked")
+  RESET_SENT       @map("reset_sent")
+  IMPERSONATION    @map("impersonation")
+  AUDIT_LINKED     @map("audit_linked")
+  ERROR_LINKED     @map("error_linked")
+  INCIDENT_LINKED  @map("incident_linked")
+  RESOLVED         @map("resolved")
+}
+
+enum SupportMacroStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
+}
+
+enum KnowledgeArticleStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
 }
 
 enum UserStatus {
@@ -21,6 +84,44 @@ enum UserStatus {
   INACTIVE
   SUSPENDED
   DELETED
+}
+
+enum BackupType {
+  AUTOMATIC          @map("automatic")
+  MANUAL             @map("manual")
+  SCHEDULED          @map("scheduled")
+  PRE_DEPLOY         @map("pre_deploy")
+  PRE_MIGRATION      @map("pre_migration")
+  PRE_RESTORE        @map("pre_restore")
+  PRE_DATA_CLEANUP   @map("pre_data_cleanup")
+  SIMULATION         @map("simulation")
+  PROVIDER_MANAGED   @map("provider_managed")
+  EXTERNAL_LOGICAL   @map("external_logical")
+  RESTORE_DRILL      @map("restore_drill")
+}
+
+enum BackupStatus {
+  REQUESTED   @map("requested")
+  RUNNING     @map("running")
+  VERIFIED    @map("verified")
+  FAILED      @map("failed")
+  EXPIRED     @map("expired")
+}
+
+enum RestoreStatus {
+  REQUESTED   @map("requested")
+  VALIDATING   @map("validating")
+  VALIDATED    @map("validated")
+  FAILED       @map("failed")
+  BLOCKED      @map("blocked")
+}
+
+enum RollbackStatus {
+  PLANNED     @map("planned")
+  VALIDATED   @map("validated")
+  BLOCKED     @map("blocked")
+  COMPLETED   @map("completed")
+  FAILED      @map("failed")
 }
 
 model User {
@@ -102,14 +203,151 @@ model UserChange {
 model AuthSession {
   id               String    @id @default(cuid())
   refreshTokenHash String    @map("refresh_token_hash")
+  familyId         String    @default(cuid()) @map("family_id")
   expiresAt        DateTime  @map("expires_at")
   revokedAt        DateTime? @map("revoked_at")
+  revokedReason    String?   @map("revoked_reason")
+  lastUsedAt       DateTime? @map("last_used_at")
+  userAgent        String?   @map("user_agent")
+  ipHash           String?   @map("ip_hash")
+  deviceLabel      String?   @map("device_label")
+  reuseDetectedAt  DateTime? @map("reuse_detected_at")
   createdAt        DateTime  @default(now()) @map("created_at")
   userId           String    @map("user_id")
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
+  @@index([userId, revokedAt, expiresAt])
   @@map("auth_sessions")
+}
+
+model RateLimitBucket {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  scope     String
+  subject   String
+  count     Int      @default(0)
+  resetAt   DateTime @map("reset_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([scope, resetAt])
+  @@map("rate_limit_buckets")
+}
+
+model SupportTicket {
+  id                  String                @id @default(cuid())
+  title               String
+  description         String
+  category            SupportTicketCategory @default(OTHER)
+  priority            SupportTicketPriority @default(MEDIUM)
+  status              SupportTicketStatus   @default(NEW)
+  originChannel       String                @default("internal") @map("origin_channel")
+  businessId          String?               @map("business_id")
+  userId              String?               @map("user_id")
+  cashierUserId       String?               @map("cashier_user_id")
+  transactionId       String?               @map("transaction_id")
+  rewardId            String?               @map("reward_id")
+  incidentId          String?               @map("incident_id")
+  requestId           String?               @map("request_id")
+  correlationId       String?               @map("correlation_id")
+  assignedAgentId     String?               @map("assigned_agent_id")
+  createdById         String?               @map("created_by_id")
+  firstResponseAt     DateTime?             @map("first_response_at")
+  resolvedAt          DateTime?             @map("resolved_at")
+  closedAt            DateTime?             @map("closed_at")
+  slaFirstResponseDue DateTime?             @map("sla_first_response_due")
+  slaResolutionDue    DateTime?             @map("sla_resolution_due")
+  metadata            Json?
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  notes               SupportInternalNote[]
+  timeline            SupportTimelineEvent[]
+
+  @@index([status, priority, createdAt])
+  @@index([businessId, status])
+  @@index([userId, status])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([incidentId])
+  @@map("support_tickets")
+}
+
+model SupportInternalNote {
+  id        String   @id @default(cuid())
+  ticketId  String?  @map("ticket_id")
+  subjectType String @map("subject_type")
+  subjectId String   @map("subject_id")
+  authorId String?   @map("author_id")
+  body      String
+  editedAt  DateTime? @map("edited_at")
+  editReason String?  @map("edit_reason")
+  createdAt DateTime  @default(now()) @map("created_at")
+  ticket    SupportTicket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@index([subjectType, subjectId, createdAt])
+  @@index([ticketId, createdAt])
+  @@map("support_internal_notes")
+}
+
+model SupportTimelineEvent {
+  id          String              @id @default(cuid())
+  ticketId    String              @map("ticket_id")
+  type        SupportTimelineType
+  actorId     String?             @map("actor_id")
+  message     String
+  metadata    Json?
+  requestId   String?             @map("request_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  ticket      SupportTicket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([type, createdAt])
+  @@map("support_timeline_events")
+}
+
+model SupportSlaPolicy {
+  id                         String                @id @default(cuid())
+  priority                   SupportTicketPriority @unique
+  firstResponseMinutes       Int                   @map("first_response_minutes")
+  resolutionMinutes          Int                   @map("resolution_minutes")
+  active                     Boolean               @default(true)
+  createdAt                  DateTime              @default(now()) @map("created_at")
+  updatedAt                  DateTime              @updatedAt @map("updated_at")
+
+  @@map("support_sla_policies")
+}
+
+model SupportMacro {
+  id          String             @id @default(cuid())
+  title       String
+  category    SupportTicketCategory @default(OTHER)
+  body        String
+  status      SupportMacroStatus @default(DRAFT)
+  variables   Json?
+  createdById String?            @map("created_by_id")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([status, category])
+  @@map("support_macros")
+}
+
+model KnowledgeArticle {
+  id              String                 @id @default(cuid())
+  title           String
+  category        SupportTicketCategory  @default(OTHER)
+  keywords        String[]               @default([])
+  body            String
+  status          KnowledgeArticleStatus @default(DRAFT)
+  authorizedRoles UserRole[]             @default([]) @map("authorized_roles")
+  authorId        String?                @map("author_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, category])
+  @@map("knowledge_articles")
 }
 
 enum BusinessStatus {
@@ -184,8 +422,10 @@ enum ManualMovementType {
 }
 
 enum BillingPeriod {
-  MONTHLY @map("monthly")
-  YEARLY  @map("yearly")
+  MONTHLY    @map("monthly")
+  QUARTERLY  @map("quarterly")
+  SEMIANNUAL @map("semiannual")
+  YEARLY     @map("yearly")
 }
 
 enum PlanStatus {
@@ -194,8 +434,10 @@ enum PlanStatus {
 }
 
 enum SubscriptionStatus {
+  DRAFT     @map("draft")
   TRIALING  @map("trialing")
   ACTIVE    @map("active")
+  GRACE_PERIOD @map("grace_period")
   PAST_DUE  @map("past_due")
   SUSPENDED @map("suspended")
   CANCELLED @map("cancelled")
@@ -208,7 +450,59 @@ enum PaymentStatus {
   REJECTED  @map("rejected")
   CANCELLED @map("cancelled")
   REFUNDED  @map("refunded")
+  REVERSED  @map("reversed")
   FAILED    @map("failed")
+}
+
+enum BillingEventType {
+  SUBSCRIPTION_CREATED @map("subscription_created")
+  PLAN_CHANGED         @map("plan_changed")
+  PRICE_CHANGED        @map("price_changed")
+  DISCOUNT_APPLIED     @map("discount_applied")
+  PAYMENT_REGISTERED   @map("payment_registered")
+  PAYMENT_APPROVED     @map("payment_approved")
+  PAYMENT_REJECTED     @map("payment_rejected")
+  PAYMENT_REVERSED     @map("payment_reversed")
+  DUE_DATE_CHANGED     @map("due_date_changed")
+  TRIAL_EXTENDED       @map("trial_extended")
+  SUSPENDED            @map("suspended")
+  REACTIVATED          @map("reactivated")
+  CANCELLED            @map("cancelled")
+  REMINDER_SENT        @map("reminder_sent")
+  EXPORT_CREATED       @map("export_created")
+  REQUEST_CREATED      @map("request_created")
+}
+
+enum BillingRequestType {
+  PLAN_CHANGE     @map("plan_change")
+  CANCELLATION    @map("cancellation")
+  TRIAL_EXTENSION @map("trial_extension")
+  PAYMENT_REVIEW  @map("payment_review")
+  REACTIVATION    @map("reactivation")
+  BILLING_QUESTION @map("billing_question")
+}
+
+enum BillingRequestStatus {
+  OPEN       @map("open")
+  REVIEWING  @map("reviewing")
+  APPROVED   @map("approved")
+  REJECTED   @map("rejected")
+  CLOSED     @map("closed")
+}
+
+enum DiscountType {
+  PERCENTAGE @map("percentage")
+  FIXED      @map("fixed")
+}
+
+enum BillingReminderType {
+  TRIAL_ENDING      @map("trial_ending")
+  TRIAL_EXPIRED     @map("trial_expired")
+  PAYMENT_UPCOMING  @map("payment_upcoming")
+  PAYMENT_DUE       @map("payment_due")
+  GRACE_PERIOD      @map("grace_period")
+  SUSPENSION_WARNING @map("suspension_warning")
+  SUSPENDED         @map("suspended")
 }
 
 enum PaymentProvider {
@@ -224,18 +518,76 @@ enum WebhookEventStatus {
   FAILED    @map("failed")
 }
 
+enum IncidentSeverity {
+  CRITICAL @map("critical")
+  HIGH     @map("high")
+  MEDIUM   @map("medium")
+}
+
+enum IncidentStatus {
+  DETECTED      @map("detected")
+  INVESTIGATING @map("investigating")
+  IDENTIFIED    @map("identified")
+  MONITORING    @map("monitoring")
+  RESOLVED      @map("resolved")
+}
+
+enum IncidentActionType {
+  DETECTED          @map("detected")
+  STATUS_CHANGED    @map("status_changed")
+  NOTE_ADDED        @map("note_added")
+  ALERT_SENT        @map("alert_sent")
+  ALERT_SUPPRESSED  @map("alert_suppressed")
+  RECOVERY_DETECTED @map("recovery_detected")
+  RESOLVED          @map("resolved")
+}
+
+enum IncidentAlertChannel {
+  EMAIL    @map("email")
+  SLACK    @map("slack")
+  WHATSAPP @map("whatsapp")
+}
+
+enum AuditResult {
+  SUCCESS @map("success")
+  FAILURE @map("failure")
+  DENIED  @map("denied")
+  PARTIAL @map("partial")
+}
+
+enum AuditRiskLevel {
+  LOW      @map("low")
+  MEDIUM   @map("medium")
+  HIGH     @map("high")
+  CRITICAL @map("critical")
+}
+
+enum SystemErrorStatus {
+  OPEN          @map("open")
+  INVESTIGATING @map("investigating")
+  RESOLVED      @map("resolved")
+}
+
 model Plan {
   id                String     @id @default(cuid())
   name              String     @unique
+  code              String?    @unique
+  description       String?
   monthlyPrice      Decimal    @default(0) @map("monthly_price") @db.Decimal(12, 2)
   currency          String     @default("CLP")
   billingPeriod     BillingPeriod @default(MONTHLY) @map("billing_period")
   trialDays         Int        @default(0) @map("trial_days")
+  graceDays         Int        @default(0) @map("grace_days")
   customerLimit     Int        @default(500) @map("customer_limit")
   collaboratorLimit Int        @default(3) @map("collaborator_limit")
   features          Json       @default("[]")
+  limits            Json       @default("{}")
   active            Boolean    @default(true)
   status            PlanStatus @default(ACTIVE)
+  sortOrder         Int        @default(100) @map("sort_order")
+  version           Int        @default(1)
+  publicVisible     Boolean    @default(false) @map("public_visible")
+  allowNewSubscriptions Boolean @default(true) @map("allow_new_subscriptions")
   businesses        Business[]
   subscriptions     BusinessSubscription[]
   createdAt         DateTime   @default(now()) @map("created_at")
@@ -379,22 +731,31 @@ model BusinessSubscription {
   planId                String             @map("plan_id")
   status                SubscriptionStatus @default(TRIALING)
   startedAt             DateTime           @default(now()) @map("started_at")
+  trialStartedAt        DateTime?          @map("trial_started_at")
   trialEndsAt           DateTime?          @map("trial_ends_at")
   currentPeriodStartsAt DateTime           @default(now()) @map("current_period_starts_at")
   currentPeriodEndsAt   DateTime?          @map("current_period_ends_at")
   nextBillingAt         DateTime?          @map("next_billing_at")
   graceEndsAt           DateTime?          @map("grace_ends_at")
+  suspendedAt           DateTime?          @map("suspended_at")
+  reactivatedAt         DateTime?          @map("reactivated_at")
   cancelledAt           DateTime?          @map("cancelled_at")
   cancellationReason    String?            @map("cancellation_reason")
   externalProvider      PaymentProvider?   @map("external_provider")
   externalSubscriptionId String?           @unique @map("external_subscription_id")
   lastPaymentStatus     PaymentStatus?     @map("last_payment_status")
+  agreedPrice           Decimal?           @map("agreed_price") @db.Decimal(12, 2)
+  discountPercent       Decimal?           @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount        Decimal?           @map("discount_amount") @db.Decimal(12, 2)
+  paymentMethod         String?            @map("payment_method")
+  autoRenew             Boolean            @default(false) @map("auto_renew")
   metadata              Json?
   createdAt             DateTime           @default(now()) @map("created_at")
   updatedAt             DateTime           @updatedAt @map("updated_at")
   business              Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   plan                  Plan               @relation(fields: [planId], references: [id])
   payments              BillingPayment[]
+  discounts             BillingDiscount[]
 
   @@index([status, nextBillingAt])
   @@index([planId])
@@ -411,6 +772,10 @@ model BillingPayment {
   currency          String          @default("CLP")
   status            PaymentStatus   @default(PENDING)
   paidAt            DateTime?       @map("paid_at")
+  approvedAt        DateTime?       @map("approved_at")
+  reviewedByUserId  String?         @map("reviewed_by_user_id")
+  rejectedReason    String?         @map("rejected_reason")
+  notes             String?
   periodStart       DateTime?       @map("period_start")
   periodEnd         DateTime?       @map("period_end")
   paymentMethod     String?         @map("payment_method")
@@ -426,6 +791,85 @@ model BillingPayment {
   @@index([businessId, status, createdAt])
   @@index([subscriptionId])
   @@map("billing_payments")
+}
+
+model BillingFinancialEvent {
+  id              String           @id @default(cuid())
+  businessId      String           @map("business_id")
+  subscriptionId  String?          @map("subscription_id")
+  paymentId       String?          @map("payment_id")
+  actorUserId     String?          @map("actor_user_id")
+  eventType       BillingEventType @map("event_type")
+  previousState   Json?            @map("previous_state")
+  nextState       Json?            @map("next_state")
+  reason          String?
+  requestId       String?          @map("request_id")
+  correlationId   String?          @map("correlation_id")
+  metadata        Json?
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@index([businessId, createdAt])
+  @@index([subscriptionId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("billing_financial_events")
+}
+
+model BillingDiscount {
+  id             String       @id @default(cuid())
+  businessId     String       @map("business_id")
+  subscriptionId String       @map("subscription_id")
+  planId         String?      @map("plan_id")
+  type           DiscountType
+  value          Decimal      @db.Decimal(12, 2)
+  startsAt       DateTime     @map("starts_at")
+  endsAt         DateTime?    @map("ends_at")
+  maxCycles      Int?         @map("max_cycles")
+  code           String?
+  reason         String
+  approvedById   String      @map("approved_by_id")
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  subscription   BusinessSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, active])
+  @@index([subscriptionId, active])
+  @@map("billing_discounts")
+}
+
+model BillingRequest {
+  id              String               @id @default(cuid())
+  businessId      String               @map("business_id")
+  requestedById   String               @map("requested_by_id")
+  requestedPlanId String?              @map("requested_plan_id")
+  type            BillingRequestType
+  status          BillingRequestStatus @default(OPEN)
+  reason          String
+  supportTicketId String?              @map("support_ticket_id")
+  metadata        Json?
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  @@index([businessId, status, createdAt])
+  @@index([type, status])
+  @@map("billing_requests")
+}
+
+model BillingReminderRun {
+  id             String              @id @default(cuid())
+  environment    String              @default("staging")
+  type           BillingReminderType
+  status         String              @default("completed")
+  processedCount Int                 @default(0) @map("processed_count")
+  sentCount      Int                 @default(0) @map("sent_count")
+  skippedCount   Int                 @default(0) @map("skipped_count")
+  errorCount     Int                 @default(0) @map("error_count")
+  idempotencyKey String              @unique @map("idempotency_key")
+  metadata       Json?
+  startedAt      DateTime            @default(now()) @map("started_at")
+  finishedAt     DateTime?           @map("finished_at")
+
+  @@index([type, startedAt])
+  @@map("billing_reminder_runs")
 }
 
 model BillingPaymentHistory {
@@ -457,6 +901,185 @@ model BillingWebhookEvent {
   @@unique([provider, eventId])
   @@index([status, createdAt])
   @@map("billing_webhook_events")
+}
+
+model Incident {
+  id                  String           @id @default(cuid())
+  dedupeKey           String           @map("dedupe_key")
+  title               String
+  service             String
+  environment         String
+  severity            IncidentSeverity
+  status              IncidentStatus   @default(DETECTED)
+  startedAt           DateTime         @default(now()) @map("started_at")
+  detectedAt          DateTime         @default(now()) @map("detected_at")
+  recoveredAt         DateTime?        @map("recovered_at")
+  closedAt            DateTime?        @map("closed_at")
+  durationSeconds     Int?             @map("duration_seconds")
+  deployedVersion     String?          @map("deployed_version")
+  commit              String?
+  summary             String
+  technicalDetail     String?          @map("technical_detail")
+  source              String           @default("monitor")
+  responsible         String?
+  finalStatus         String?          @map("final_status")
+  lastAlertAt         DateTime?        @map("last_alert_at")
+  alertCooldownUntil  DateTime?        @map("alert_cooldown_until")
+  metadata            Json?
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  actions             IncidentAction[]
+  alerts              IncidentAlert[]
+
+  @@index([environment, status, severity, createdAt])
+  @@index([service, environment, status])
+  @@index([dedupeKey, environment, status])
+  @@map("incidents")
+}
+
+model IncidentAction {
+  id          String             @id @default(cuid())
+  incidentId  String             @map("incident_id")
+  actorUserId String?            @map("actor_user_id")
+  action      IncidentActionType
+  note        String?
+  metadata    Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  incident    Incident           @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("incident_actions")
+}
+
+model IncidentAlert {
+  id          String               @id @default(cuid())
+  incidentId  String               @map("incident_id")
+  channel     IncidentAlertChannel
+  status      String
+  recipient   String?
+  message     String?
+  providerId  String?              @map("provider_id")
+  sentAt      DateTime?            @map("sent_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  incident    Incident             @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, channel, createdAt])
+  @@map("incident_alerts")
+}
+
+model SystemError {
+  id              String            @id @default(cuid())
+  fingerprint     String
+  environment     String
+  service         String            @default("api")
+  module          String?
+  type            String
+  message         String
+  sanitizedStack  String?           @map("sanitized_stack")
+  endpoint        String?
+  method          String?
+  statusCode      Int?              @map("status_code")
+  firstSeenAt     DateTime          @default(now()) @map("first_seen_at")
+  lastSeenAt      DateTime          @default(now()) @map("last_seen_at")
+  occurrenceCount Int               @default(1) @map("occurrence_count")
+  requestId       String?           @map("request_id")
+  correlationId   String?           @map("correlation_id")
+  actorUserId     String?           @map("actor_user_id")
+  role            String?
+  businessId      String?           @map("business_id")
+  version         String?
+  commit          String?
+  buildNumber     String?           @map("build_number")
+  status          SystemErrorStatus @default(OPEN)
+  incidentId      String?           @map("incident_id")
+  notes           Json?
+  metadata        Json?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@unique([fingerprint, environment])
+  @@index([environment, status, lastSeenAt])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([incidentId])
+  @@map("system_errors")
+}
+
+model BackupRecord {
+  id              String       @id @default(cuid())
+  environment     String
+  databaseName    String       @map("database_name")
+  version         String
+  commit          String
+  branch          String?
+  responsibleId   String?      @map("responsible_id")
+  responsibleName String?      @map("responsible_name")
+  type            BackupType
+  status          BackupStatus @default(REQUESTED)
+  startedAt       DateTime     @default(now()) @map("started_at")
+  finishedAt      DateTime?    @map("finished_at")
+  durationMs      Int?         @map("duration_ms")
+  sizeBytes       BigInt?      @map("size_bytes")
+  checksum        String?
+  result          String?
+  storageProvider String       @default("provider_or_logical") @map("storage_provider")
+  storageRef      String?      @map("storage_ref")
+  validation      Json?
+  metadata        Json?
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  restores        RestoreRecord[]
+
+  @@index([environment, status, startedAt])
+  @@index([type, startedAt])
+  @@map("backup_records")
+}
+
+model RestoreRecord {
+  id                   String        @id @default(cuid())
+  backupId             String?       @map("backup_id")
+  environment          String
+  targetEnvironment    String        @map("target_environment")
+  temporaryDatabaseRef String?       @map("temporary_database_ref")
+  requestedById        String?       @map("requested_by_id")
+  requestedByName      String?       @map("requested_by_name")
+  status               RestoreStatus @default(REQUESTED)
+  startedAt            DateTime      @default(now()) @map("started_at")
+  finishedAt           DateTime?     @map("finished_at")
+  durationMs           Int?          @map("duration_ms")
+  validation           Json?
+  result               String?
+  safetyNotes          String?       @map("safety_notes")
+  metadata             Json?
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  backup               BackupRecord? @relation(fields: [backupId], references: [id], onDelete: SetNull)
+
+  @@index([environment, status, startedAt])
+  @@index([backupId])
+  @@map("restore_records")
+}
+
+model RollbackPlan {
+  id              String         @id @default(cuid())
+  environment     String
+  requestedById   String?        @map("requested_by_id")
+  requestedByName String?        @map("requested_by_name")
+  status          RollbackStatus @default(PLANNED)
+  reason          String
+  fromCommit      String?        @map("from_commit")
+  toCommit        String?        @map("to_commit")
+  backupId        String?        @map("backup_id")
+  migrationPlan   Json?          @map("migration_plan")
+  variablePlan    Json?          @map("variable_plan")
+  validation      Json?
+  result          String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([environment, status, createdAt])
+  @@map("rollback_plans")
 }
 
 model ManualCustomer {
@@ -623,16 +1246,40 @@ model Reward {
 
 model AuditLog {
   id         String    @id @default(cuid())
-  userId     String    @map("user_id")
+  userId     String?   @map("user_id")
   businessId String?   @map("business_id")
   action     String
   entityType String    @map("entity_type")
   entityId   String    @map("entity_id")
+  environment String   @default("development")
+  actorRole  String?   @map("actor_role")
+  category   String    @default("administration")
+  module     String    @default("admin")
+  result     AuditResult @default(SUCCESS)
+  riskLevel  AuditRiskLevel @default(LOW) @map("risk_level")
+  previousState Json?  @map("previous_state")
+  nextState  Json?     @map("next_state")
+  requestId  String?   @map("request_id")
+  correlationId String? @map("correlation_id")
+  endpoint   String?
+  method     String?
+  statusCode Int?      @map("status_code")
+  durationMs Int?      @map("duration_ms")
+  ipHash     String?   @map("ip_hash")
+  userAgent  String?   @map("user_agent")
+  version    String?
+  commit     String?
+  buildNumber String?  @map("build_number")
   metadata   Json?
   createdAt  DateTime  @default(now()) @map("created_at")
-  user       User      @relation(fields: [userId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
   business   Business? @relation(fields: [businessId], references: [id])
 
   @@index([businessId, createdAt])
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([environment, category, result, createdAt])
+  @@index([action, createdAt])
   @@map("audit_logs")
 }

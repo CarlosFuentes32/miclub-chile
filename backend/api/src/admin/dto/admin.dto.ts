@@ -20,14 +20,21 @@ export class StatusDto {
 
 export class PlanDto {
   @IsString() name!: string;
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() description?: string;
   @IsNumber() @IsPositive() monthlyPrice!: number;
   @IsOptional() @IsString() currency?: string;
-  @IsOptional() @IsIn(["MONTHLY", "YEARLY"]) billingPeriod?: "MONTHLY" | "YEARLY";
+  @IsOptional() @IsIn(["MONTHLY", "QUARTERLY", "SEMIANNUAL", "YEARLY"]) billingPeriod?: "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "YEARLY";
   @IsOptional() @IsInt() trialDays?: number;
+  @IsOptional() @IsInt() graceDays?: number;
   @IsInt() @IsPositive() customerLimit!: number;
   @IsInt() @IsPositive() collaboratorLimit!: number;
+  @IsOptional() limits?: Record<string, unknown>;
   @IsArray() @IsString({ each: true }) features!: string[];
   @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @IsInt() sortOrder?: number;
+  @IsOptional() @IsBoolean() publicVisible?: boolean;
+  @IsOptional() @IsBoolean() allowNewSubscriptions?: boolean;
 }
 
 export class ManualPaymentDto {
@@ -40,11 +47,21 @@ export class ManualPaymentDto {
   @IsOptional() @IsString() paymentMethod?: string;
   @IsOptional() @IsString() idempotencyKey?: string;
   @IsOptional() @IsString() paidAt?: string;
+  @IsOptional() @IsString() periodStart?: string;
+  @IsOptional() @IsString() periodEnd?: string;
+  @IsOptional() @IsString() notes?: string;
+}
+
+export class ReviewPaymentDto {
+  @IsString() @MinLength(5) reason!: string;
+  @IsOptional() @IsString() rejectedReason?: string;
 }
 
 export class ChangeSubscriptionPlanDto {
   @IsString() planId!: string;
   @IsString() @MinLength(5) reason!: string;
+  @IsOptional() @IsBoolean() immediate?: boolean;
+  @IsOptional() @IsNumber() agreedPrice?: number;
 }
 
 export class TrialGrantDto {
@@ -54,6 +71,16 @@ export class TrialGrantDto {
 
 export class CancelSubscriptionDto {
   @IsString() @MinLength(5) reason!: string;
+}
+
+export class DiscountDto {
+  @IsIn(["PERCENTAGE", "FIXED"]) type!: "PERCENTAGE" | "FIXED";
+  @IsNumber() @IsPositive() value!: number;
+  @IsString() @MinLength(5) reason!: string;
+  @IsOptional() @IsString() code?: string;
+  @IsOptional() @IsString() startsAt?: string;
+  @IsOptional() @IsString() endsAt?: string;
+  @IsOptional() @IsInt() maxCycles?: number;
 }
 
 export class CreateBusinessDto {

@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { createHmac } from "crypto";
 import { adminApi } from "../support/api";
 import { cleanupQaArtifacts, createQaBusiness, qaRunId } from "../support/qa-data";
-import { e2e } from "../support/env";
 
 test.describe("Billing staging", () => {
   test.afterEach(async () => {
@@ -38,13 +36,19 @@ test.describe("Billing staging", () => {
     const first = await admin.post("/admin/billing/payments/manual", { data: manualPayload });
     expect(first.ok(), await first.text()).toBeTruthy();
     const firstBody = await first.json();
-    expect(firstBody.status).toBe("APPROVED");
+    expect(firstBody.status).toBe("PENDING");
     expect(firstBody.provider).toBe("MANUAL");
 
     const second = await admin.post("/admin/billing/payments/manual", { data: manualPayload });
     expect(second.ok(), await second.text()).toBeTruthy();
     const secondBody = await second.json();
     expect(secondBody.id).toBe(firstBody.id);
+
+    const approve = await admin.post(`/admin/billing/payments/${firstBody.id}/approve`, {
+      data: { reason: "QA aprobación manual con evidencia de transferencia" },
+    });
+    expect(approve.ok(), await approve.text()).toBeTruthy();
+    expect((await approve.json()).status).toBe("APPROVED");
 
     const refreshed = await (await admin.get("/admin/billing/subscriptions")).json();
     const active = refreshed.find((row: any) => row.businessId === qa.business.id);
@@ -62,11 +66,16 @@ test.describe("Billing staging", () => {
       status: "approved",
       source: "playwright-staging",
     };
-    const signature = createHmac("sha256", e2e.billingWebhookSecret).update(JSON.stringify(payload)).digest("hex");
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signed = await admin.post("/admin/billing/webhooks/test-signature", {
+      data: { payload, timestamp },
+    });
+    expect(signed.ok(), await signed.text()).toBeTruthy();
+    const { signature } = await signed.json();
 
     const first = await admin.post("/billing/webhooks/flow", {
       data: payload,
-      headers: { "x-miclub-signature": signature },
+      headers: { "x-miclub-signature": signature, "x-miclub-timestamp": timestamp },
     });
     expect(first.ok(), await first.text()).toBeTruthy();
     const firstBody = await first.json();
@@ -75,7 +84,7 @@ test.describe("Billing staging", () => {
 
     const second = await admin.post("/billing/webhooks/flow", {
       data: payload,
-      headers: { "x-miclub-signature": signature },
+      headers: { "x-miclub-signature": signature, "x-miclub-timestamp": timestamp },
     });
     expect(second.ok(), await second.text()).toBeTruthy();
     const secondBody = await second.json();

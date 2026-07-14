@@ -19,6 +19,15 @@ export default defineConfig({
   ],
   use: {
     baseURL: e2e.customerUrl,
+    extraHTTPHeaders: {
+      "x-miclub-staging-e2e": "true",
+      ...(e2e.vercelBypassSecret
+        ? {
+            "x-vercel-protection-bypass": e2e.vercelBypassSecret,
+            "x-vercel-set-bypass-cookie": "true",
+          }
+        : {}),
+    },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

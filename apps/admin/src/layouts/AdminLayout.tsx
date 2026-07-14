@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardList,
   Database,
+  Bug,
   Headphones,
   Layers3,
   LogOut,
@@ -29,8 +30,12 @@ const superNav = [
   ["/customers", "Clientes globales", Users],
   ["/cashiers", "Cajeros", UserCog],
   ["/audit", "Auditoría", ClipboardList],
+  ["/security", "Seguridad", ShieldCheck],
   ["/super-settings", "Config. global", Settings],
   ["/maintenance", "Mantenimiento", Database],
+  ["/system-status", "Estado del Sistema", Database],
+  ["/system-errors", "Errores del sistema", Bug],
+  ["/backups", "Backups", Database],
 ] as const;
 
 export function AdminLayout({
@@ -40,7 +45,8 @@ export function AdminLayout({
   user: AuthUser;
   onLogout: () => void;
 }) {
-  const nav = user.role === "SUPER_ADMIN" ? [...baseNav, ...superNav] : baseNav;
+  const supportNav = [["/support", "Soporte", Headphones]] as const;
+  const nav = user.role === "SUPPORT" ? supportNav : user.role === "SUPER_ADMIN" ? [...baseNav, ...superNav] : baseNav;
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
       <aside className="border-b border-white/10 bg-gradient-to-b from-slate-950 via-violet-950 to-slate-950 text-white lg:fixed lg:inset-y-0 lg:w-[280px]">
@@ -55,6 +61,8 @@ export function AdminLayout({
             <small className="block text-cyan-300">
               {user.role === "SUPER_ADMIN"
                 ? "Super Administrador"
+                : user.role === "SUPPORT"
+                  ? "Soporte Enterprise"
                 : "Control global"}
             </small>
           </div>

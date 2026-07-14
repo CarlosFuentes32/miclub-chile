@@ -1,11 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtUser } from '../auth/auth.types';
 import { CreateLoyaltyProgramDto, UpdateLoyaltyProgramDto } from './dto/create-loyalty-program.dto';
 import { LoyaltyProgramsService } from './loyalty-programs.service';
 
-@Controller('business/loyalty-programs') @UseGuards(JwtAuthGuard)
+@Controller('business/loyalty-programs') @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.BUSINESS_ADMIN, UserRole.BUSINESS_OWNER)
 export class LoyaltyProgramsController {
   constructor(private readonly programs: LoyaltyProgramsService) {}
   @Post() create(@CurrentUser() user: JwtUser, @Body() dto: CreateLoyaltyProgramDto) { return this.programs.create(user.id, dto); }

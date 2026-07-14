@@ -86,6 +86,7 @@ export function UsersPage() {
               "BUSINESS_ADMIN",
               "BUSINESS_OWNER",
               "MICLUB_ADMIN",
+              "SUPPORT",
             ] as UserRole[]
           ).map((r) => (
             <option key={r}>{r}</option>

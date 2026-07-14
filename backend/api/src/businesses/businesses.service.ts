@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import {
+  BillingRequestType,
   CycleStatus,
   MembershipStatus,
   ProgramStatus,
@@ -304,13 +305,32 @@ export class BusinessesService {
 
   async requestBillingChange(userId: string, businessId: string, requestedPlanId: string | undefined, reason: string) {
     await this.access.requireManager(userId, businessId);
-    await this.audit.create({ userId, businessId, action: "billing_plan_change_requested", entityType: "business", entityId: businessId, metadata: { requestedPlanId, reason } });
+    const request = await this.prisma.billingRequest.create({
+      data: {
+        businessId,
+        requestedById: userId,
+        requestedPlanId,
+        type: BillingRequestType.PLAN_CHANGE,
+        reason,
+        metadata: { source: "commerce_panel" },
+      },
+    });
+    await this.audit.create({ userId, businessId, action: "billing_plan_change_requested", entityType: "billing_request", entityId: request.id, category: "billing", module: "commerce", result: "success", riskLevel: "medium", metadata: { requestedPlanId, reason } });
     return { ok: true, message: "Solicitud registrada. El equipo MiClub revisará el cambio de plan." };
   }
 
   async requestBillingCancel(userId: string, businessId: string, reason: string) {
     await this.access.requireManager(userId, businessId);
-    await this.audit.create({ userId, businessId, action: "billing_cancel_requested", entityType: "business", entityId: businessId, metadata: { reason } });
+    const request = await this.prisma.billingRequest.create({
+      data: {
+        businessId,
+        requestedById: userId,
+        type: BillingRequestType.CANCELLATION,
+        reason,
+        metadata: { source: "commerce_panel", automaticCancellation: false },
+      },
+    });
+    await this.audit.create({ userId, businessId, action: "billing_cancel_requested", entityType: "billing_request", entityId: request.id, category: "billing", module: "commerce", result: "success", riskLevel: "medium", metadata: { reason } });
     return { ok: true, message: "Solicitud de cancelación registrada. No se cancela automáticamente hasta revisión administrativa." };
   }
 }
