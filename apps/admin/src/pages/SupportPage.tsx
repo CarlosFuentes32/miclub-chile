@@ -5,6 +5,35 @@ import { SupportDashboard, SupportSearchResult, SupportTicket } from "../types/a
 const categories = ["ACCESS", "ACCOUNT", "BUSINESS", "CASHIER", "CUSTOMER", "PROGRAM", "REWARD", "TRANSACTION", "REDEEM", "BILLING", "SECURITY", "INCIDENT", "CONFIGURATION", "OTHER"];
 const priorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 const statuses = ["NEW", "OPEN", "INVESTIGATING", "WAITING_CUSTOMER", "WAITING_INTERNAL", "RESOLVED", "CLOSED", "REOPENED"];
+const summaryLabels: Record<string, string> = {
+  openTickets: "Tickets abiertos",
+  criticalTickets: "Tickets críticos",
+  overdueTickets: "Tickets vencidos",
+  activeIncidents: "Incidentes activos",
+  lockedUsers: "Cuentas bloqueadas",
+  suspendedBusinesses: "Comercios suspendidos",
+  recentErrors: "Errores recientes",
+  revokedSessions: "Sesiones revocadas",
+  assignedToMe: "Asignados a mí",
+  firstResponseAverageMinutes: "Tiempo promedio de primera respuesta",
+  resolutionAverageMinutes: "Tiempo promedio de resolución",
+};
+
+function supportSummaryLabel(key: string) {
+  return summaryLabels[key] ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (value) => value.toUpperCase());
+}
+
+function formatMinutes(value: unknown) {
+  if (value === null || value === undefined || value === "") return "Sin datos";
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes)) return String(value);
+  if (minutes <= 0) return "Sin datos";
+  const rounded = Math.round(minutes);
+  if (rounded < 60) return `${rounded} min`;
+  const hours = Math.floor(rounded / 60);
+  const rest = rounded % 60;
+  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+}
 
 export function SupportPage() {
   const [dashboard, setDashboard] = useState<SupportDashboard | null>(null);
@@ -121,11 +150,15 @@ export function SupportPage() {
       <p className="subtitle">Herramientas controladas, auditadas y con datos sensibles enmascarados.</p>
       {message && <p className="mt-4 rounded-2xl bg-violet-50 p-4 font-bold text-violet-800">{message}</p>}
 
-      <section className="mt-6 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+      <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {dashboard && Object.entries(dashboard.summary).map(([key, value]) => (
-          <div key={key} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-wider text-slate-400">{key}</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{value ?? "—"}</p>
+          <div key={key} className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="min-h-9 whitespace-normal break-words text-[clamp(.68rem,1.7vw,.76rem)] font-black uppercase leading-snug tracking-wider text-slate-400">
+              {supportSummaryLabel(key)}
+            </p>
+            <p className="mt-2 break-words text-[clamp(1.65rem,4vw,2rem)] font-black leading-tight text-slate-950">
+              {key.toLowerCase().includes("minutes") ? formatMinutes(value) : value ?? "Sin datos"}
+            </p>
           </div>
         ))}
       </section>
